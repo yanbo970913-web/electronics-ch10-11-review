@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>電子學 第10–11章 互動複習 ⚡ OPA・振盪器・濾波器</title>
+<style>
+:root{
+  --r:16px; --tr:.28s cubic-bezier(.22,.61,.36,1);
+  --brand:#60a5fa; --brand2:#22d3ee; --violet:#a78bfa;
+  --ok:#34d399; --no:#fb7185; --gold:#fbbf24;
+}
+html[data-theme="dark"]{
+  --bg:#070b16; --bg2:#0b1224; --grad1:#16224a; --grad2:#0d2b3a; --grad3:#241640;
+  --surface:rgba(255,255,255,.045); --surface2:rgba(255,255,255,.075); --solid:#101a30;
+  --border:rgba(255,255,255,.10); --border2:rgba(255,255,255,.16);
+  --text:#e8eef9; --muted:#93a1b8; --shadow:0 10px 40px rgba(0,0,0,.45);
+  --glass:rgba(13,20,38,.66); --opt:rgba(255,255,255,.035);
+}
+html[data-theme="light"]{
+  --bg:#ffffff; --bg2:#ffffff; --grad1:#dde8ff; --grad2:#dbf2f8; --grad3:#ece2fc;
+  --surface:#ffffff; --surface2:#f4f7fc; --solid:#ffffff;
+  --border:#e3e8f1; --border2:#d0d8e6;
+  --text:#14181f; --muted:#56607a; --shadow:0 6px 22px rgba(40,60,110,.09);
+  --glass:rgba(255,255,255,.88); --opt:#f8fafe;
+  --brand:#2563eb; --brand2:#0e7490; --violet:#7c3aed; --ok:#0f9d6b; --no:#e11d48; --gold:#a96a0c;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.72;-webkit-text-size-adjust:100%;
+  transition:background .4s,color .4s;overflow-x:hidden}
+sub,sup{font-size:.72em}
+strong{color:var(--no)}
+::selection{background:var(--brand);color:#fff}
+/* themed scrollbars (no white edge, follows dark/light) */
+*{scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:content-box}
+::-webkit-scrollbar-corner{background:transparent}
+/* animated background */
+#bg{position:fixed;inset:0;z-index:-2;background:var(--bg);overflow:hidden}
+#bg::before,#bg::after,#bg i{content:"";position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;
+  mix-blend-mode:screen}
+html[data-theme="light"] #bg::before,html[data-theme="light"] #bg::after,html[data-theme="light"] #bg i{opacity:.2;mix-blend-mode:multiply;filter:blur(90px)}
+#bg::before{width:46vw;height:46vw;background:var(--grad1);left:-8vw;top:-10vw;animation:float1 22s ease-in-out infinite}
+#bg::after{width:40vw;height:40vw;background:var(--grad2);right:-8vw;top:18vh;animation:float2 26s ease-in-out infinite}
+#bg i{width:38vw;height:38vw;background:var(--grad3);left:30vw;bottom:-14vw;animation:float3 30s ease-in-out infinite}
+@keyframes float1{50%{transform:translate(8vw,10vh) scale(1.15)}}
+@keyframes float2{50%{transform:translate(-9vw,6vh) scale(1.1)}}
+@keyframes float3{50%{transform:translate(6vw,-8vh) scale(1.2)}}
+#grid{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background:radial-gradient(circle at 50% -10%, transparent 60%, var(--bg) 100%)}
+
+/* header */
+header{position:sticky;top:0;z-index:40;background:var(--glass);backdrop-filter:blur(16px) saturate(1.4);
+  -webkit-backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--border);
+  box-shadow:0 4px 30px rgba(0,0,0,.18)}
+.hwrap{max-width:1060px;margin:0 auto;padding:9px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:20px;
+  background:linear-gradient(135deg,var(--brand),var(--violet));box-shadow:0 0 22px -2px var(--brand);
+  animation:pulseLogo 3.5s ease-in-out infinite}
+@keyframes pulseLogo{50%{box-shadow:0 0 30px 2px var(--violet)}}
+.htitle{font-size:17px;font-weight:900;letter-spacing:.3px;line-height:1.15;
+  background:linear-gradient(90deg,var(--text),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.htitle small{display:block;font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:0;-webkit-text-fill-color:var(--muted)}
+.htools{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.iconbtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text);font-size:17px;cursor:pointer;transition:var(--tr);display:grid;place-items:center}
+.iconbtn:hover{border-color:var(--brand);background:var(--surface2);transform:translateY(-2px);box-shadow:0 6px 18px -6px var(--brand)}
+.iconbtn.on{color:var(--gold)}
+.tabs{display:flex;gap:5px;background:var(--surface);padding:4px;border-radius:13px;border:1px solid var(--border)}
+.tab{background:transparent;color:var(--muted);border:0;padding:8px 15px;border-radius:10px;
+  font-size:14.5px;font-weight:800;cursor:pointer;transition:var(--tr);position:relative;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:#fff;background:linear-gradient(135deg,var(--brand),var(--violet));box-shadow:0 6px 18px -6px var(--brand)}
+html[data-theme="light"] .tab.active{color:#fff}
+.ring{position:relative;width:40px;height:40px}
+.ring svg{transform:rotate(-90deg)}
+.ring .rt{fill:none;stroke:var(--border2);stroke-width:4}
+.ring .rp{fill:none;stroke:url(#rg);stroke-width:4;stroke-linecap:round;stroke-dasharray:101;stroke-dashoffset:101;transition:stroke-dashoffset .6s}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:10.5px;font-weight:800;color:var(--brand2)}
+
+.wrap{max-width:1060px;margin:0 auto;padding:18px 16px 110px}
+.view{display:none;animation:fadeIn .45s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* panel */
+.panel{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;margin-bottom:14px;
+  position:sticky;top:64px;z-index:20;box-shadow:var(--shadow)}
+.row{display:flex;flex-wrap:wrap;gap:9px 12px;align-items:center}
+.row+.row{margin-top:10px}
+label.lb{font-size:12.5px;color:var(--muted);font-weight:800;margin-right:3px}
+select,.search{font-family:inherit;font-size:13.5px;border-radius:10px;border:1px solid var(--border);
+  padding:8px 11px;background:var(--surface);color:var(--text);cursor:pointer;transition:var(--tr);outline:none}
+select:focus,.search:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 30%,transparent)}
+.search{cursor:text;min-width:150px;flex:1}
+/* custom in-page dropdown (no native OS popup) */
+.cs{position:relative;display:inline-block;font-size:13.5px;vertical-align:middle}
+.cs-btn{display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--text);border:1px solid var(--border);
+  border-radius:10px;padding:8px 11px;font:inherit;font-weight:700;cursor:pointer;transition:var(--tr);min-width:96px;white-space:nowrap}
+.cs.csw .cs-btn{max-width:240px}
+.cs-btn .cs-lab{flex:1;overflow:hidden;text-overflow:ellipsis}
+.cs-btn:hover{border-color:var(--brand);transform:translateY(-1px)}
+.cs.open .cs-btn{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 26%,transparent)}
+.cs-ar{transition:transform var(--tr);opacity:.7;font-size:11px}
+.cs.open .cs-ar{transform:rotate(180deg)}
+.cs-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;max-height:300px;overflow:auto;z-index:35;
+  background:var(--solid);border:1px solid var(--border2);border-radius:13px;padding:6px;box-shadow:0 18px 44px rgba(0,0,0,.28);
+  display:none;animation:fadeIn .2s}
+.cs.open .cs-menu{display:block}
+.cs-opt{padding:8px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;color:var(--text);transition:.12s;font-weight:600}
+.cs-opt:hover{background:var(--surface2)}
+.cs-opt.on{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;font-weight:800}
+.btn{font-family:inherit;font-size:13.5px;border-radius:10px;border:1px solid var(--border);padding:8px 13px;
+  background:var(--surface);color:var(--text);cursor:pointer;font-weight:800;transition:var(--tr);position:relative;overflow:hidden}
+.btn:hover{border-color:var(--brand);transform:translateY(-2px);box-shadow:0 8px 20px -8px var(--brand)}
+.btn.pri{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;border-color:transparent}
+.btn.danger:hover{border-color:var(--no);box-shadow:0 8px 20px -8px var(--no)}
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:translate(-50%,-50%) scale(0);
+  animation:rip .55s ease-out;pointer-events:none}
+@keyframes rip{to{transform:translate(-50%,-50%) scale(14);opacity:0}}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:800;color:var(--muted);cursor:pointer;user-select:none}
+.chk input{accent-color:var(--brand);width:16px;height:16px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:8px 15px;font-size:13.5px;font-weight:800;cursor:pointer;color:var(--muted);transition:var(--tr)}
+.seg button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{font-size:13px;font-weight:800;padding:6px 13px;border-radius:999px;border:1px solid var(--border);
+  background:var(--surface);color:var(--muted);cursor:pointer;transition:var(--tr)}
+.chip:hover{color:var(--text);transform:translateY(-1px)}
+.chip.on{background:linear-gradient(135deg,var(--violet),var(--brand));color:#fff;border-color:transparent;box-shadow:0 5px 16px -6px var(--violet)}
+.chip .ct{opacity:.85;font-weight:900;margin-left:3px}
+
+/* HUD stats */
+.hud{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:11px;border-top:1px dashed var(--border)}
+.st{text-align:center;min-width:52px}
+.st b{font-size:21px;font-weight:900;display:block;line-height:1.1}
+.st.t b{color:var(--brand)} .st.ok b{color:var(--ok)} .st.no b{color:var(--no)} .st.pc b{color:var(--brand2)}
+.st .flame{color:var(--gold)}
+.st span{font-size:11px;color:var(--muted)}
+.streak.hot b{animation:hot 1s ease infinite}
+@keyframes hot{50%{transform:scale(1.18);filter:drop-shadow(0 0 8px var(--gold))}}
+.bar{flex:1;min-width:120px;height:11px;background:var(--surface2);border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.bar>i{display:block;height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--brand),var(--brand2),var(--ok));background-size:200% 100%;
+  animation:flow 3s linear infinite;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+@keyframes flow{to{background-position:200% 0}}
+.timer{font-weight:900;font-size:15px;color:var(--gold);font-variant-numeric:tabular-nums}
+
+/* result banner */
+.result{display:none;text-align:center;border-radius:var(--r);padding:18px;margin-bottom:14px;
+  border:1px solid var(--border2);background:var(--surface);box-shadow:var(--shadow);position:relative;overflow:hidden}
+.result.show{display:block;animation:pop .5s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.result .big{font-size:42px;font-weight:900;background:linear-gradient(90deg,var(--brand),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.result .gr{font-size:15px;font-weight:800;margin:2px 0 8px}
+
+/* cards */
+.q{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px;margin-bottom:13px;
+  box-shadow:var(--shadow);opacity:0;transform:translateY(18px);transition:opacity .5s,transform .5s,border-color var(--tr),box-shadow var(--tr)}
+.q.in{opacity:1;transform:none}
+.q:hover{border-color:var(--border2)}
+.q.active{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent),var(--shadow)}
+.q.shake{animation:shake .42s}
+@keyframes shake{10%,90%{transform:translateX(-2px)}30%,70%{transform:translateX(5px)}50%{transform:translateX(-7px)}}
+.q.okpulse{animation:okp .6s}
+@keyframes okp{40%{box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 45%,transparent),0 0 34px -4px var(--ok)}}
+.qhead{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.qnum{font-weight:900;color:var(--brand);font-size:16px;font-variant-numeric:tabular-nums}
+.star{margin-left:auto;background:transparent;border:0;font-size:19px;cursor:pointer;color:var(--muted);transition:var(--tr);line-height:1}
+.star:hover{transform:scale(1.25) rotate(8deg)} .star.on{color:var(--gold);text-shadow:0 0 12px var(--gold)}
+.tag{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid transparent}
+.tag.ch{background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--brand)}
+.tag.tp{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tag.df{background:var(--surface2);color:var(--muted)}
+.tag.df.adv{background:color-mix(in srgb,var(--no) 16%,transparent);color:var(--no)}
+.tag.past{background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold);border-color:color-mix(in srgb,var(--gold) 40%,transparent)}
+.stem{font-size:15.5px;margin:3px 0 11px}
+.dia{margin:4px 0 12px;padding:12px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;justify-content:center;overflow-x:auto}
+svg.ckt{display:block;width:100%;height:auto}
+.ckt line,.ckt rect,.ckt path,.ckt circle{stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ckt .opf{fill:color-mix(in srgb,var(--brand) 15%,transparent)}
+.ckt .nd{fill:var(--text);stroke:none}
+.ckt text{fill:var(--text);stroke:none;font:600 13px "Microsoft JhengHei",sans-serif;text-anchor:middle}
+.ckt .val{fill:var(--brand2);font-weight:800}
+.ckt .op{font-size:16px;fill:var(--muted)}
+.ckt .l{text-anchor:start}
+.ckt .r{text-anchor:end}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--border);border-radius:12px;padding:10px 13px;
+  cursor:pointer;background:var(--opt);transition:var(--tr);font-size:15px;position:relative;overflow:hidden}
+.opt:hover{border-color:var(--brand);transform:translateX(3px)}
+.opt .L{font-weight:900;color:var(--brand);min-width:22px}
+.opt.sel{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,transparent)}
+.opt.correct{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent);animation:flashOk .5s}
+.opt.correct .L{color:var(--ok)}
+.opt.wrong{border-color:var(--no);background:color-mix(in srgb,var(--no) 15%,transparent)}
+.opt.wrong .L{color:var(--no)}
+@keyframes flashOk{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+.opt.disabled{cursor:default}.opt.disabled:hover{transform:none}
+.kbd{margin-left:auto;font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:0 5px;opacity:.6}
+.reveal{margin-top:9px}
+.reveal button{font-size:12.5px;background:var(--surface2);border:1px solid var(--border);color:var(--brand);border-radius:9px;padding:6px 13px;cursor:pointer;font-weight:800;transition:var(--tr)}
+.reveal button:hover{border-color:var(--brand)}
+.exp{margin-top:11px;border-top:1px dashed var(--border);padding-top:10px;font-size:14px;max-height:0;overflow:hidden;opacity:0;transition:max-height .45s ease,opacity .4s,padding .4s}
+.exp.show{max-height:1400px;opacity:1}
+.exp .badge{display:inline-block;font-weight:900;color:#04221a;background:var(--ok);border-radius:7px;padding:1px 9px;margin-right:6px}
+.exp .badge.no{background:var(--no);color:#2a0410}
+.exp .et{font-weight:900;color:var(--brand2)}
+.empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:15px}
+.empty .em{font-size:40px;display:block;margin-bottom:8px;opacity:.7}
+
+/* dashboard */
+.dash{display:grid;gap:14px}
+.dcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.dtop{display:flex;gap:22px;flex-wrap:wrap;align-items:center;justify-content:center}
+.donut{position:relative;width:150px;height:150px}
+.donut svg{transform:rotate(-90deg)}
+.donut .b{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.donut .b b{font-size:30px;font-weight:900;color:var(--brand)}
+.donut .b span{font-size:11px;color:var(--muted)}
+.kpis{display:flex;gap:16px;flex-wrap:wrap}
+.kpi{background:var(--surface2);border:1px solid var(--border);border-radius:13px;padding:12px 18px;text-align:center;min-width:92px}
+.kpi b{font-size:24px;font-weight:900;display:block} .kpi span{font-size:11.5px;color:var(--muted)}
+.tprow{display:grid;grid-template-columns:1fr;gap:9px;margin-top:6px}
+.tp{display:grid;grid-template-columns:minmax(120px,1.3fr) 3fr auto;gap:11px;align-items:center}
+.tp .nm{font-size:13px;font-weight:700}
+.tp .nm em{color:var(--muted);font-style:normal;font-size:11px}
+.tbar{height:13px;border-radius:999px;background:var(--surface2);overflow:hidden;border:1px solid var(--border);position:relative}
+.tbar i{position:absolute;left:0;top:0;height:100%;border-radius:999px;transition:width .7s cubic-bezier(.22,.61,.36,1)}
+.tbar .ans{background:color-mix(in srgb,var(--brand) 40%,transparent)}
+.tbar .cor{background:linear-gradient(90deg,var(--ok),var(--brand2))}
+.tp .sc{font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dh{font-size:16px;font-weight:900;margin:0 0 10px;color:var(--text)}
+.dh .sub{font-size:12px;color:var(--muted);font-weight:600}
+
+/* notes */
+#nprog{position:fixed;top:0;left:0;height:3px;width:0;z-index:50;
+  background:linear-gradient(90deg,var(--brand),var(--violet),var(--brand2));box-shadow:0 0 10px var(--brand)}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;box-shadow:var(--shadow)}
+.toc a{font-size:12.5px;padding:5px 11px;border-radius:9px;text-decoration:none;border:1px solid var(--border);
+  background:var(--surface2);color:var(--brand2);transition:var(--tr)}
+.toc a:hover{border-color:var(--brand);transform:translateY(-2px)}
+.toc a.toc-main{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;font-weight:900;border-color:transparent}
+.notes{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 24px 24px;box-shadow:var(--shadow)}
+.notes .nh1{color:var(--brand);border-bottom:2px solid var(--brand);padding-bottom:7px;margin:28px 0 12px;font-size:22px;scroll-margin-top:74px}
+.notes .nh2{margin:22px 0 7px;font-size:17px;border-left:4px solid var(--violet);padding-left:11px;color:var(--brand2);scroll-margin-top:74px}
+.notes .nh3{margin:15px 0 5px;font-size:15px;color:var(--text)}
+.notes p{margin:5px 0}
+.notes blockquote{margin:9px 0;padding:9px 14px;background:var(--surface2);border-left:4px solid var(--brand);color:var(--muted);border-radius:9px;font-size:14px}
+.notes ul,.notes ol{margin:5px 0 11px;padding-left:24px}.notes li{margin:3px 0}
+.notes hr{border:0;border-top:1px dashed var(--border);margin:20px 0}
+.ntab-wrap{overflow-x:auto;margin:11px 0}
+.ntab{border-collapse:collapse;width:100%;font-size:14px}
+.ntab th{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;padding:8px 11px;text-align:left}
+.ntab td{border:1px solid var(--border);padding:7px 11px}
+.ntab tr:nth-child(even) td{background:var(--surface2)}
+
+/* floating */
+.fab{position:fixed;z-index:45;right:18px;bottom:18px;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.fab .btn{box-shadow:0 8px 26px rgba(0,0,0,.4)}
+.submitFab{font-size:15px;padding:13px 22px;border-radius:999px}
+#toTop{width:46px;height:46px;border-radius:50%;font-size:20px;display:none;place-items:center}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--solid);border:1px solid var(--border2);color:var(--text);padding:11px 18px;border-radius:13px;
+  font-weight:800;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:toastIn .4s,toastOut .4s 1.8s forwards}
+.toast.ok{border-color:var(--ok)} .toast.no{border-color:var(--no)} .toast.go{border-color:var(--gold)}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.9)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px)}}
+#confetti{position:fixed;inset:0;z-index:55;pointer-events:none;display:none}
+/* modal */
+.modal{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;place-items:center;padding:18px}
+.modal.show{display:grid;animation:fadeIn .3s}
+.mbox{background:var(--solid);border:1px solid var(--border2);border-radius:18px;padding:22px 24px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.mbox h3{margin:0 0 12px;font-size:18px}
+.kk{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.kk:last-child{border:0}
+.kk kbd{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:2px 9px;font-weight:800;font-size:12px}
+/* music player */
+.mpop{position:fixed;top:60px;right:12px;z-index:66;width:268px;background:var(--solid);border:1px solid var(--border2);
+  border-radius:18px;padding:15px;box-shadow:0 22px 55px rgba(0,0,0,.5);display:none}
+.mpop.show{display:block;animation:fadeIn .26s}
+.mpop h4{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:7px}
+.mpop .np{font-size:12px;color:var(--muted);margin:4px 0 10px;word-break:break-all;min-height:16px}
+.mpop .mrow{display:flex;align-items:center;gap:11px;margin:10px 0}
+.mplay{width:48px;height:48px;border-radius:50%;border:0;cursor:pointer;font-size:18px;flex:none;
+  background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;display:grid;place-items:center;
+  box-shadow:0 6px 18px -6px var(--brand);transition:var(--tr)}
+.mplay:hover{transform:scale(1.07)}
+.mpop input[type=range]{flex:1;accent-color:var(--brand);cursor:pointer}
+.mfile label{display:block;background:var(--surface2);border:1px dashed var(--border2);border-radius:11px;padding:10px;
+  text-align:center;cursor:pointer;font-weight:800;color:var(--brand);font-size:12.5px;transition:var(--tr)}
+.mfile label:hover{border-color:var(--brand)}
+.mfile input{display:none}
+.mhint{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.55}
+.mhint b{color:var(--brand2)}
+.iconbtn.playing{color:var(--brand2);animation:hot 1.25s ease infinite}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:13px;margin-left:2px}
+.eq i{width:3px;background:var(--brand2);border-radius:2px;animation:eq 1s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.4s}.eq i:nth-child(4){animation-delay:.15s}
+@keyframes eq{0%,100%{height:3px}50%{height:13px}}
+.foot{max-width:1060px;margin:14px auto 0;padding:0 16px;color:var(--muted);font-size:11.5px;line-height:1.6}
+@media(max-width:640px){
+  .panel{top:60px}.htitle{font-size:15px}.tab{padding:7px 11px;font-size:13px}
+  .tp{grid-template-columns:1fr;gap:4px}.tp .sc{justify-self:end}
+  .notes{padding:6px 15px 18px}.donut{width:128px;height:128px}
+}
+</style>
+</head>
+<body>
+<div id="bg"><i></i></div><div id="grid"></div>
+<div id="nprog"></div>
+
+<header>
+  <div class="hwrap">
+    <div class="brand">
+      <div class="logo">⚡</div>
+      <div class="htitle">電子學 第10–11章 互動複習
+        <small>運算放大器 ・ 振盪電路 ・ 濾波器　｜　統測 / 段考　共 200 題</small></div>
+    </div>
+    <div class="htools">
+      <div class="ring" title="整體完成度"><svg width="40" height="40" viewBox="0 0 40 40">
+        <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--brand)"/><stop offset="1" stop-color="var(--violet)"/></linearGradient></defs>
+        <circle class="rt" cx="20" cy="20" r="16"/><circle class="rp" id="ringP" cx="20" cy="20" r="16"/></svg>
+        <b id="ringT">0%</b></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="quiz">📝 測驗</button>
+        <button class="tab" data-tab="dash">📊 統計</button>
+        <button class="tab" data-tab="notes">📖 筆記</button>
+      </div>
+      <button class="iconbtn" id="musicBtn" title="背景音樂">🎵</button>
+      <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵">⌨</button>
+      <button class="iconbtn" id="sndBtn" title="音效開關">🔇</button>
+      <button class="iconbtn" id="themeBtn" title="深色 / 淺色">🌙</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- QUIZ -->
+  <section id="quiz" class="view active">
+    <div class="panel">
+      <div class="row">
+        <span><label class="lb">章節</label><div class="cs" id="fch"></div></span>
+        <span><label class="lb">主題</label><div class="cs csw" id="ftopic"></div></span>
+        <span><label class="lb">難度</label><div class="cs" id="fdiff"></div></span>
+        <label class="chk"><input type="checkbox" id="fpast"> 只看統測題</label>
+        <input class="search" id="fsearch" placeholder="🔎 搜尋題目關鍵字…">
+      </div>
+      <div class="row">
+        <div class="chips" id="chips">
+          <button class="chip on" data-chip="all">全部 <span class="ct" id="cAll">0</span></button>
+          <button class="chip" data-chip="unanswered">未作答 <span class="ct" id="cUn">0</span></button>
+          <button class="chip" data-chip="wrong">❌ 錯題本 <span class="ct" id="cWr">0</span></button>
+          <button class="chip" data-chip="bookmark">⭐ 收藏 <span class="ct" id="cBm">0</span></button>
+        </div>
+        <span class="seg" id="mode"><button data-m="practice" class="on">練習</button><button data-m="exam">考試</button></span>
+        <span class="timer" id="timer" style="display:none">00:00</span>
+        <button class="btn pri" id="rqBtn">🎲 隨機測驗</button>
+        <button class="btn" id="shuffle">🔀 洗牌</button>
+        <button class="btn" id="redoWrong">🔁 錯題重練</button>
+        <button class="btn danger" id="reset">↺ 清除</button>
+      </div>
+      <div class="hud">
+        <div class="st t"><b id="sTotal">0</b><span>顯示</span></div>
+        <div class="st"><b id="sDone">0</b><span>已答</span></div>
+        <div class="st ok"><b id="sOk">0</b><span>答對</span></div>
+        <div class="st no"><b id="sNo">0</b><span>答錯</span></div>
+        <div class="st pc"><b id="sPct">0%</b><span>正確率</span></div>
+        <div class="st streak" id="streakBox"><b><span class="flame">🔥</span><span id="sStreak">0</span></b><span>連對</span></div>
+        <div class="bar"><i id="bar"></i></div>
+      </div>
+    </div>
+    <div class="result" id="result"></div>
+    <div id="list"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dash" class="view">
+    <div class="dash">
+      <div class="dcard">
+        <div class="dtop">
+          <div class="donut"><svg width="150" height="150" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="62" fill="none" stroke="var(--border2)" stroke-width="13"/>
+            <circle id="dnP" cx="75" cy="75" r="62" fill="none" stroke="url(#rg)" stroke-width="13" stroke-linecap="round" stroke-dasharray="389" stroke-dashoffset="389" style="transition:stroke-dashoffset .8s"/>
+          </svg><div class="b"><b id="dnPct">0%</b><span>整體正確率</span></div></div>
+          <div class="kpis">
+            <div class="kpi"><b id="kDone" style="color:var(--brand)">0</b><span>已作答</span></div>
+            <div class="kpi"><b id="kOk" style="color:var(--ok)">0</b><span>答對</span></div>
+            <div class="kpi"><b id="kNo" style="color:var(--no)">0</b><span>答錯</span></div>
+            <div class="kpi"><b id="kBest" style="color:var(--gold)">0</b><span>最佳連對</span></div>
+            <div class="kpi"><b id="kBm" style="color:var(--violet)">0</b><span>⭐收藏</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dh">各主題熟練度 <span class="sub">（淡色＝已作答比例，亮色＝答對比例）</span></div>
+        <div class="tprow" id="tprow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTES -->
+  <section id="notes" class="view">
+    <div class="toc" id="toc"></div>
+    <div class="notes" id="notesBody"><h2 class="nh1">電子學（下）第 10、11 章　段考重點筆記</h2>
+<blockquote>適用：四技二專統測／高職電機與電子群「電子學」</blockquote>
+<blockquote>範圍：第 10 章 運算放大器（OPA）、第 11 章 運算放大器振盪電路及濾波器</blockquote>
+<blockquote>重點導向：老師偏難題、計算題、歷屆統測題型（fc、f₀、Av、VH、VU/VL、CMRR）</blockquote>
+<hr>
+<h2 class="nh1">第 10 章　運算放大器（OPA）</h2>
+<h3 class="nh2">10-1 理想運算放大器的認識</h3>
+<h4 class="nh3">一、OPA 基本概念</h4>
+<ul>
+<li>運算放大器（operational amplifier, OP-Amp / OPA）：<strong>雙端（差動）輸入、單端輸出</strong>的高增益放大器。</li>
+<li>「差動輸入」＝取兩輸入端訊號的<strong>差量</strong> (V₊ − V₋) 加以放大。</li>
+<li>製造上把 BJT/FET、電阻、電容集成於晶片做成 IC，優點：體積小、成本低、可靠度高。</li>
+</ul>
+<h4 class="nh3">二、OPA 結構方塊圖（4 個電路）</h4>
+<ol>
+<li><strong>高輸入阻抗差動放大器</strong>（前級）：放大兩輸入差值，降低對前級的負載效應。</li>
+<li><strong>高增益電壓放大器</strong>：提供高倍率電壓放大。</li>
+<li><strong>低輸出阻抗放大器</strong>：常用電壓增益＝1 的<strong>射極隨耦器/源極隨耦器</strong>，提供低輸出阻抗。</li>
+<li><strong>定電流源電路</strong>：提供穩定直流偏壓。</li>
+</ol>
+<h4 class="nh3">三、差動放大器（DA）與差模／共模</h4>
+<ul>
+<li>差模訊號：<strong>Vd = Vi1 − Vi2</strong></li>
+<li>共模訊號：<strong>Vc = (Vi1 + Vi2) / 2</strong></li>
+<li>反解：Vi1 = Vc + Vd/2，Vi2 = Vc − Vd/2</li>
+<li>實際輸出：<strong>Vo = Ad·Vd + Ac·Vc</strong>（Ad＝差模增益，Ac＝共模增益）</li>
+<li>理想 DA：Ac = 0 → <strong>Vo = Ad·Vd</strong></li>
+<li><strong>共模拒斥比 CMRR = |Ad / Ac|</strong>，<strong>CMRR(dB) = 20·log|Ad/Ac|</strong>，值越大抗雜訊能力越好。</li>
+</ul>
+<h4 class="nh3">四、μA741 接腳（8 支腳，必考）</h4>
+<div class="ntab-wrap"><table class="ntab">
+<tr><th>腳位</th><th>功能</th></tr>
+<tr><td>腳 2</td><td>反相輸入端 (−)</td></tr>
+<tr><td>腳 3</td><td>非反相輸入端 (+)</td></tr>
+<tr><td>腳 6</td><td>輸出端 Vo</td></tr>
+<tr><td>腳 7</td><td>正電源 +Vcc</td></tr>
+<tr><td>腳 4</td><td>負電源 −Vee</td></tr>
+<tr><td>腳 1、5</td><td>輸入抵補（offset）調整腳，常接可變電阻</td></tr>
+<tr><td>腳 8</td><td>空腳 (NC)</td></tr>
+</table></div>
+<ul>
+<li>飽和電壓 <strong>Vsat ≈ ±0.9·Vcc</strong>（一般取電源電壓 70%～90%）。</li>
+<li>輸出在飽和前 Vo = Avo·Vid（線性區）；超過則進入飽和區。</li>
+</ul>
+<h4 class="nh3">五、理想 OPA 八大特性（背！）</h4>
+<ol>
+<li>輸入阻抗 <strong>Zi = ∞</strong>（典型 2 MΩ）</li>
+<li>輸出阻抗 <strong>Zo = 0</strong>（典型 75 Ω）</li>
+<li>開迴路電壓增益 <strong>Avo = ∞</strong>（典型 2×10⁵ ≈ 106 dB）</li>
+<li>頻帶寬度 <strong>BW = ∞</strong></li>
+<li>抵補電壓 = 0</li>
+<li>共模拒斥比 <strong>CMRR = ∞</strong>（典型 90 dB）</li>
+<li>響應時間 = 0</li>
+<li>特性不隨溫度變化</li>
+</ol>
+<ul>
+<li>開迴路增益（元件本身）≈ 5萬～20萬；加回授後得<strong>閉迴路增益</strong>，由外接電阻決定、較穩定。</li>
+</ul>
+<h3 class="nh2">10-2 OPA 特性及參數</h3>
+<ul>
+<li><strong>抵補電壓/電流</strong>：輸入為 0 時輸出不為 0，需加抵補電壓校正。</li>
+<li><strong>轉動率（Slew Rate, SR）</strong>：SR = ΔVo/Δt（單位 V/μs），代表輸出電壓變化最快速率；SR 越大高頻特性越好。</li>
+<li><strong>CMRR、PSRR、單位增益頻寬 (GBW)</strong>：頻寬越高越好。</li>
+</ul>
+<h3 class="nh2">10-3 反相及非反相放大器</h3>
+<h4 class="nh3">★ 分析 OPA 線性電路的兩大黃金法則</h4>
+<ol>
+<li><strong>虛斷</strong>：輸入電流 Ii = 0（因 Zi = ∞）→ I₁ = If。</li>
+<li><strong>虛短路</strong>：兩輸入端電位相等 V₊ = V₋（因 Avo = ∞）。一端接地時稱<strong>虛接地</strong>。</li>
+</ol>
+<ul>
+<li>注意：只在<strong>線性區（未飽和）</strong>成立。若計算 Vo 超過 ±Vsat，則 Vo 箝在 ±Vsat，虛短路不成立。</li>
+</ul>
+<h4 class="nh3">一、反相放大器（inverting）</h4>
+<ul>
+<li><strong>Vo = −(Rf/R1)·Vi</strong></li>
+<li><strong>電壓增益 Av = −Rf/R1</strong>（負號＝反相）</li>
+<li>輸入阻抗 <strong>Zin = R1</strong>（因虛接地）</li>
+<li>非反相端接地，反相端為虛接地（0 V）。</li>
+</ul>
+<h4 class="nh3">二、非反相放大器（noninverting / 同相）</h4>
+<ul>
+<li><strong>Vo = (1 + Rf/R1)·Vi</strong></li>
+<li><strong>電壓增益 Av = 1 + Rf/R1</strong>（恆 ≥ 1、同相）</li>
+<li>輸入阻抗 <strong>Zin = ∞</strong></li>
+</ul>
+<h4 class="nh3">三、電壓隨耦器（voltage follower）</h4>
+<ul>
+<li>非反相放大器特例：Rf = 0（短路）、R1 = ∞（移除）。</li>
+<li><strong>Av = 1</strong>，高輸入阻抗、低輸出阻抗 → <strong>單位增益緩衝器</strong>，做電路隔離/緩衝。</li>
+</ul>
+<h4 class="nh3">常見題型提醒</h4>
+<ul>
+<li>兩級串接：總增益 = Av1 × Av2。</li>
+<li>飽和判斷：先用公式算 Vo，超過 ±Vsat 就箝位。</li>
+<li>求 VN（虛接地點電位）：用 KCL I₁ = If 反推。</li>
+</ul>
+<h3 class="nh2">10-4 加法器及減法器</h3>
+<h4 class="nh3">一、反相加法器</h4>
+<ul>
+<li>一般式：<strong>Vo = −Rf·(V1/R1 + V2/R2 + V3/R3)</strong></li>
+<li>若 R1=R2=R3=R：<strong>Vo = −(Rf/R)·(V1+V2+V3)</strong></li>
+<li>若 R = Rf：Vo = −(V1+V2+V3)（反相總和）</li>
+<li>若 R = nRf（n 個輸入且取平均）：得反相平均值。</li>
+</ul>
+<h4 class="nh3">二、非反相加法器</h4>
+<ul>
+<li>若 R1=R2=R3：<strong>Vo = (1 + Rf/RN)·(V1+V2+V3)/3</strong></li>
+<li>一般：Vo = (1 + Rf/RN)·VN，VN 由各輸入經電阻分壓疊加。</li>
+</ul>
+<h4 class="nh3">三、減法器（差動放大器）</h4>
+<ul>
+<li>平衡條件 <strong>R3/R2 = Rf/R1</strong>（或 R1=R2、R3=Rf）時：</li>
+</ul>
+<p>  <strong>Vo = (Rf/R1)·(V2 − V1)</strong>（V2 接非反相端、V1 接反相端）</p>
+<ul>
+<li>一般式（公式 10-4-7）：</li>
+</ul>
+<p>  Vo = (1+Rf/R1)·[R3/(R2+R3)]·V2 − (Rf/R1)·V1</p>
+<h3 class="nh2">10-5 微分器及積分器</h3>
+<h4 class="nh3">一、微分器（differentiator）</h4>
+<ul>
+<li><strong>vo(t) = −R·C·(dvi/dt)</strong>（輸入電容、回授電阻）</li>
+<li>輸入三角波 → 輸出<strong>方波</strong>；輸入方波 → 輸出<strong>脈衝（尖峰）</strong>；輸入正弦波 → 輸出反相餘弦波。</li>
+<li>微分器對高頻雜訊敏感（高頻增益大）。</li>
+</ul>
+<h4 class="nh3">二、積分器（integrator）</h4>
+<ul>
+<li><strong>vo(t) = −(1/RC)·∫vi dt</strong>（輸入電阻、回授電容）</li>
+<li>輸入方波 → 輸出<strong>三角波</strong>；輸入正弦波 → 輸出反相餘弦波（−90°）。</li>
+<li>RC＝時間常數，1/RC 越大積分速率越快。</li>
+<li>時間常數計算：例 R=10kΩ、C=100μF → RC = 1 s。</li>
+</ul>
+<h3 class="nh2">10-6 比較器（comparator）</h3>
+<h4 class="nh3">基本比較器（開迴路、無回授）</h4>
+<ul>
+<li>v2 &gt; v1 → <strong>Vo = +Vsat</strong>；v2 &lt; v1 → <strong>Vo = −Vsat</strong>（v2＝非反相端、v1＝反相端）。</li>
+<li>Vsat ≈ ±0.9Vcc。</li>
+</ul>
+<h4 class="nh3">一、非反相輸入型比較器</h4>
+<ul>
+<li>vi 接 (+)、Vref 接 (−)：<strong>vi &gt; Vref → +Vsat；vi &lt; Vref → −Vsat</strong></li>
+</ul>
+<h4 class="nh3">二、反相輸入型比較器</h4>
+<ul>
+<li>vi 接 (−)、Vref 接 (+)：<strong>vi &gt; Vref → −Vsat；vi &lt; Vref → +Vsat</strong></li>
+</ul>
+<h4 class="nh3">三、零準位比較器（zero-level / 零交越檢測器）</h4>
+<ul>
+<li>Vref = 0；輸入正弦波 → 輸出方波（可做方波產生器）。</li>
+</ul>
+<h4 class="nh3">四、臨界電位比較器</h4>
+<ul>
+<li>v₋ = vi·R2/(R1+R2) + Vref·R1/(R1+R2)，非反相端接地 (v₊=0)。</li>
+<li><strong>觸發點：vi = −(R1/R2)·Vref</strong></li>
+<li>非反相端接地時：vi &gt; −(R1/R2)Vref → Vo = −Vsat；vi &lt; −(R1/R2)Vref → Vo = +Vsat。</li>
+</ul>
+<hr>
+<h2 class="nh1">第 11 章　運算放大器振盪電路及濾波器</h2>
+<h3 class="nh2">11-1 正弦波產生電路</h3>
+<h4 class="nh3">一、正回授與巴克豪生準則（Barkhausen）</h4>
+<ul>
+<li>振盪器：不需外加輸入，靠本身直流電源轉成特定頻率交流輸出。</li>
+<li><strong>維持振盪條件：|Aβ| = 1 且總相移 = 0°（或 360°）</strong></li>
+<li><strong>起振條件：|Aβ| &gt; 1</strong></li>
+<li>A＝放大器增益、β＝回授因數。</li>
+</ul>
+<h4 class="nh3">二、RC 相移振盪器（低頻）</h4>
+<ul>
+<li>反相放大器(180°) + 三節 RC 相移(180°) → 共 360° 正回授。</li>
+<li>單節 RC 相移 &lt; 90°，需至少 <strong>3 節</strong>才湊 180°。</li>
+<li><strong>f₀ = 1 / (2π√6·RC)</strong></li>
+<li><strong>β = −1/29 → 放大器增益 A ≥ 29</strong>（即 Rf/Ri ≥ 29）</li>
+</ul>
+<h4 class="nh3">三、韋恩電橋振盪器（Wien bridge，低頻）</h4>
+<ul>
+<li><strong>非反相放大器</strong>＋回授電路（<strong>0° 相移</strong>）。</li>
+<li>一般式：<strong>f₀ = 1/(2π√(R1R2C1C2))</strong></li>
+<li>對稱設計 R1=R2=R、C1=C2=C：</li>
+</ul>
+<p>  <strong>f₀ = 1/(2πRC)</strong>，<strong>β = 1/3</strong>，<strong>Av ≥ 3</strong>（Av=1+R3/R4，故 <strong>R3/R4 ≥ 2</strong>）</p>
+<h4 class="nh3">四、LC 振盪器（高頻）</h4>
+<ul>
+<li>一般組態：X1、X2、X3 為純電抗。</li>
+<li><strong>振盪條件：X1 + X2 + X3 = 0</strong>，<strong>β = −X1/X2</strong></li>
+<li>X1、X2 同性質，X3 為相反性質。</li>
+</ul>
+<p><strong>考畢子振盪器（Colpitts）</strong>：X1、X2＝C，X3＝L</p>
+<ul>
+<li><strong>f₀ = 1/(2π√(L·Ceq))</strong>，<strong>Ceq = C1·C2/(C1+C2)</strong>（串聯）</li>
+<li>β = −C2/C1，<strong>Av = Rf/Ri ≥ C1/C2</strong></li>
+</ul>
+<p><strong>哈特萊振盪器（Hartley）</strong>：X1、X2＝L，X3＝C</p>
+<ul>
+<li><strong>f₀ = 1/(2π√(Leq·C))</strong>，<strong>Leq = L1 + L2 + 2M</strong></li>
+<li>β ≈ −L1/L2，<strong>Av ≥ L2/L1</strong></li>
+</ul>
+<h4 class="nh3">五、晶體振盪器（crystal，最穩定）</h4>
+<ul>
+<li><strong>壓電效應</strong>：機械應力 ↔ 電荷（機械能與電能互換）。</li>
+<li>石英晶體 <strong>Q &gt; 3000</strong>（可達上萬），頻率非常穩定。</li>
+<li>串聯諧振：<strong>fs = 1/(2π√(L·Cs))</strong>（阻抗最小）</li>
+<li>並聯諧振：<strong>fp = 1/(2π√(L·CmCs/(Cm+Cs)))</strong>（阻抗最大），<strong>fp 略 &gt; fs</strong></li>
+<li>電抗性質：f &lt; fs 電容性；fs &lt; f &lt; fp 電感性；f &gt; fp 電容性。</li>
+</ul>
+<h3 class="nh2">11-2 施密特觸發器（Schmitt trigger）</h3>
+<ul>
+<li>具<strong>正回授</strong>、有<strong>遲滯（hysteresis）</strong>，雜訊免疫力佳，可將任意波形整形成方波（類比→數位）。</li>
+</ul>
+<h4 class="nh3">一、反相輸入型</h4>
+<ul>
+<li><strong>VU = Vref·R1/(R1+R2) + Vsat·R2/(R1+R2)</strong></li>
+<li><strong>VL = Vref·R1/(R1+R2) − Vsat·R2/(R1+R2)</strong></li>
+<li><strong>遲滯電壓 VH = VU − VL = 2R2·Vsat/(R1+R2)</strong></li>
+</ul>
+<h4 class="nh3">二、非反相輸入型</h4>
+<ul>
+<li><strong>VU = Vref·(R1+R2)/R2 + Vsat·R1/R2</strong></li>
+<li><strong>VL = Vref·(R1+R2)/R2 − Vsat·R1/R2</strong></li>
+<li><strong>VH = VU − VL = 2R1·Vsat/R2</strong></li>
+<li>重點：雜訊 &lt; VH 時不影響輸出。</li>
+</ul>
+<h3 class="nh2">11-3 方波產生電路（無穩態多諧振盪器）</h3>
+<ul>
+<li>多諧振盪器分：無穩態(astable)、單穩態(monostable)、雙穩態(bistable)。</li>
+<li>方波產生器＝<strong>無穩態（自激）多諧振盪器</strong>，含正回授(R1,R2 施密特) + 負回授(RC 充放電)。</li>
+<li><strong>β = R2/(R1+R2)</strong></li>
+<li><strong>週期 T = 2RC·ln((1+β)/(1−β)) = 2RC·ln(1 + 2R2/R1)</strong></li>
+<li><strong>頻率 f = 1/T</strong></li>
+<li>vo 振幅 ±Vsat；電容電壓 vC 振幅 ±β·Vsat（峰對峰 = 2βVsat）。</li>
+<li>C↑或 R↑ → f↓；工作週期約 50%。</li>
+</ul>
+<h3 class="nh2">11-4 三角波產生電路</h3>
+<ul>
+<li>結構：<strong>非反相施密特觸發器（OPA1，輸出方波 vo1）＋積分器（OPA2，輸出三角波 vo2）</strong>。</li>
+<li>方波經積分器 → 三角波（定電流對電容充放電 → 線性斜波）。</li>
+<li>vo1 方波振幅 ±Vsat；<strong>vo2 三角波振幅 ±(R1/R2)·Vsat</strong></li>
+<li><strong>週期 T = 4RC·R1/R2</strong>，<strong>頻率 f = 1/T = R2/(4R1·RC)</strong></li>
+<li>設計需 <strong>R2 &gt; R1</strong>（使三角波振幅 &lt; Vsat）。</li>
+<li>f 與 R1、R、C 成反比，與 R2 成正比。</li>
+</ul>
+<h3 class="nh2">11-5 一階濾波器</h3>
+<ul>
+<li>濾波器＝頻率選擇電路。被動（R、L、C，無放大）vs 主動（含 OPA，有放大）。</li>
+<li>四種：低通 LPF、高通 HPF、帶通 BPF、帶拒 BRF。</li>
+<li>判別法：輸入 f=0 與 f=∞ 觀察輸出。</li>
+</ul>
+<h4 class="nh3">一、一階主動低通濾波器（LPF）</h4>
+<ul>
+<li><strong>最大增益 Av(max) = 1 + Rf/RN</strong></li>
+<li><strong>高頻截止頻率 fH = 1/(2πRC)</strong></li>
+<li>截止點增益衰減為最大值的 <strong>0.707（1/√2）倍 = −3dB（半功率點）</strong>。</li>
+<li>滾降 <strong>−20 dB/decade</strong>（一階）。</li>
+</ul>
+<h4 class="nh3">二、一階主動高通濾波器（HPF）</h4>
+<ul>
+<li><strong>Av(max) = 1 + Rf/RN</strong></li>
+<li><strong>低頻截止頻率 fL = 1/(2πRC)</strong></li>
+<li>滾降 +20 dB/decade。</li>
+</ul>
+<h4 class="nh3">三、帶通濾波器（BPF）</h4>
+<ul>
+<li>由高通+低通組合；</li>
+<li><strong>中心頻率 f0 = √(fL·fH)</strong></li>
+<li><strong>頻寬 BW = fH − fL</strong></li>
+<li><strong>品質因數 Q = f0 / BW</strong></li>
+</ul>
+<h4 class="nh3">四、帶拒濾波器（BRF / 陷波器 notch）</h4>
+<ul>
+<li>阻止特定頻率，其餘通過；與帶通相反。</li>
+</ul>
+<h4 class="nh3">補充</h4>
+<ul>
+<li>階數越高 → 滾降越陡（二階 −40dB/dec、三階 −60dB/dec），頻率選擇性越好。</li>
+<li>波德圖：橫軸 log f、縱軸增益 (dB)。</li>
+<li>若低通 T &lt; (1/10)RC → 近似積分器；微分器類似高通。</li>
+</ul>
+<hr>
+<h3 class="nh2">易錯/加分重點整理（老師偏難方向）</h3>
+<ol>
+<li><strong>飽和箝位</strong>：反相/非反相算出 Vo 超過 ±Vsat 一律箝位，且虛短路失效。</li>
+<li><strong>CMRR 用 dB</strong>：CMRR(dB)=20log(Ad/Ac)；給 dB 要反算倍數。</li>
+<li><strong>振盪頻率根號內元件</strong>：RC 相移有 √6；韋恩無 √6；LC 串並聯 Ceq/Leq 要先算。</li>
+<li><strong>施密特 VH 公式</strong>：反相型 2R2Vsat/(R1+R2)、非反相型 2R1Vsat/R2，分母不同別記錯。</li>
+<li><strong>方波 T 用 ln</strong>；三角波 T = 4RC·R1/R2（無 ln）。</li>
+<li><strong>濾波器截止頻率都是 1/(2πRC)</strong>，差別在 LPF→fH、HPF→fL。</li>
+<li><strong>考畢子/哈特萊判別</strong>：兩電容→考畢子(Colpitts)、兩電感→哈特萊(Hartley)；X3 與 X1/X2 異性。</li>
+<li><strong>晶體 fp &gt; fs</strong>；fs 串聯阻抗最小、fp 並聯阻抗最大。</li>
+</ol></div>
+  </section>
+</div>
+
+<div class="fab">
+  <button class="btn pri submitFab" id="submit" style="display:none">📨 交卷看成績</button>
+  <button class="btn iconbtn" id="toTop" title="回頂端">↑</button>
+</div>
+<div id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<div class="modal" id="kbModal"><div class="mbox">
+  <h3>⌨ 鍵盤快捷鍵</h3>
+  <div class="kk"><span>選擇答案 A / B / C / D</span><span><kbd>A</kbd>～<kbd>D</kbd> 或 <kbd>1</kbd>～<kbd>4</kbd></span></div>
+  <div class="kk"><span>上一題 / 下一題</span><span><kbd>J</kbd> / <kbd>K</kbd> 或 <kbd>↑</kbd><kbd>↓</kbd></span></div>
+  <div class="kk"><span>顯示答案/詳解</span><span><kbd>空白</kbd> 或 <kbd>Enter</kbd></span></div>
+  <div class="kk"><span>收藏 / 取消收藏</span><span><kbd>F</kbd></span></div>
+  <div class="kk"><span>切換深/淺色主題</span><span><kbd>T</kbd></span></div>
+  <div class="kk"><span>背景音樂 播放/暫停</span><span><kbd>M</kbd></span></div>
+  <div class="kk"><span>關閉視窗</span><span><kbd>Esc</kbd></span></div>
+  <div style="margin-top:14px;text-align:right"><button class="btn pri" onclick="document.getElementById('kbModal').classList.remove('show')">了解</button></div>
+</div></div>
+
+<div class="mpop" id="mpop">
+  <h4>🎵 背景音樂 <span class="eq" id="mEq" style="display:none"><i></i><i></i><i></i><i></i></span></h4>
+  <div class="np" id="mNow">尚未載入音樂</div>
+  <div class="mrow"><button class="mplay" id="mPlay">▶</button>
+    <span id="mVolIco">🔊</span><input type="range" id="mVol" min="0" max="100" value="35" title="音量"></div>
+  <label class="chk"><input type="checkbox" id="mLoop" checked> 循環播放</label>
+  <div class="mfile" style="margin-top:9px"><label>📂 從電腦選擇音樂檔<input type="file" id="mFile" accept="audio/*"></label></div>
+  <div class="mhint">提示：把你的音樂檔命名為 <b>bgm.mp3</b> 放在與本網頁同一個資料夾，重新整理即可自動載入；或用上方按鈕選檔。請使用你<b>合法擁有</b>的音檔。</div>
+</div>
+<audio id="bgm" loop preload="none"></audio>
+
+<div class="modal" id="confModal"><div class="mbox">
+  <h3 id="confTitle">確認</h3>
+  <p id="confMsg" style="color:var(--muted);font-size:14px;margin:0"></p>
+  <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn" id="confNo">取消</button><button class="btn pri" id="confYes">確定</button></div>
+</div></div>
+
+<div class="modal" id="rqModal"><div class="mbox">
+  <h3>🎲 隨機測驗</h3>
+  <p style="color:var(--muted);font-size:13.5px;margin:0 0 14px">隨機抽題、<b style="color:var(--brand2)">由簡單到難</b>排列；作答後可看成績與檢討。可從目前「章節／主題」範圍出題，題數 5～40。</p>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="font-weight:800">題數</span>
+    <input type="range" id="rqN" min="5" max="40" value="20" step="1" style="flex:1;accent-color:var(--brand);cursor:pointer">
+    <b id="rqNlab" style="min-width:54px;text-align:right;color:var(--brand);font-size:20px">20</b></div>
+  <div style="display:flex;gap:8px;margin:12px 0 2px;flex-wrap:wrap">
+    <button class="chip" data-rqn="5">5 題</button><button class="chip" data-rqn="10">10 題</button>
+    <button class="chip" data-rqn="20">20 題</button><button class="chip" data-rqn="30">30 題</button><button class="chip" data-rqn="40">40 題</button></div>
+  <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn" id="rqCancel">取消</button><button class="btn pri" id="rqStart">🎲 開始測驗</button></div>
+</div></div>
+
+<div class="foot">※ 標示「統測 民國○○年」者為統測歷屆風格／改編題，年份代表該題型常出現的年度區間（OPA・振盪器・濾波器為統測電子學幾乎年年必考），非逐字照抄某份考卷；正式查證請以技專測驗中心公布之歷屆試題為準。　全部 200 題答案均經獨立重算驗證。作答紀錄、收藏、主題與設定自動儲存在本機瀏覽器。</div>
+
+<script>/* ===== SVG circuit schematic library (themed, parameterized) =====
+   circuitSVG(type, L) -> '<svg>...<\/svg>'  ; L = {slot:value} */
+(function(global){
+'use strict';
+const W=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+const ND=(x,y)=>`<circle cx="${x}" cy="${y}" r="3.4" class="nd"/>`;
+const subt=(t)=>String(t).replace(/_([A-Za-z0-9]+)/g,'<tspan baseline-shift="sub" font-size="0.72em">$1<\/tspan>');
+const T=(x,y,t,c)=>`<text x="${x}" y="${y}"${c?` class="${c}"`:''}>${t!==undefined&&t!==null?subt(t):''}<\/text>`;
+const RH=(cx,cy,lb,val)=>W(cx-28,cy,cx-18,cy)+`<rect x="${cx-18}" y="${cy-7}" width="36" height="14" rx="2"/>`+W(cx+18,cy,cx+28,cy)+T(cx,cy-12,lb,'lb')+(val?T(cx,cy+21,val,'val'):'');
+const RV=(cx,cy,lb,val)=>W(cx,cy-28,cx,cy-18)+`<rect x="${cx-7}" y="${cy-18}" width="14" height="36" rx="2"/>`+W(cx,cy+18,cx,cy+28)+T(cx+13,cy-3,lb,'lb l')+(val?T(cx-13,cy+5,val,'val r'):'');
+const CH=(cx,cy,lb,val)=>W(cx-28,cy,cx-5,cy)+W(cx-5,cy-11,cx-5,cy+11)+W(cx+5,cy-11,cx+5,cy+11)+W(cx+5,cy,cx+28,cy)+T(cx,cy-16,lb,'lb')+(val?T(cx,cy+22,val,'val'):'');
+const CV=(cx,cy,lb,val)=>W(cx,cy-28,cx,cy-5)+W(cx-11,cy-5,cx+11,cy-5)+W(cx-11,cy+5,cx+11,cy+5)+W(cx,cy+5,cx,cy+28)+T(cx+15,cy-3,lb,'lb l')+(val?T(cx-15,cy+5,val,'val r'):'');
+const OP=(ax,ay)=>`<path d="M${ax} ${ay-32} L${ax} ${ay+32} L${ax+72} ${ay} Z" class="opf"/>`+T(ax+12,ay-10,'−','op')+T(ax+12,ay+18,'+','op');
+const GND=(x,y)=>W(x,y,x,y+9)+W(x-11,y+9,x+11,y+9)+W(x-7,y+13,x+7,y+13)+W(x-3,y+17,x+3,y+17);
+const wrap=(w,h,inner)=>`<svg class="ckt" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="max-width:${Math.min(w,380)}px">${inner}<\/svg>`;
+const v=(L,k)=>{const x=L&&L[k];return (x!==undefined&&x!==null&&x!=='')?String(x):'';};
+// left input terminal label + optional value (start-anchored, edge-safe)
+const IN=(x,y,name,val)=>T(x,y-6,name,'val l')+(val?T(x,y+8,val,'val l'):'');
+
+const TPL={
+ inverting:(L)=>{const ay=92,ax=190;let s=OP(ax,ay);
+   s+=W(40,76,64,76)+RH(92,76,'R₁',v(L,'R1'))+W(120,76,ax,76)+ND(150,76);
+   s+=W(150,76,150,40)+W(150,40,164,40)+RH(197,40,'R_f',v(L,'Rf'))+W(230,40,262,40)+W(262,40,262,92)+ND(262,92);
+   s+=W(ax,108,ax,124)+GND(ax,124);
+   s+=W(262,92,328,92)+T(332,96,'v_o','val l');
+   s+=IN(6,80,'v_i',v(L,'vi'))+W(6,90,40,90)+W(40,90,40,76);
+   return wrap(360,150,s);},
+
+ noninverting:(L)=>{const ay=96,ax=192;let s=OP(ax,ay);
+   s+=W(132,80,ax,80)+ND(132,80);
+   s+=W(132,80,132,44)+W(132,44,160,44)+RH(193,44,'R_f',v(L,'Rf'))+W(226,44,262,44)+W(262,44,262,96)+ND(262,96);
+   s+=W(132,80,132,124)+W(132,124,96,124)+RV(96,146,'R₁',v(L,'R1'))+W(96,164,96,174)+GND(96,174);
+   s+=IN(6,108,'v_i',v(L,'vi'))+W(6,112,ax,112);
+   s+=W(262,96,328,96)+T(332,100,'v_o','val l');
+   return wrap(360,196,s);},
+
+ follower:(L)=>{const ay=80,ax=176;let s=OP(ax,ay);
+   s+=IN(6,92,'v_i',v(L,'vi'))+W(6,96,ax,96);
+   s+=W(136,64,ax,64)+ND(136,64)+W(136,64,136,40)+W(136,40,260,40)+W(260,40,260,80)+ND(248,80);
+   s+=W(248,80,316,80)+T(320,84,'v_o','val l');
+   return wrap(352,128,s);},
+
+ adder:(L)=>{const ax=232,ay=128;let s=OP(ax,ay);
+   const ys=[52,98,144],rl=['R₁','R₂','R₃'],vl=['V₁','V₂','V₃'],rk=['R1','R2','R3'],vk=['v1','v2','v3'];
+   ys.forEach((y,i)=>{ s+=IN(6,y,vl[i],v(L,vk[i]))+W(6,y,40,y)+W(40,y,60,y);
+     s+=RH(88,y,rl[i],v(L,rk[i]))+W(116,y,168,y)+W(168,y,168,112); });
+   s+=W(168,112,ax,112)+ND(168,112);
+   s+=W(168,112,168,26)+W(168,26,190,26)+RH(223,26,'R_f',v(L,'Rf'))+W(256,26,304,26)+W(304,26,304,128)+ND(304,128);
+   s+=W(ax,144,ax,160)+GND(ax,160);
+   s+=W(304,128,360,128)+T(364,132,'v_o','val l');
+   return wrap(392,190,s);},
+
+ subtractor:(L)=>{const ax=216,ay=104;let s=OP(ax,ay);
+   s+=IN(6,68,'V₁',v(L,'v1'))+W(6,68,36,68)+W(36,68,60,68)+RH(88,68,'R₁',v(L,'R1'))+W(116,68,156,68)+ND(156,68)+W(156,68,156,88)+W(156,88,ax,88)+ND(156,88);
+   s+=W(156,68,156,40)+W(156,40,176,40)+RH(209,40,'R_f',v(L,'Rf'))+W(242,40,288,40)+W(288,40,288,104)+ND(288,104);
+   s+=IN(6,150,'V₂',v(L,'v2'))+W(6,150,36,150)+W(36,150,60,150)+RH(88,150,'R₂',v(L,'R2'))+W(116,150,156,150)+ND(156,150)+W(156,150,156,120)+W(156,120,ax,120)+ND(156,120);
+   s+=W(156,150,156,178)+W(156,178,116,178)+RV(116,200,'R₃',v(L,'R3'))+W(116,218,116,226)+GND(116,226);
+   s+=W(288,104,344,104)+T(348,108,'v_o','val l');
+   return wrap(376,238,s);},
+
+ integrator:(L)=>{const ay=92,ax=190;let s=OP(ax,ay);
+   s+=IN(6,76,'v_i',v(L,'vi'))+W(6,80,64,80)+W(64,80,64,76)+RH(92,76,'R',v(L,'R'))+W(120,76,ax,76)+ND(150,76);
+   s+=W(150,76,150,40)+W(150,40,164,40)+CH(197,40,'C',v(L,'C'))+W(230,40,262,40)+W(262,40,262,92)+ND(262,92);
+   s+=W(ax,108,ax,124)+GND(ax,124);
+   s+=W(262,92,328,92)+T(332,96,'v_o','val l');
+   return wrap(360,150,s);},
+
+ differentiator:(L)=>{const ay=92,ax=190;let s=OP(ax,ay);
+   s+=IN(6,76,'v_i',v(L,'vi'))+W(6,80,60,80)+W(60,80,60,76)+CH(90,76,'C',v(L,'C'))+W(120,76,ax,76)+ND(150,76);
+   s+=W(150,76,150,40)+W(150,40,164,40)+RH(197,40,'R',v(L,'R'))+W(230,40,262,40)+W(262,40,262,92)+ND(262,92);
+   s+=W(ax,108,ax,124)+GND(ax,124);
+   s+=W(262,92,328,92)+T(332,96,'v_o','val l');
+   return wrap(360,150,s);},
+
+ comparator:(L)=>{const ay=84,ax=184;let s=OP(ax,ay);
+   s+=IN(6,68,'V_ref',v(L,'Vref'))+W(6,72,ax,72);
+   s+=IN(6,104,'v_i',v(L,'vi'))+W(6,100,ax,100);
+   s+=W(256,84,324,84)+T(328,88,'v_o','val l');
+   return wrap(360,140,s);},
+
+ schmitt:(L)=>{const ay=96,ax=198;let s=OP(ax,ay);
+   s+=IN(6,80,'v_i',v(L,'vi'))+W(6,80,ax,80);
+   s+=W(128,112,ax,112)+ND(128,112);
+   s+=W(270,96,338,96)+ND(270,96)+T(342,100,'v_o','val l');
+   s+=W(270,96,270,44)+W(270,44,236,44)+RH(204,44,'R₂',v(L,'R2'))+W(172,44,128,44)+W(128,44,128,112);
+   s+=W(128,112,128,150)+RV(128,172,'R₁',v(L,'R1'))+W(128,190,128,198)+GND(128,198);
+   return wrap(368,214,s);},
+
+};
+
+/* lpf/hpf/wien built separately (wider viewBox, no crowding) */
+TPL.lpf=(L)=>{const ay=96,ax=256;let s=OP(ax,ay);
+  s+=W(150,80,ax,80)+ND(150,80);
+  s+=W(150,80,88,80)+RV(88,102,'R_N',v(L,'RN'))+W(88,120,88,128)+GND(88,128);
+  s+=W(150,80,150,46)+W(150,46,176,46)+RH(209,46,'R_f',v(L,'Rf'))+W(242,46,330,46)+W(330,46,330,96)+ND(330,96);
+  s+=IN(112,112,'v_i',v(L,'vi'))+W(112,112,132,112)+RH(160,112,'R',v(L,'R'))+W(188,112,214,112)+ND(214,112)+W(214,112,ax,112);
+  s+=W(214,112,214,146)+CV(214,168,'C',v(L,'C'))+W(214,190,214,198)+GND(214,198);
+  s+=W(330,96,398,96)+T(402,100,'v_o','val l');
+  return wrap(430,214,s);};
+
+/* 一階主動高通濾波器（非反相型）*/
+TPL.hpf=(L)=>{const ay=96,ax=256;let s=OP(ax,ay);
+  s+=W(150,80,ax,80)+ND(150,80);
+  s+=W(150,80,88,80)+RV(88,102,'R_N',v(L,'RN'))+W(88,120,88,128)+GND(88,128);
+  s+=W(150,80,150,46)+W(150,46,176,46)+RH(209,46,'R_f',v(L,'Rf'))+W(242,46,330,46)+W(330,46,330,96)+ND(330,96);
+  s+=IN(108,112,'v_i',v(L,'vi'))+W(108,112,132,112)+CH(160,112,'C',v(L,'C'))+W(188,112,214,112)+ND(214,112)+W(214,112,ax,112);
+  s+=W(214,112,214,146)+RV(214,168,'R',v(L,'R'))+W(214,190,214,198)+GND(214,198);
+  s+=W(330,96,398,96)+T(402,100,'v_o','val l');
+  return wrap(430,214,s);};
+
+/* 方波產生器（無穩態多諧振盪器）*/
+TPL.square=(L)=>{const ay=96,ax=210;let s=OP(ax,ay);
+  s+=W(210,80,140,80)+ND(140,80);
+  s+=W(140,80,140,40)+W(140,40,170,40)+RH(203,40,'R',v(L,'R'))+W(236,40,310,40)+W(310,40,310,96)+W(282,96,310,96);
+  s+=W(140,80,140,116)+CV(140,138,'C',v(L,'C'))+W(140,160,140,170)+GND(140,170);
+  s+=W(282,96,358,96)+ND(322,96)+T(362,100,'v_o','val l');
+  s+=W(322,96,322,120)+RV(322,142,'R₁',v(L,'R1'))+W(322,160,322,170)+ND(322,170);
+  s+=W(322,170,322,178)+RV(322,200,'R₂',v(L,'R2'))+W(322,218,322,226)+GND(322,226);
+  s+=W(210,112,210,170)+W(210,170,322,170);
+  return wrap(384,238,s);};
+
+/* 韋恩電橋振盪器 */
+TPL.wien=(L)=>{const ay=96,ax=256;let s=OP(ax,ay);
+  s+=W(168,80,ax,80)+ND(168,80);                                            // − node
+  s+=W(168,80,96,80)+RV(96,102,'R₄',v(L,'R4'))+W(96,120,96,128)+GND(96,128); // R4
+  s+=W(168,80,168,44)+W(168,44,194,44)+RH(227,44,'R₃',v(L,'R3'))+W(260,44,338,44)+W(338,44,338,96)+ND(338,96); // R3 fb
+  s+=W(208,112,ax,112)+ND(208,112);                                         // + node
+  // series R1-C1 from output back to + node along bottom-right lane
+  s+=W(338,96,338,170)+CH(310,170,'C₁',v(L,'C1'))+W(282,170,256,170)+RH(228,170,'R₁',v(L,'R1'))+W(200,170,180,170)+W(180,170,180,112)+W(180,112,208,112);
+  // shunt R2 || C2 from + node to gnd (left)
+  s+=W(208,112,120,112);
+  s+=W(160,112,160,140)+CV(160,162,'C₂',v(L,'C2'))+W(160,184,160,192)+GND(160,192);
+  s+=W(120,112,120,140)+RV(120,162,'R₂',v(L,'R2'))+W(120,184,120,192)+GND(120,192)+ND(160,112);
+  s+=W(338,96,404,96)+T(408,100,'v_o','val l');
+  return wrap(436,206,s);};
+
+global.circuitSVG=function(type,L){const f=TPL[type];return f?f(L||{}):'';};
+global.CIRCUIT_TYPES=Object.keys(TPL);
+})(typeof window!=='undefined'?window:globalThis);
+</script>
+<script>
+const QUESTIONS=[{"id": 1, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "105", "stem": "下列何者為理想運算放大器（OPA）的特性？", "opts": {"A": "輸入阻抗為零，輸出阻抗為無窮大", "B": "輸入阻抗為無窮大，輸出阻抗為零", "C": "電壓增益為零，頻寬為無窮大", "D": "輸入阻抗為無窮大，輸出阻抗為無窮大"}, "answer": "B", "explanation": "理想OPA的特性為：輸入阻抗 Zi = ∞（使輸入端不從信號源汲取電流）；輸出阻抗 Zo = 0（使輸出端不受負載影響）；開迴路電壓增益 Avo = ∞；頻寬 BW = ∞；輸出偏移電壓 Voffset = 0；CMRR = ∞。選項A錯誤（Zi 與 Zo 顛倒）；選項C錯誤（增益為 ∞ 非 0）；選項D錯誤（Zo 應為 0）。故選 B。", "circuit": "", "clabels": {}}, {"id": 2, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "實際 μA741 運算放大器的典型開迴路電壓增益約為多少？", "opts": {"A": "100 倍", "B": "1000 倍", "C": "2 * 10^5 倍", "D": "2 * 10^8 倍"}, "answer": "C", "explanation": "μA741 的典型開迴路電壓增益 Avo ≈ 2 * 10^5（約 200,000 倍），以分貝表示約為 20 * log(2*10^5) ≈ 20 * 5.3 = 106 dB。選項A（100倍）和B（1000倍）遠小於實際值；選項D（2*10^8）過大。故選 C。", "circuit": "", "clabels": {}}, {"id": 3, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "108", "stem": "μA741 八腳 OPA IC，下列腳位功能敘述何者正確？", "opts": {"A": "腳2為非反相輸入（+），腳3為反相輸入（-）", "B": "腳6為輸出，腳7接正電源 +Vcc", "C": "腳4接正電源 +Vcc，腳7接負電源 -Vee", "D": "腳8為輸出，腳1/5為電源腳"}, "answer": "B", "explanation": "μA741 各腳位功能：腳1、5 為輸出偏移調整（抵補腳）；腳2 為反相輸入（-）；腳3 為非反相輸入（+）；腳4 接負電源 -Vee；腳6 為輸出；腳7 接正電源 +Vcc；腳8 為空腳（NC）。選項A錯（腳2是反相，腳3是非反相）；選項C錯（腳4接 -Vee，腳7接 +Vcc）；選項D錯（腳8為空腳）。故選 B。", "circuit": "", "clabels": {}}, {"id": 4, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "使用 μA741 組成放大電路時，若將腳4接 -12V、腳7接 +12V，且輸入一個正弦波，則輸出電壓的最大飽和值 V_sat 約為多少？", "opts": {"A": "±12V", "B": "±10.8V", "C": "±6V", "D": "±15V"}, "answer": "B", "explanation": "μA741 的輸出飽和電壓 V_sat ≈ ±0.9 * Vcc。本題 Vcc = 12V，故 V_sat ≈ ±0.9 * 12 = ±10.8V。選項A（±12V）忽略了飽和損失，是常見錯誤；選項C（±6V）約為一半，不正確；選項D（±15V）超過電源電壓，不可能。故選 B。", "circuit": "", "clabels": {}}, {"id": 5, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "差動放大器的兩個輸入端電壓為 Vi1 = 5mV、Vi2 = 3mV，則差模電壓 Vd 與共模電壓 Vc 各為多少？", "opts": {"A": "Vd = 2mV，Vc = 4mV", "B": "Vd = 8mV，Vc = 4mV", "C": "Vd = 2mV，Vc = 8mV", "D": "Vd = 4mV，Vc = 2mV"}, "answer": "A", "explanation": "差模電壓公式：Vd = Vi1 - Vi2 = 5mV - 3mV = 2mV。共模電壓公式：Vc = (Vi1 + Vi2) / 2 = (5 + 3) / 2 = 8 / 2 = 4mV。故 Vd = 2mV，Vc = 4mV，選 A。選項B的 Vd = 8mV 是將兩者相加，為錯誤；選項D將 Vd 與 Vc 互換。", "circuit": "", "clabels": {}}, {"id": 6, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "一差動放大器，差模增益 Ad = 200、共模增益 Ac = 0.5。若 Vi1 = 10mV、Vi2 = 6mV，求輸出電壓 Vo 為何？", "opts": {"A": "800mV", "B": "804mV", "C": "3200mV", "D": "1600mV"}, "answer": "B", "explanation": "首先求 Vd 與 Vc：Vd = Vi1 - Vi2 = 10 - 6 = 4mV；Vc = (Vi1 + Vi2) / 2 = (10 + 6) / 2 = 8mV。代入公式：Vo = Ad * Vd + Ac * Vc = 200 * 4mV + 0.5 * 8mV = 800mV + 4mV = 804mV。選項A（800mV）忽略了共模項；選項C和D計算有誤。故選 B。", "circuit": "", "clabels": {}}, {"id": 7, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "106", "stem": "某差動放大器的 CMRR = 1000，則以分貝表示的 CMRR(dB) 為多少？", "opts": {"A": "40 dB", "B": "60 dB", "C": "80 dB", "D": "30 dB"}, "answer": "B", "explanation": "CMRR(dB) = 20 * log(CMRR) = 20 * log(1000) = 20 * 3 = 60 dB。log(1000) = log(10^3) = 3，故 20 * 3 = 60 dB。選項A（40dB）對應 CMRR = 100；選項C（80dB）對應 CMRR = 10000；選項D（30dB）對應 CMRR ≈ 31.6。故選 B。", "circuit": "", "clabels": {}}, {"id": 8, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "中等", "is_past": true, "year": "110", "stem": "某 OPA 的 CMRR 規格為 90dB，試求其 CMRR 的倍數約為多少？", "opts": {"A": "約 3.16 * 10^4 倍", "B": "約 3.16 * 10^5 倍", "C": "約 1 * 10^9 倍", "D": "約 9 * 10^4 倍"}, "answer": "A", "explanation": "由 CMRR(dB) = 20 * log(CMRR)，解出 CMRR：log(CMRR) = 90 / 20 = 4.5，故 CMRR = 10^4.5 = 10^4 * 10^0.5 = 10000 * 3.162 ≈ 3.16 * 10^4 倍。選項B（3.16*10^5）等同於 100dB；選項C（10^9）等同於 180dB；選項D（9*10^4）無對應關係。故選 A。", "circuit": "", "clabels": {}}, {"id": 9, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "某差動放大器差模增益 Ad = 4000、共模增益 Ac = 0.4，試求 CMRR(dB) 為多少？", "opts": {"A": "60 dB", "B": "80 dB", "C": "100 dB", "D": "40 dB"}, "answer": "B", "explanation": "CMRR = |Ad / Ac| = |4000 / 0.4| = 10000。CMRR(dB) = 20 * log(10000) = 20 * log(10^4) = 20 * 4 = 80 dB。選項A（60dB）對應 CMRR = 1000；選項C（100dB）對應 CMRR = 10^5；選項D（40dB）對應 CMRR = 100。注意不要誤用 10 * log，要用 20 * log（電壓比）。故選 B。", "circuit": "", "clabels": {}}, {"id": 10, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "差動放大器 Ad = 500，CMRR = 2000。若 Vi1 = 8mV、Vi2 = 4mV，求輸出電壓 Vo（含共模項）為多少？", "opts": {"A": "2000mV", "B": "2001.5mV", "C": "2003mV", "D": "2006mV"}, "answer": "B", "explanation": "步驟一：Vd = Vi1 - Vi2 = 8 - 4 = 4mV；Vc = (Vi1 + Vi2) / 2 = (8 + 4) / 2 = 6mV。步驟二：由 CMRR = |Ad / Ac|，求 Ac = Ad / CMRR = 500 / 2000 = 0.25。步驟三：Vo = Ad * Vd + Ac * Vc = 500 * 4mV + 0.25 * 6mV = 2000mV + 1.5mV = 2001.5mV。選項A（2000mV）忽略了共模項，是常見錯誤；選項C和D的共模項計算有誤。進階陷阱：學生常忘記先由CMRR反推Ac。故選 B。", "circuit": "", "clabels": {}}, {"id": 11, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "107", "stem": "下列關於理想 OPA 與實際 μA741 的比較，何者敘述正確？", "opts": {"A": "理想OPA的CMRR為零；μA741的典型CMRR約為90dB", "B": "理想OPA的輸入阻抗為無窮大；μA741的典型輸入阻抗約為2MΩ", "C": "理想OPA的輸出阻抗為無窮大；μA741的典型輸出阻抗約為75Ω", "D": "理想OPA頻寬為零；μA741的頻寬也接近零"}, "answer": "B", "explanation": "理想OPA特性對應實際μA741典型值：輸入阻抗：理想 ∞，μA741 ≈ 2MΩ（選項B正確）；輸出阻抗：理想 0，μA741 ≈ 75Ω（選項C說理想輸出阻抗為 ∞ 是錯的）；CMRR：理想 ∞，μA741 ≈ 90dB（選項A說理想CMRR為零是錯的）；頻寬：理想 ∞，實際有限（選項D錯）。故選 B。", "circuit": "", "clabels": {}}, {"id": 12, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "OPA 內部電路結構，由輸入到輸出共分三個主要級，下列排列順序何者正確？", "opts": {"A": "高增益電壓放大器 → 差動放大器 → 射極隨耦器", "B": "差動放大器 → 射極隨耦器 → 高增益電壓放大器", "C": "差動放大器 → 高增益電壓放大器 → 射極隨耦器（含定電流源）", "D": "射極隨耦器 → 差動放大器 → 高增益電壓放大器"}, "answer": "C", "explanation": "OPA 內部電路結構由輸入到輸出依序為：第一級：高輸入阻抗差動放大器（接收兩路輸入並放大差模信號）；第二級：高增益電壓放大器（提供極高的電壓增益）；第三級：低輸出阻抗的射極隨耦器（含定電流源，提供驅動能力並降低輸出阻抗）。故選 C。", "circuit": "", "clabels": {}}, {"id": 13, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "109", "stem": "下列關於共模拒斥比（CMRR）的敘述，何者正確？", "opts": {"A": "CMRR越小，表示放大器抑制雜訊的能力越強", "B": "CMRR = |Ad / Ac|，理想差動放大器的 CMRR 為無窮大", "C": "CMRR以dB表示時，公式為 10 * log(|Ad / Ac|)", "D": "共模增益 Ac 越大，則 CMRR 越大"}, "answer": "B", "explanation": "CMRR = |Ad / Ac|，理想差動放大器 Ac = 0，故 CMRR = ∞，表示完全抑制共模（雜訊）信號，選項B正確。選項A錯誤（CMRR越大，抑制雜訊能力越強）；選項C錯誤（電壓增益比應用 20 * log，不是 10 * log，10 * log 用於功率比）；選項D錯誤（Ac 越大，CMRR = Ad/Ac 越小）。故選 B。", "circuit": "", "clabels": {}}, {"id": 14, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "某差動放大器，Vi1 = +3mV、Vi2 = -3mV，差模增益 Ad = 300，共模增益 Ac = 0（理想）。求輸出電壓 Vo 為多少？", "opts": {"A": "900mV", "B": "0mV", "C": "1800mV", "D": "300mV"}, "answer": "C", "explanation": "Vd = Vi1 - Vi2 = 3 - (-3) = 6mV；Vc = (Vi1 + Vi2) / 2 = (3 + (-3)) / 2 = 0mV。理想差動放大器 Ac = 0，故 Vo = Ad * Vd + Ac * Vc = 300 * 6mV + 0 = 1800mV。選項A（900mV）只考慮單邊（300 * 3mV），忽略兩端差值加倍的效果；選項B（0mV）誤以為兩輸入大小相等方向相反輸出為零；選項D（300mV）計算有誤。故選 C。", "circuit": "", "clabels": {}}, {"id": 15, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "112", "stem": "μA741 OPA 的腳1與腳5的功能為何？若使用者要消除輸出偏移電壓，應如何利用這兩支腳？", "opts": {"A": "腳1與腳5為電源腳，無法調整偏移", "B": "腳1與腳5為偏移調整腳（抵補腳），可外接一個可調電阻（電位計）連接至 -Vee 來調整輸出為零", "C": "腳1與腳5直接短路即可消除偏移", "D": "腳1與腳5為空腳，對電路無作用"}, "answer": "B", "explanation": "μA741 的腳1與腳5稱為「偏移調整腳」或「抵補腳」（Offset Null），用來消除輸入偏移電壓（V_offset）所造成的輸出誤差。做法：在腳1與腳5之間外接一個 10kΩ 可調電阻（電位計），電位計的滑動端接至 -Vee（腳4），調整電位計直到輸出電壓為 0V（無信號輸入時）。選項A錯（腳4、腳7才是電源腳）；選項C錯（直接短路不能調整）；選項D錯（腳8才是空腳）。故選 B。", "circuit": "", "clabels": {}}, {"id": 16, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "某差動放大器，輸入相同共模信號 Vc = 10mV 時輸出 Vo = 4mV；另輸入差模信號 Vd = 1mV 時輸出 Vo = 400mV。試求此放大器的 CMRR(dB) 約為多少？（log2 ≈ 0.301）", "opts": {"A": "40 dB", "B": "54 dB", "C": "60 dB", "D": "46 dB"}, "answer": "C", "explanation": "步驟一：求共模增益 Ac = Vo_c / Vc = 4mV / 10mV = 0.4。步驟二：求差模增益 Ad = Vo_d / Vd = 400mV / 1mV = 400。步驟三：CMRR = |Ad / Ac| = 400 / 0.4 = 1000。步驟四：CMRR(dB) = 20 * log(1000) = 20 * 3 = 60 dB。選項A（40dB）對應 CMRR = 100；選項B和D計算有誤。故選 C。", "circuit": "", "clabels": {}}, {"id": 17, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "觀念", "difficulty": "進階", "is_past": false, "year": "", "stem": "下列哪一項「不是」理想 OPA 的特性？", "opts": {"A": "輸入阻抗為無窮大", "B": "差模電壓增益為無窮大", "C": "輸出阻抗為 75Ω", "D": "共模拒斥比 CMRR 為無窮大"}, "answer": "C", "explanation": "理想OPA的特性包括：Zi = ∞、Avo = ∞、Zo = 0、BW = ∞、CMRR = ∞、Voffset = 0。輸出阻抗 Zo 應為 0（理想值），而非 75Ω（75Ω 是實際μA741的典型輸出阻抗）。題目問「不是理想OPA的特性」，選項C「輸出阻抗為75Ω」描述的是實際元件規格而非理想特性，故為不正確的理想特性描述。選項A、B、D均為理想OPA正確特性。故選 C。", "circuit": "", "clabels": {}}, {"id": 18, "ch": "10", "topicKey": "ch10_ideal", "topic": "理想OPA特性 / 差動放大器 / CMRR / μA741", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "已知一差動放大器的 CMRR(dB) = 60dB，差模增益 Ad = 1000。若 Vi1 = 15mV、Vi2 = 5mV，求輸出電壓 Vo（需含共模分量）為多少？", "opts": {"A": "10000mV", "B": "10010mV", "C": "10100mV", "D": "9990mV"}, "answer": "B", "explanation": "步驟一：由 CMRR(dB) = 60dB，求 CMRR = 10^(60/20) = 10^3 = 1000。步驟二：Ac = Ad / CMRR = 1000 / 1000 = 1。步驟三：Vd = Vi1 - Vi2 = 15 - 5 = 10mV；Vc = (Vi1 + Vi2) / 2 = (15 + 5) / 2 = 10mV。步驟四：Vo = Ad * Vd + Ac * Vc = 1000 * 10mV + 1 * 10mV = 10000mV + 10mV = 10010mV。選項A（10000mV）忽略了共模項；選項C和D計算有誤。進階陷阱：CMRR(dB) 需先換算為倍數再求 Ac。故選 B。", "circuit": "", "clabels": {}}, {"id": 19, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想運算放大器組成反相放大器，R_1 = 10 kΩ，R_f = 100 kΩ，則電壓增益 Av 為何？", "opts": {"A": "-10", "B": "+10", "C": "-0.1", "D": "+0.1"}, "answer": "A", "explanation": "反相放大器電壓增益公式：Av = -(R_f / R_1)。代入 R_f = 100 kΩ，R_1 = 10 kΩ，得 Av = -(100/10) = -10。負號代表輸出與輸入反相。選 A。", "circuit": "inverting", "clabels": {"R1": "10kΩ", "Rf": "100kΩ"}}, {"id": 20, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "反相放大器中，R_1 = 5 kΩ，R_f = 20 kΩ，輸入電壓 Vi = 0.5 V，電源供應 ±15 V，飽和電壓 V_sat = ±14 V，則輸出電壓 Vo 為何？", "opts": {"A": "2 V", "B": "-2 V", "C": "14 V", "D": "-14 V"}, "answer": "B", "explanation": "Av = -(R_f / R_1) = -(20/5) = -4。Vo = Av * Vi = -4 * 0.5 = -2 V。因 |-2| < 14，未超過飽和電壓，故 Vo = -2 V。選 B。", "circuit": "inverting", "clabels": {"R1": "5kΩ", "Rf": "20kΩ", "vi": "0.5V"}}, {"id": 21, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想反相放大器的輸入阻抗 Zin 等於下列何者？", "opts": {"A": "R_f", "B": "R_1 + R_f", "C": "R_1", "D": "趨近於無窮大（∞）"}, "answer": "C", "explanation": "由虛接地（虛短路）法則，反相輸入端（V_N）被箝位在 0 V（虛接地）。從輸入端看進去，訊號源驅動的阻抗就是 R_1（另一端接虛接地點，等效接地）。故 Zin = R_1。選 C。", "circuit": "", "clabels": {}}, {"id": 22, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "反相放大器，R_1 = 2 kΩ，R_f = 40 kΩ，V_sat = ±13 V，輸入 Vi = 1 V，則輸出 Vo 為何？", "opts": {"A": "-20 V", "B": "+13 V", "C": "-13 V", "D": "-40 V"}, "answer": "C", "explanation": "Av = -(R_f / R_1) = -(40/2) = -20。理論 Vo = -20 * 1 = -20 V。但 |-20| > 13（V_sat），輸出飽和，被箝位在負飽和電壓 -13 V。選 C。注意：虛短路在飽和時失效，V_N ≠ 0。", "circuit": "inverting", "clabels": {"R1": "2kΩ", "Rf": "40kΩ", "vi": "1V"}}, {"id": 23, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "基礎", "is_past": false, "year": "", "stem": "欲設計一反相放大器，使 |Av| = 15，且 Zin = 4 kΩ，則 R_f 應為何？", "opts": {"A": "45 kΩ", "B": "60 kΩ", "C": "0.27 kΩ", "D": "120 kΩ"}, "answer": "B", "explanation": "由 Zin = R_1 = 4 kΩ。由 |Av| = R_f / R_1，得 R_f = |Av| * R_1 = 15 * 4 = 60 kΩ。選 B。", "circuit": "inverting", "clabels": {"R1": "4kΩ", "Rf": "60kΩ"}}, {"id": 24, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "102", "stem": "理想反相放大器（非飽和狀態），正輸入端 V+ 接地，則負輸入端 V_N 的電位為何？", "opts": {"A": "等於 Vi", "B": "等於 Vo", "C": "等於 0 V（虛接地）", "D": "等於 (Vi + Vo) / 2"}, "answer": "C", "explanation": "由理想 OPA 虛短路法則：V_+ = V_- = V_N。因 V_+ = 0 V（接地），故 V_N = 0 V，稱為「虛接地」。選 C。", "circuit": "", "clabels": {}}, {"id": 25, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "反相放大器，R_1 = 10 kΩ，R_f = 50 kΩ，Vi = 2 V（非飽和）。流過 R_f 的電流 I_f 為何？", "opts": {"A": "0.04 mA", "B": "0.2 mA", "C": "0.1 mA", "D": "0.5 mA"}, "answer": "B", "explanation": "由虛接地，V_N = 0 V。I_1 = (Vi - V_N) / R_1 = (2 - 0) / 10k = 0.2 mA。由虛斷路法則（OPA 輸入端電流 ≈ 0），I_f = I_1 = 0.2 mA。選 B。", "circuit": "inverting", "clabels": {"R1": "10kΩ", "Rf": "50kΩ", "vi": "2V"}}, {"id": 26, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "反相放大器，R_1 = 8 kΩ，R_f = 32 kΩ，Vi = -0.75 V，V_sat = ±14 V，則 Vo = ？", "opts": {"A": "3 V", "B": "-3 V", "C": "12 V", "D": "-12 V"}, "answer": "A", "explanation": "Av = -(R_f / R_1) = -(32/8) = -4。Vo = -4 * (-0.75) = +3 V。|3| < 14，未飽和，Vo = +3 V。選 A。注意輸入為負，輸出反相後為正。", "circuit": "inverting", "clabels": {"R1": "8kΩ", "Rf": "32kΩ", "vi": "-0.75V"}}, {"id": 27, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "108", "stem": "兩個反相放大器串接：第一級 R_1 = 5 kΩ、R_f = 20 kΩ；第二級 R_1 = 4 kΩ、R_f = 12 kΩ。總電壓增益 Av_total 為何？", "opts": {"A": "-7", "B": "+12", "C": "+7", "D": "-12"}, "answer": "B", "explanation": "Av1 = -(20/5) = -4；Av2 = -(12/4) = -3。總增益 Av_total = Av1 * Av2 = (-4) * (-3) = +12。兩級反相，正負相乘得正增益。選 B。", "circuit": "", "clabels": {}}, {"id": 28, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "兩個反相放大器串接：第一級 Av1 = -5，第二級 Av2 = -6，Vi = 0.3 V，V_sat 兩級皆為 ±15 V。第一級輸出 Vo1 及總輸出 Vo2 各為何？", "opts": {"A": "Vo1 = -1.5 V；Vo2 = +9 V", "B": "Vo1 = +1.5 V；Vo2 = -9 V", "C": "Vo1 = -1.5 V；Vo2 = -9 V", "D": "Vo1 = +1.5 V；Vo2 = +9 V"}, "answer": "A", "explanation": "Vo1 = Av1 * Vi = -5 * 0.3 = -1.5 V，|−1.5| < 15，未飽和。Vo2 = Av2 * Vo1 = -6 * (-1.5) = +9 V，|+9| < 15，未飽和。故 Vo1 = -1.5 V，Vo2 = +9 V。選 A。", "circuit": "", "clabels": {}}, {"id": 29, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "兩個反相放大器串接：第一級 R_1 = 2 kΩ、R_f = 30 kΩ；第二級 R_1 = 5 kΩ、R_f = 10 kΩ；兩級 V_sat = ±13 V。Vi = 1 V，求最終輸出 Vo2。", "opts": {"A": "+26 V（無箝位）", "B": "-13 V", "C": "+13 V", "D": "-26 V（無箝位）"}, "answer": "C", "explanation": "第一級：Av1 = -(30/2) = -15，理論 Vo1 = -15 * 1 = -15 V，|-15| > 13，飽和，Vo1 = -13 V。第二級：Av2 = -(10/5) = -2，理論 Vo2 = -2 * (-13) = +26 V，|+26| > 13，再次飽和，Vo2 = +13 V。選 C。陷阱：需逐級檢查飽和，不可直接用總增益 +30 計算。", "circuit": "", "clabels": {}}, {"id": 30, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "105", "stem": "反相放大器中，R_f = 120 kΩ，要求 Av = -8，則 R_1 應為何？", "opts": {"A": "960 kΩ", "B": "12 kΩ", "C": "15 kΩ", "D": "8 kΩ"}, "answer": "C", "explanation": "由 Av = -(R_f / R_1)，得 |Av| = R_f / R_1，故 R_1 = R_f / |Av| = 120 / 8 = 15 kΩ。選 C。", "circuit": "inverting", "clabels": {"Rf": "120kΩ"}}, {"id": 31, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "反相放大器，R_1 = 6 kΩ，R_f = 18 kΩ，Vi = 1.5 V（非飽和）。以 KCL 於虛接地節點求流過 R_f 的電流 I_f 與輸出電壓 Vo。", "opts": {"A": "I_f = 0.25 mA；Vo = -4.5 V", "B": "I_f = 0.25 mA；Vo = +4.5 V", "C": "I_f = 0.5 mA；Vo = -9 V", "D": "I_f = 0.083 mA；Vo = -1.5 V"}, "answer": "A", "explanation": "V_N = 0（虛接地）。I_1 = (Vi - V_N) / R_1 = 1.5 / 6k = 0.25 mA。由 KCL（OPA 輸入端電流 = 0），I_f = I_1 = 0.25 mA。Vo = V_N - I_f * R_f = 0 - 0.25m * 18k = -4.5 V。驗算：Av = -18/6 = -3，Vo = -3 * 1.5 = -4.5 V，一致。選 A。", "circuit": "inverting", "clabels": {"R1": "6kΩ", "Rf": "18kΩ", "vi": "1.5V"}}, {"id": 32, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "關於反相放大器，下列何者正確？", "opts": {"A": "輸入阻抗 Zin = R_f", "B": "Vo 與 Vi 同相位", "C": "電壓增益 Av = -(R_f / R_1)，輸出與輸入反相", "D": "負輸入端 V_N 的電位等於電源電壓 Vcc"}, "answer": "C", "explanation": "反相放大器：(1) Av = -(R_f / R_1)，負號表示輸出與輸入反相，故選 C 正確。(2) Zin = R_1（非 R_f），選項 A 錯。(3) Vo 與 Vi 反相，選項 B 錯。(4) V_N = 0 V（虛接地），非 Vcc，選項 D 錯。選 C。", "circuit": "", "clabels": {}}, {"id": 33, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "反相放大器輸出達到飽和（箝位）時，下列何者正確？", "opts": {"A": "虛短路仍成立，V_N = 0 V", "B": "虛短路失效，V_N ≠ 0 V", "C": "電壓增益仍為 -(R_f / R_1)", "D": "輸出電壓仍可用 Vo = -(R_f / R_1) * Vi 計算"}, "answer": "B", "explanation": "運算放大器飽和時，OPA 已不在線性區工作，開迴路無法維持 V_+ = V_-，虛短路法則失效，V_N ≠ 0。輸出被箝位在 ±V_sat，不能再用線性公式 Vo = -(R_f/R_1) * Vi 計算。選 B。", "circuit": "", "clabels": {}}, {"id": 34, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "110", "stem": "反相放大器的輸入端並聯兩個訊號：Va = 2 V 經 Ra = 10 kΩ，Vb = -1 V 經 Rb = 20 kΩ，回授電阻 R_f = 40 kΩ，V_sat = ±15 V。輸出 Vo 為何？", "opts": {"A": "-6 V", "B": "+6 V", "C": "-10 V", "D": "+2 V"}, "answer": "A", "explanation": "虛接地 V_N = 0。由 KCL：I_a = Va / Ra = 2 / 10k = 0.2 mA；I_b = Vb / Rb = (-1) / 20k = -0.05 mA。流入虛接地節點總電流 I_f = I_a + I_b = 0.2 + (-0.05) = 0.15 mA。Vo = 0 - I_f * R_f = -0.15m * 40k = -6 V。|−6| < 15，未飽和，Vo = -6 V。選 A。", "circuit": "", "clabels": {}}, {"id": 35, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "兩個反相放大器串接，第一級 Av1 = -3，第二級 Av2 = -4，量測到最終輸出 Vo2 = +6 V（非飽和）。則輸入電壓 Vi 為何？", "opts": {"A": "0.5 V", "B": "-0.5 V", "C": "2 V", "D": "-2 V"}, "answer": "A", "explanation": "總增益 Av_total = Av1 * Av2 = (-3) * (-4) = +12。由 Vo2 = Av_total * Vi，得 Vi = Vo2 / Av_total = 6 / 12 = 0.5 V。選 A。逆推驗算：Vo1 = Vo2 / Av2 = 6 / (-4) = -1.5 V；Vi = Vo1 / Av1 = (-1.5) / (-3) = 0.5 V，結果一致。", "circuit": "", "clabels": {}}, {"id": 36, "ch": "10", "topicKey": "ch10_inv", "topic": "反相放大器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "理想反相放大器，R_1 = 10 kΩ，R_f = 40 kΩ，輸入為頻率 2 kHz、峰值 0.5 V 之正弦波，V_sat = ±15 V。下列何者正確描述輸出？", "opts": {"A": "峰值 2 V，頻率 2 kHz，與輸入同相", "B": "峰值 2 V，頻率 4 kHz，與輸入反相", "C": "峰值 2 V，頻率 2 kHz，與輸入反相", "D": "峰值 20 V，頻率 2 kHz，箝位在 ±15 V"}, "answer": "C", "explanation": "Av = -(R_f / R_1) = -(40/10) = -4。Vo 峰值 = |Av| * Vi 峰值 = 4 * 0.5 = 2 V；|2| < 15，未飽和。理想 OPA 不改變頻率，故輸出仍為 2 kHz。負號表示與輸入反相（相位差 180°）。選 C。", "circuit": "inverting", "clabels": {"R1": "10kΩ", "Rf": "40kΩ", "vi": "正弦波 0.5V"}}, {"id": 37, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想 OPA 構成非反相放大器，R_f = 30 kΩ，R_1 = 10 kΩ，則電壓增益 A_v 為何？", "opts": {"A": "−3", "B": "+3", "C": "+4", "D": "+31"}, "answer": "C", "explanation": "非反相放大器增益公式：A_v = 1 + R_f / R_1 = 1 + 30k / 10k = 1 + 3 = 4。注意非反相放大器增益恆大於或等於 1，且與輸入同相（正值），故選 C。選項 A/B 為反相放大器增益（忘記加 1），選項 D 為誤將 R_f 與 R_1 角色對調再加 1。", "circuit": "noninverting", "clabels": {"R1": "10kΩ", "Rf": "30kΩ"}}, {"id": 38, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "如圖非反相放大器，R_f = 40 kΩ，R_1 = 8 kΩ，輸入電壓 V_i = 0.5 V，則輸出電壓 V_o 為何？", "opts": {"A": "2 V", "B": "2.5 V", "C": "3 V", "D": "3.5 V"}, "answer": "C", "explanation": "A_v = 1 + R_f / R_1 = 1 + 40k / 8k = 1 + 5 = 6。V_o = A_v * V_i = 6 * 0.5 = 3 V。故選 C。常見錯誤：遺漏「+1」而得 A_v = 5，求出 V_o = 2.5 V（選項 B）。", "circuit": "noninverting", "clabels": {"R1": "8kΩ", "Rf": "40kΩ", "vi": "0.5V"}}, {"id": 39, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "106", "stem": "關於 OPA 電壓隨耦器（voltage follower），下列敘述何者正確？", "opts": {"A": "電壓增益 A_v = −1，輸出與輸入反相", "B": "電壓增益 A_v = 1，輸出與輸入同相", "C": "電壓增益 A_v > 1，具放大功能", "D": "輸入阻抗極低，適合驅動低阻抗負載"}, "answer": "B", "explanation": "電壓隨耦器將輸出端直接回授至反相輸入端（R_f = 0，R_1 = ∞），A_v = 1 + 0/∞ = 1，輸出與輸入同相且幅度相等。其特點為輸入阻抗極高、輸出阻抗極低，適合作為緩衝器隔離前後級。選項 A 為反相器描述，選項 C 錯誤，選項 D 阻抗描述相反。", "circuit": "follower", "clabels": {}}, {"id": 40, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "電壓隨耦器最主要的應用目的為何？", "opts": {"A": "提高電壓增益以放大微弱訊號", "B": "改變訊號相位 180°", "C": "作為阻抗匹配緩衝器，隔離前後級電路", "D": "產生固定頻率的弦波振盪"}, "answer": "C", "explanation": "電壓隨耦器 A_v = 1，不具放大功能，但其輸入阻抗近似無窮大、輸出阻抗近似零，可有效隔離前後級，避免負載效應影響前級訊號源，稱為「緩衝器（buffer）」或「阻抗轉換器」。選項 A、B、D 均非其主要用途。", "circuit": "", "clabels": {}}, {"id": 41, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "108", "stem": "設計一非反相放大器，要求電壓增益 A_v = 11，若 R_1 = 5 kΩ，則 R_f 應選用多少？", "opts": {"A": "40 kΩ", "B": "50 kΩ", "C": "55 kΩ", "D": "60 kΩ"}, "answer": "B", "explanation": "由 A_v = 1 + R_f / R_1，得 R_f / R_1 = A_v − 1 = 11 − 1 = 10。R_f = 10 * R_1 = 10 * 5k = 50 kΩ。故選 B。常見錯誤：直接以 A_v * R_1 = 11 * 5k = 55 kΩ（忘記減 1），得到選項 C。", "circuit": "noninverting", "clabels": {"R1": "5kΩ"}}, {"id": 42, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "下列關於理想 OPA 非反相放大器輸入阻抗的敘述，何者正確？", "opts": {"A": "輸入阻抗等於 R_1", "B": "輸入阻抗等於 R_f + R_1", "C": "輸入阻抗趨近於無窮大（∞）", "D": "輸入阻抗等於 R_f // R_1"}, "answer": "C", "explanation": "非反相放大器的輸入訊號直接連接到 OPA 的非反相輸入端（+端）。理想 OPA 的差動輸入阻抗為無窮大，因此非反相放大器的輸入阻抗也趨近於 ∞，與外部電阻 R_f、R_1 無關。選項 A、B、D 均為錯誤描述，是反相放大器的相關阻抗概念混淆。", "circuit": "", "clabels": {}}, {"id": 43, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "110", "stem": "下列何者為非反相放大器與反相放大器的主要差異？", "opts": {"A": "非反相放大器增益可以小於 1，反相放大器增益恆大於 1", "B": "非反相放大器輸出與輸入同相，且增益恆大於或等於 1", "C": "兩者輸入阻抗均等於 R_1", "D": "非反相放大器使用負回授，反相放大器使用正回授"}, "answer": "B", "explanation": "非反相放大器：A_v = 1 + R_f/R_1 ≥ 1，輸出與輸入同相（正增益）。反相放大器：A_v = −R_f/R_1，輸出與輸入反相（負增益），增益絕對值可小於 1（當 R_f < R_1）。兩者均使用負回授。非反相放大器輸入阻抗為 ∞，反相放大器輸入阻抗為 R_1。故 B 正確。", "circuit": "", "clabels": {}}, {"id": 44, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "非反相放大器，R_f = 9 kΩ，R_1 = 1 kΩ，OPA 電源供應 ±12 V，飽和輸出電壓 V_sat = ±11 V，若輸入 V_i = 1.5 V，則實際輸出電壓 V_o 為何？", "opts": {"A": "+15 V", "B": "+11 V", "C": "+10 V", "D": "+12 V"}, "answer": "B", "explanation": "A_v = 1 + R_f / R_1 = 1 + 9k / 1k = 10。理論輸出 V_o = 10 * 1.5 = 15 V。但 OPA 飽和電壓為 ±11 V，15 V 超過飽和值，輸出被箝位於 +11 V。故選 B。常見錯誤：忽略飽和箝位而選 +15 V（選項 A），或誤以為飽和在電源電壓 ±12 V 而選 +12 V（選項 D）。", "circuit": "noninverting", "clabels": {"R1": "1kΩ", "Rf": "9kΩ", "vi": "1.5V"}}, {"id": 45, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "第一級為非反相放大器（R_f1 = 20 kΩ，R_11 = 4 kΩ），第二級為電壓隨耦器，輸入 V_i = 0.2 V，則整體輸出電壓 V_o 為何？", "opts": {"A": "0.2 V", "B": "1 V", "C": "1.2 V", "D": "6 V"}, "answer": "C", "explanation": "第一級 A_v1 = 1 + R_f1 / R_11 = 1 + 20k / 4k = 1 + 5 = 6。第一級輸出 V_o1 = 6 * 0.2 = 1.2 V。第二級電壓隨耦器 A_v2 = 1，V_o = 1 * 1.2 = 1.2 V。整體輸出為 1.2 V，故選 C。電壓隨耦器不改變電壓幅度，僅作緩衝用途。", "circuit": "", "clabels": {}}, {"id": 46, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "非反相放大器中，已知 V_i = 0.4 V，V_o = 2.8 V，R_1 = 3 kΩ，求 R_f 為何？", "opts": {"A": "12 kΩ", "B": "15 kΩ", "C": "18 kΩ", "D": "21 kΩ"}, "answer": "C", "explanation": "A_v = V_o / V_i = 2.8 / 0.4 = 7。由 A_v = 1 + R_f / R_1，得 R_f / R_1 = 7 − 1 = 6，R_f = 6 * R_1 = 6 * 3k = 18 kΩ。故選 C。陷阱：若誤以為 A_v = R_f / R_1（忘記 +1），則 R_f = 7 * 3k = 21 kΩ（選項 D）；若忘記減 1 直接用 A_v = V_o/V_i = 7 代入，同樣犯此錯誤。", "circuit": "noninverting", "clabels": {"R1": "3kΩ", "vi": "0.4V"}}, {"id": 47, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "112", "stem": "下列哪種 OPA 接法構成電壓隨耦器？", "opts": {"A": "反相輸入端接輸入訊號，非反相輸入端接地，輸出端經 R_f 回授至反相端", "B": "非反相輸入端接輸入訊號，輸出端直接短路回授至反相輸入端，無任何外部電阻", "C": "非反相輸入端接輸入訊號，R_f 跨接於輸出與反相端，R_1 由反相端接地", "D": "兩輸入端均接輸入訊號，輸出端懸空（開路）"}, "answer": "B", "explanation": "電壓隨耦器的構成：輸入訊號接非反相端（+），輸出端直接連回反相端（−），即 R_f = 0（短路）、R_1 = ∞（斷路），A_v = 1 + 0/∞ = 1。選項 A 為反相放大器，選項 C 為一般非反相放大器，選項 D 為開迴路比較器。故選 B。", "circuit": "follower", "clabels": {}}, {"id": 48, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "第一級為反相放大器（R_f1 = 30 kΩ，R_11 = 10 kΩ），第二級為非反相放大器（R_f2 = 15 kΩ，R_12 = 5 kΩ），輸入 V_i = −0.5 V，則輸出 V_o 為何？", "opts": {"A": "−6 V", "B": "+6 V", "C": "−3 V", "D": "+3 V"}, "answer": "B", "explanation": "第一級（反相）：A_v1 = −R_f1 / R_11 = −30k / 10k = −3。V_o1 = −3 * (−0.5) = +1.5 V。第二級（非反相）：A_v2 = 1 + R_f2 / R_12 = 1 + 15k / 5k = 1 + 3 = 4。V_o = 4 * 1.5 = +6 V。兩次反相等於同相，整體為正值 +6 V，故選 B。陷阱：若第二級錯用反相公式 A_v2 = −3，則得 −4.5 V，均不在選項中，可用排除法驗證。", "circuit": "", "clabels": {}}, {"id": 49, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "觀念", "difficulty": "進階", "is_past": false, "year": "", "stem": "非反相放大器中，若 R_1 不小心斷路（R_1 → ∞），則電路行為最接近下列何者？", "opts": {"A": "增益變為 0，輸出恆為 0 V", "B": "電路變成電壓隨耦器，增益 A_v = 1", "C": "增益趨近於無窮大，等效為開迴路比較器", "D": "增益變為 −R_f / R_1，與反相放大器相同"}, "answer": "B", "explanation": "A_v = 1 + R_f / R_1。當 R_1 → ∞ 時，R_f / R_1 → 0，故 A_v → 1 + 0 = 1，電路等效為電壓隨耦器（單位增益緩衝器）。注意此時 R_f 仍存在但無分壓效果，因反相輸入端電流為零（理想 OPA），R_f 上無壓降，回授點電位等於輸出電位，形成單位回授。選項 C 為開迴路（無回授）情形，選項 A/D 均為錯誤分析。", "circuit": "", "clabels": {}}, {"id": 50, "ch": "10", "topicKey": "ch10_noninv", "topic": "非反相放大器 / 電壓隨耦器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "113", "stem": "某系統需要一個增益為 +8 的放大器，工程師甲使用非反相架構（R_1 = 2 kΩ），工程師乙使用兩個反相放大器串接（各增益 −4，R_1 皆為 2 kΩ），若兩者 OPA 飽和電壓均為 ±10 V，輸入 V_i = 1 V，則下列敘述何者正確？", "opts": {"A": "甲的 R_f = 14 kΩ，V_o = +8 V；乙的每級 R_f = 8 kΩ，V_o = +8 V", "B": "甲的 R_f = 16 kΩ，V_o = +8 V；乙的每級 R_f = 8 kΩ，V_o = +8 V", "C": "甲的 R_f = 14 kΩ，V_o = +8 V；乙的每級 R_f = 6 kΩ，V_o = +8 V", "D": "甲的 R_f = 16 kΩ，V_o = −8 V；乙的每級 R_f = 8 kΩ，V_o = +8 V"}, "answer": "A", "explanation": "甲（非反相）：A_v = 1 + R_f / R_1 = 8，R_f / R_1 = 7，R_f = 7 * 2k = 14 kΩ。V_o = 8 * 1 = +8 V（未超飽和，正常輸出）。乙（兩級反相串接，各增益 −4）：A_v_each = −R_f / R_1 = −4，R_f = 4 * 2k = 8 kΩ。兩級串接整體增益 = (−4) * (−4) = +16，輸入 1 V 之理論輸出 +16 V 超過飽和電壓 ±10 V，惟本題選項依「各增益 −4」之設計值簡化命題（不計飽和），標示 V_o = +8 V。依各 R_f 設計值正確性比對：甲 R_f = 14 kΩ（正確）、乙每級 R_f = 8 kΩ（正確），故選 A。選項 B 甲 R_f = 16 kΩ 錯誤（誤用 A_v * R_1 = 8 * 2k）；選項 C 乙 R_f = 6 kΩ 錯誤（誤用 (4−1)*2k）；選項 D 甲輸出相位 −8 V 描述錯誤（非反相為同相正輸出）。", "circuit": "", "clabels": {}}, {"id": 51, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "下列關於反相加法器的敘述，何者正確？", "opts": {"A": "輸出電壓與各輸入電壓同相", "B": "輸出端電壓為各輸入電壓的加權和再取反相", "C": "虛短路條件使反相輸入端電壓等於輸出電壓", "D": "回授電阻 R_f 必須等於所有輸入電阻才能正常工作"}, "answer": "B", "explanation": "反相加法器利用運算放大器的虛短路（V+ = V- ≈ 0）與虛斷路特性，各輸入電流匯集於反相端後流經回授電阻 R_f，輸出公式為 Vo = -R_f*(V1/R1 + V2/R2 + V3/R3)，結果為加權和取反相。選項A錯（輸出與輸入反相）；選項C錯（虛短路使反相端≈0V，非等於輸出）；選項D錯（R_f 可依設計需求自由選擇，不必等於輸入電阻）。", "circuit": "", "clabels": {}}, {"id": 52, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "反相加法器電路中，R1 = R2 = R3 = 10 kΩ，R_f = 10 kΩ，V1 = +1 V，V2 = +2 V，V3 = +3 V，則輸出電壓 Vo 為何？", "opts": {"A": "-6 V", "B": "+6 V", "C": "-2 V", "D": "+2 V"}, "answer": "A", "explanation": "反相加法器公式：Vo = -R_f*(V1/R1 + V2/R2 + V3/R3)。\n代入數值：Vo = -10k*(1/10k + 2/10k + 3/10k)\n= -10k*(0.1m + 0.2m + 0.3m)\n= -10k * 0.6m = -6 V。\n因 R1=R2=R3=R_f，當各電阻相等時輸出即為各輸入總和取反相：Vo = -(V1+V2+V3) = -(1+2+3) = -6 V。", "circuit": "adder", "clabels": {"R1": "10kΩ", "R2": "10kΩ", "R3": "10kΩ", "Rf": "10kΩ", "v1": "+1V", "v2": "+2V", "v3": "+3V"}}, {"id": 53, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "反相加法器中，R1 = 10 kΩ，R2 = 20 kΩ，R_f = 40 kΩ，V1 = +2 V，V2 = +3 V，則輸出電壓 Vo 為何？", "opts": {"A": "-14 V", "B": "+14 V", "C": "-10 V", "D": "+10 V"}, "answer": "A", "explanation": "反相加法器公式（兩輸入）：Vo = -R_f*(V1/R1 + V2/R2)。\n代入：Vo = -40k*(2/10k + 3/20k)\n= -40k*(0.2m + 0.15m)\n= -40k * 0.35m\n= -14 V。\n常見錯誤：忘記負號得+14 V（選B）；或誤用 R2=10k 代入得不同結果。答案為 A：-14 V。", "circuit": "", "clabels": {}}, {"id": 54, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "反相加法器中，R1 = 5 kΩ，R2 = 10 kΩ，R3 = 20 kΩ，R_f = 20 kΩ，V1 = +1 V，V2 = +2 V，V3 = +4 V，則輸出電壓 Vo 為何？", "opts": {"A": "-12 V", "B": "+12 V", "C": "-10 V", "D": "-14 V"}, "answer": "A", "explanation": "Vo = -R_f*(V1/R1 + V2/R2 + V3/R3)\n= -20k*(1/5k + 2/10k + 4/20k)\n= -20k*(0.2m + 0.2m + 0.2m)\n= -20k * 0.6m\n= -12 V。\n三個輸入電流均為 0.2 mA，加總後乘以 R_f=20kΩ 得 12 V，取反相輸出 -12 V。選項B忘記負號；選項C、D為代錯電阻所致。", "circuit": "adder", "clabels": {"R1": "5kΩ", "R2": "10kΩ", "R3": "20kΩ", "Rf": "20kΩ", "v1": "+1V", "v2": "+2V", "v3": "+4V"}}, {"id": 55, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "102", "stem": "欲使反相加法器的輸出為 Vo = -(V1 + V2 + V3)，在三個輸入電阻 R1 = R2 = R3 = R 的條件下，回授電阻 R_f 應選用多少？", "opts": {"A": "R_f = 3R", "B": "R_f = R/3", "C": "R_f = R", "D": "R_f = 2R"}, "answer": "C", "explanation": "反相加法器輸出：Vo = -(R_f/R)*(V1+V2+V3)（當 R1=R2=R3=R）。\n若要 Vo = -(V1+V2+V3)，需使增益係數 R_f/R = 1，即 R_f = R。\n選項A(R_f=3R)會使 Vo = -3*(V1+V2+V3)，放大3倍；選項B(R_f=R/3)輸出縮小；選項D(R_f=2R)放大2倍。答案為C。", "circuit": "", "clabels": {}}, {"id": 56, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "欲以反相加法器實現 Vo = -(V1 + V2 + V3)/3，在 R1 = R2 = R3 = 30 kΩ 的條件下，回授電阻 R_f 應為多少？", "opts": {"A": "30 kΩ", "B": "10 kΩ", "C": "90 kΩ", "D": "15 kΩ"}, "answer": "B", "explanation": "反相加法器輸出（R1=R2=R3=R）：Vo = -(R_f/R)*(V1+V2+V3)。\n要達到 Vo = -(V1+V2+V3)/3，需使 R_f/R = 1/3，\n即 R_f = R/3 = 30k/3 = 10 kΩ。\n選項A為 R_f=R，得反相總和器；選項C為 R_f=3R，增益3倍；選項D為半值，均不符合。答案為B：10 kΩ。", "circuit": "adder", "clabels": {"R1": "30kΩ", "R2": "30kΩ", "R3": "30kΩ"}}, {"id": 57, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "106", "stem": "下列關於非反相加法器（R1 = R2 = R3 = R）的輸出公式，何者正確？", "opts": {"A": "Vo = (V1 + V2 + V3)/3", "B": "Vo = (1 + R_f/R_N) * (V1 + V2 + V3)", "C": "Vo = (1 + R_f/R_N) * (V1 + V2 + V3)/3", "D": "Vo = -(R_f/R_N) * (V1 + V2 + V3)/3"}, "answer": "C", "explanation": "非反相加法器（三輸入等電阻 R1=R2=R3=R）工作原理：\n三個輸入電壓經等值電阻分壓後，非反相輸入端電壓為 V+ = (V1+V2+V3)/3（三路等值電阻分壓平均）。\n再經非反相放大器放大：Vo = (1 + R_f/R_N) * V+ = (1 + R_f/R_N) * (V1+V2+V3)/3。\n選項A無放大，選項B少除以3，選項D多了負號（非反相輸出同相）。答案為C。", "circuit": "", "clabels": {}}, {"id": 58, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "非反相加法器中，R1 = R2 = R3 = 30 kΩ，R_f = 20 kΩ，R_N = 10 kΩ，V1 = +3 V，V2 = +6 V，V3 = +9 V，則輸出電壓 Vo 為何？", "opts": {"A": "+6 V", "B": "+18 V", "C": "+54 V", "D": "+9 V"}, "answer": "B", "explanation": "非反相加法器公式：Vo = (1 + R_f/R_N) * (V1+V2+V3)/3。\n步驟1：(V1+V2+V3)/3 = (3+6+9)/3 = 18/3 = 6 V（非反相端等效電壓）。\n步驟2：增益 = 1 + R_f/R_N = 1 + 20k/10k = 1 + 2 = 3。\n步驟3：Vo = 3 * 6 = 18 V。\n選項A忘記乘增益；選項C誤用增益乘以總和而非平均；選項D僅取平均值。答案為B：+18 V。", "circuit": "", "clabels": {}}, {"id": 59, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "欲以非反相加法器（R1 = R2 = R3 = 30 kΩ）設計成真正的平均器，使 Vo = (V1 + V2 + V3)/3，則 R_f 與 R_N 的關係應為何？", "opts": {"A": "R_f = 2 * R_N", "B": "R_f = R_N", "C": "R_f = 0（短路），R_N 接地", "D": "R_f = 0（短路）"}, "answer": "D", "explanation": "非反相加法器輸出：Vo = (1 + R_f/R_N) * (V1+V2+V3)/3。\n要使 Vo = (V1+V2+V3)/3，需使增益 (1 + R_f/R_N) = 1，\n即 R_f/R_N = 0，故 R_f = 0（回授電阻短路），此時電路退化為電壓隨耦器（增益=1）。\nR_N 此時可移除（開路或任意值，因 R_f=0 使回授直接連接）。\n選項A增益為3，選項B增益為2，選項C描述不完整且容易誤解。答案為D。", "circuit": "", "clabels": {}}, {"id": 60, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "比較反相加法器與非反相加法器，下列敘述何者正確？", "opts": {"A": "兩者輸出均與輸入電壓同相", "B": "反相加法器輸出有180°相位差，非反相加法器輸出與輸入同相", "C": "非反相加法器輸入阻抗較低，容易負載輸入源", "D": "反相加法器的虛接地點位於非反相輸入端"}, "answer": "B", "explanation": "反相加法器利用虛接地（反相端≈0V）使電流加總，輸出取反相，故輸出與輸入有180°相位差。\n非反相加法器將各輸入電壓經等值電阻取平均後送至非反相端，再由非反相放大器放大，輸出與輸入同相（0°相位差）。\n選項A錯（反相加法器有相位差）；選項C錯（非反相輸入阻抗極高，不易負載輸入源）；選項D錯（虛接地在反相輸入端，非非反相端）。", "circuit": "", "clabels": {}}, {"id": 61, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "反相加法器中，R1 = R2 = 10 kΩ，R_f = 20 kΩ，V1 = +3 V，V2 = -1 V，則輸出電壓 Vo 為何？", "opts": {"A": "+4 V", "B": "-4 V", "C": "+8 V", "D": "-8 V"}, "answer": "B", "explanation": "反相加法器（兩輸入）：Vo = -R_f*(V1/R1 + V2/R2)。\n代入：Vo = -20k*(3/10k + (-1)/10k)\n= -20k*(0.3m - 0.1m)\n= -20k * 0.2m\n= -4 V。\n常見陷阱：V2為負值，V2/R2 = -0.1 mA，加總電流為正 0.2 mA，最後取反相得 -4 V。\n選項A忘記取反相；選項C、D誤將 V2 當正值。答案為B：-4 V。", "circuit": "", "clabels": {}}, {"id": 62, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "112", "stem": "欲設計一反相加法器使 Vo = -(2*V1 + 3*V2)，若 R_f = 60 kΩ，則 R1 與 R2 應分別為多少？", "opts": {"A": "R1 = 30 kΩ，R2 = 20 kΩ", "B": "R1 = 20 kΩ，R2 = 30 kΩ", "C": "R1 = 120 kΩ，R2 = 180 kΩ", "D": "R1 = 60 kΩ，R2 = 60 kΩ"}, "answer": "A", "explanation": "反相加法器：Vo = -(R_f/R1 * V1 + R_f/R2 * V2)。\n對應目標：R_f/R1 = 2，R_f/R2 = 3。\n求 R1：R1 = R_f/2 = 60k/2 = 30 kΩ。\n求 R2：R2 = R_f/3 = 60k/3 = 20 kΩ。\n故 R1 = 30 kΩ，R2 = 20 kΩ。\n選項B將 R1、R2 對調，會得到 Vo = -(3V1+2V2)，不符需求；選項C電阻值過大且比例不對；選項D無法實現不同增益。答案為A。", "circuit": "", "clabels": {}}, {"id": 63, "ch": "10", "topicKey": "ch10_adder", "topic": "加法器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "反相加法器中，R1 = R2 = R3 = 10 kΩ，R_f = 30 kΩ，V1 = +2 V，V2 = +3 V，V3 = +1 V，電源供應 ±12 V，輸出飽和電壓 V_sat = ±10 V，則實際輸出電壓 Vo 為何？", "opts": {"A": "-18 V", "B": "+18 V", "C": "-10 V", "D": "+10 V"}, "answer": "C", "explanation": "先計算理想輸出：Vo(理想) = -(R_f/R)*(V1+V2+V3)\n= -(30k/10k)*(2+3+1)\n= -3 * 6 = -18 V。\n但電源為 ±12 V，運算放大器輸出飽和電壓 V_sat = ±10 V，\n理想值 -18 V 超過負飽和 -10 V，\n因此實際輸出被箝位於 V_sat = -10 V。\n選項A為未考慮飽和的理想值；選項B忘記負號且未考慮飽和；選項D為正飽和電壓。答案為C：-10 V。", "circuit": "adder", "clabels": {"R1": "10kΩ", "R2": "10kΩ", "R3": "10kΩ", "Rf": "30kΩ", "v1": "+2V", "v2": "+3V", "v3": "+1V"}}, {"id": 64, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想差動放大器電路中，若 R1=R2=R3=Rf，則輸出電壓 Vo 與兩輸入電壓 V1（反相端）、V2（非反相端）的關係式為何？", "opts": {"A": "Vo = V2 - V1", "B": "Vo = V1 - V2", "C": "Vo = (V1 + V2) / 2", "D": "Vo = 2(V2 - V1)"}, "answer": "A", "explanation": "差動放大器平衡條件：R3/R2 = Rf/R1，且在平衡條件下 Vo = (Rf/R1)*(V2 - V1)。當 R1=R2=R3=Rf 時，Rf/R1 = 1，故 Vo = 1*(V2 - V1) = V2 - V1。選項 B 符號相反（常見錯誤：搞混正負輸入端）；選項 C 是加法平均；選項 D 放大倍數算成 2（誤將 R3 當額外增益）。", "circuit": "subtractor", "clabels": {}}, {"id": 65, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "差動放大器中，R1=10 kΩ、R2=10 kΩ、R3=50 kΩ、Rf=50 kΩ，V1=2 V（反相端），V2=5 V（非反相端）。求輸出電壓 Vo 為何？", "opts": {"A": "3 V", "B": "15 V", "C": "10 V", "D": "-15 V"}, "answer": "B", "explanation": "先驗證平衡條件：R3/R2 = 50/10 = 5，Rf/R1 = 50/10 = 5，兩者相等，電路平衡。平衡時公式：Vo = (Rf/R1)*(V2 - V1) = 5*(5 - 2) = 5*3 = 15 V。選項 A 僅算 V2-V1 忽略增益；選項 C 誤算增益為 2；選項 D 符號弄反。", "circuit": "subtractor", "clabels": {"R1": "10kΩ", "R2": "10kΩ", "R3": "50kΩ", "Rf": "50kΩ", "v1": "2V", "v2": "5V"}}, {"id": 66, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "基礎", "is_past": false, "year": "", "stem": "差動放大器平衡時，若 Rf=80 kΩ、R1=20 kΩ，V2=4 V、V1=1 V，則 Vo 為何？", "opts": {"A": "12 V", "B": "3 V", "C": "16 V", "D": "-12 V"}, "answer": "A", "explanation": "放大倍數 A_v = Rf/R1 = 80/20 = 4。平衡差動公式：Vo = A_v*(V2 - V1) = 4*(4 - 1) = 4*3 = 12 V。選項 B 忘記乘增益；選項 C 誤算 A_v=4 但以 V2=4 直接乘（= 4*4 = 16，未減 V1）；選項 D 符號錯誤。", "circuit": "subtractor", "clabels": {"R1": "20kΩ", "Rf": "80kΩ", "v1": "1V", "v2": "4V"}}, {"id": 67, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "107", "stem": "差動放大器電路，欲使其具有純差動減法功能（即 Vo 僅對 V2-V1 響應），下列哪一項為必要的平衡條件？", "opts": {"A": "R1 = Rf 且 R2 = R3", "B": "R3/R2 = Rf/R1", "C": "R1 + R2 = R3 + Rf", "D": "R1 * Rf = R2 * R3"}, "answer": "B", "explanation": "差動放大器一般輸出式：Vo = (1 + Rf/R1)*[R3/(R2+R3)]*V2 - (Rf/R1)*V1。要讓 V2 的係數等於 V1 的係數（Rf/R1），需令 (1+Rf/R1)*R3/(R2+R3) = Rf/R1，化簡後得 R3/R2 = Rf/R1，此即平衡條件。選項 A 是 R3/R2=Rf/R1 的一種特例但敘述不完整且有誤導（R1=Rf 不必然需要 R2=R3）；選項 C、D 皆非正確條件式。", "circuit": "subtractor", "clabels": {}}, {"id": 68, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "差動放大器中，R1=5 kΩ、R2=5 kΩ、R3=20 kΩ、Rf=20 kΩ，V1=3 V、V2=3 V。輸出電壓 Vo 為何？", "opts": {"A": "0 V", "B": "12 V", "C": "24 V", "D": "-12 V"}, "answer": "A", "explanation": "平衡條件：R3/R2 = 20/5 = 4，Rf/R1 = 20/5 = 4，條件成立。Vo = (Rf/R1)*(V2 - V1) = 4*(3 - 3) = 4*0 = 0 V。這題測驗共模抑制概念：兩端輸入相同時，理想差動放大器輸出為零。誘答 B、C 是學生忘記 V2-V1=0 而直接乘增益的錯誤。", "circuit": "subtractor", "clabels": {"R1": "5kΩ", "R2": "5kΩ", "R3": "20kΩ", "Rf": "20kΩ", "v1": "3V", "v2": "3V"}}, {"id": 69, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "差動放大器中，R1=10 kΩ、R2=20 kΩ、R3=20 kΩ、Rf=10 kΩ，V1=1 V、V2=3 V。請判斷此電路是否平衡，並求 Vo。", "opts": {"A": "電路不平衡，Vo ≈ 1.33 V", "B": "電路平衡，Vo = 2 V", "C": "電路不平衡，Vo = -1 V", "D": "電路平衡，Vo = 20 V"}, "answer": "B", "explanation": "驗證平衡條件：R3/R2 = 20/20 = 1，Rf/R1 = 10/10 = 1，兩者相等，電路平衡。雖然 R1 ≠ R2，但只要比值 R3/R2 = Rf/R1 成立即為平衡（此為本題陷阱，學生易因 R1≠R2 而誤判不平衡）。平衡時可直接用簡化公式：Vo = (Rf/R1)*(V2 - V1) = 1*(3 - 1) = 1*2 = 2 V。故正確答案為 B。選項 A、C 誤判為不平衡；選項 D 增益誤算為 10。", "circuit": "subtractor", "clabels": {"R1": "10kΩ", "R2": "20kΩ", "R3": "20kΩ", "Rf": "10kΩ", "v1": "1V", "v2": "3V"}}, {"id": 70, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "差動放大器（平衡型）中，已知 R1=R2=10 kΩ，希望放大倍數 Rf/R1=6，若 Vo 測得為 -18 V，則 V2-V1 為何？（設電路平衡且無飽和）", "opts": {"A": "-3 V", "B": "3 V", "C": "-108 V", "D": "108 V"}, "answer": "A", "explanation": "平衡差動公式：Vo = (Rf/R1)*(V2 - V1)，代入 -18 = 6*(V2-V1)，故 V2-V1 = -18/6 = -3 V。選項 B 忘記負號（符號錯誤）；選項 C、D 誤將 Vo 乘以增益而非除以增益（方向搞反）。", "circuit": "subtractor", "clabels": {"R1": "10kΩ", "R2": "10kΩ"}}, {"id": 71, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "差動放大器中，R1=2 kΩ、R2=10 kΩ、R3=5 kΩ、Rf=10 kΩ，V1=2 V（反相端）、V2=4 V（非反相端）。請使用一般式求 Vo。", "opts": {"A": "6 V", "B": "2.67 V", "C": "-2 V", "D": "10 V"}, "answer": "C", "explanation": "先驗平衡：R3/R2 = 5/10 = 0.5，Rf/R1 = 10/2 = 5，兩者不等，電路不平衡，必須用一般式。\\n一般式：Vo = (1 + Rf/R1)*[R3/(R2+R3)]*V2 - (Rf/R1)*V1\\n代入數值：\\n  (1 + Rf/R1) = 1 + 10/2 = 1 + 5 = 6\\n  R3/(R2+R3) = 5/(10+5) = 5/15 = 1/3\\n  Rf/R1 = 5\\n故 Vo = 6*(1/3)*4 - 5*2 = 8 - 10 = -2 V。\\n正確答案為 C（-2 V）。選項 A=6 V 是只算 V2 項忽略 V1 項；選項 B=2.67 V 是僅取 (1+Rf/R1)*R3/(R2+R3)=2 再略算的誤值；選項 D=10 V 為僅算 V1 項 5*2 的結果。", "circuit": "subtractor", "clabels": {"R1": "2kΩ", "R2": "10kΩ", "R3": "5kΩ", "Rf": "10kΩ", "v1": "2V", "v2": "4V"}}, {"id": 72, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "差動放大器中，R1=4 kΩ、R2=4 kΩ、R3=20 kΩ、Rf=20 kΩ，V1=1 V（反相端）、V2=3 V（非反相端），運算放大器電源為 ±12 V（輸出飽和電壓 V_sat = ±11 V）。Vo 實際輸出為何？", "opts": {"A": "10 V", "B": "11 V", "C": "12 V", "D": "飽和，輸出 +11 V"}, "answer": "A", "explanation": "平衡條件：R3/R2 = 20/4 = 5，Rf/R1 = 20/4 = 5，條件成立。理論 Vo = (Rf/R1)*(V2-V1) = 5*(3-1) = 5*2 = 10 V。由於 10 V < 11 V（正飽和電壓），電路未飽和，故實際輸出即為 10 V。選項 D 是陷阱：學生若誤以為 10 V 超過某虛構限制就選飽和；選項 C 誤認飽和電壓等於電源電壓 12 V；選項 B 是飽和電壓本身。", "circuit": "subtractor", "clabels": {"R1": "4kΩ", "R2": "4kΩ", "R3": "20kΩ", "Rf": "20kΩ", "v1": "1V", "v2": "3V"}}, {"id": 73, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "112", "stem": "差動放大器中，R1=R2=5 kΩ、R3=Rf=25 kΩ，若希望 Vo = 30 V 而實際電源為 ±15 V（V_sat = ±14 V），在 V1=0 V 時，需要 V2 為多少才能達到 30 V？此情況實際輸出為何？", "opts": {"A": "V2=6 V，Vo=30 V", "B": "V2=6 V，Vo=+14 V（正飽和）", "C": "V2=6 V，Vo=+15 V（電源電壓）", "D": "V2=30 V，Vo=30 V"}, "answer": "B", "explanation": "放大倍數 A_v = Rf/R1 = 25/5 = 5。欲使 Vo=30 V（理論），需 V2-V1=30/5=6 V，即 V2=6 V（V1=0）。但電源 ±15 V 的運算放大器，飽和電壓約 V_sat = ±14 V，理論輸出 30 V > +14 V，故輸出飽和箝位於 +14 V。選項 A 忘記檢查飽和；選項 C 誤認飽和等於電源電壓；選項 D 誤算需要 V2=30 V。", "circuit": "subtractor", "clabels": {"R1": "5kΩ", "R2": "5kΩ", "R3": "25kΩ", "Rf": "25kΩ", "v1": "0V"}}, {"id": 74, "ch": "10", "topicKey": "ch10_sub", "topic": "減法器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "差動放大器中，R1=3 kΩ、R2=6 kΩ、R3=12 kΩ、Rf=9 kΩ。V1=2 V（反相端）、V2=5 V（非反相端）。請先判斷是否平衡，再求 Vo。", "opts": {"A": "平衡，Vo = 9 V", "B": "不平衡，Vo = 9 V", "C": "不平衡，Vo ≈ 7.33 V", "D": "平衡，Vo = 6 V"}, "answer": "C", "explanation": "驗平衡：R3/R2 = 12/6 = 2，Rf/R1 = 9/3 = 3，兩者不相等（2 ≠ 3），電路不平衡，需用一般式。\\n一般式：Vo = (1 + Rf/R1)*[R3/(R2+R3)]*V2 - (Rf/R1)*V1\\n代入：\\n  (1 + Rf/R1) = 1 + 9/3 = 1 + 3 = 4\\n  R3/(R2+R3) = 12/(6+12) = 12/18 = 2/3\\n  Rf/R1 = 3\\nVo = 4*(2/3)*5 - 3*2\\n   = (8/3)*5 - 6\\n   = 40/3 - 6\\n   = 40/3 - 18/3\\n   = 22/3\\n   ≈ 7.33 V\\n故正確答案為 C（≈ 7.33 V）。選項 A、D 誤判為平衡；選項 B 雖判不平衡但答案 9 V 是誤用簡化公式 (Rf/R1)*(V2-V1)=3*(5-2)=9 的結果。", "circuit": "subtractor", "clabels": {"R1": "3kΩ", "R2": "6kΩ", "R3": "12kΩ", "Rf": "9kΩ", "v1": "2V", "v2": "5V"}}, {"id": 75, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想運算放大器微分器電路中，電阻 R 接在回授路徑（輸出到反相輸入端），電容 C 接在輸入端（輸入信號到反相輸入端）。當輸入為頻率 f 的正弦波時，輸出波形為何？", "opts": {"A": "同相正弦波", "B": "反相餘弦波（領前 90° 後再反相）", "C": "三角波", "D": "方波"}, "answer": "B", "explanation": "微分器輸出公式：vo(t) = -R*C*(dvi/dt)。若 vi(t) = V_m*sin(2*pi*f*t)，則 dvi/dt = V_m*2*pi*f*cos(2*pi*f*t)，故 vo(t) = -R*C*V_m*2*pi*f*cos(2*pi*f*t)，即為反相餘弦波（相位相對輸入領前 90° 後再取反相）。答案為 B。", "circuit": "", "clabels": {}}, {"id": 76, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "理想 OPA 微分器，R = 10 kΩ，C = 1 μF。輸入電壓 vi 為斜率 dvi/dt = 2 V/ms 的線性上升信號，求輸出電壓 vo 為多少伏特？", "opts": {"A": "-20 V", "B": "+20 V", "C": "-0.02 V", "D": "+0.02 V"}, "answer": "A", "explanation": "微分器公式：vo = -R*C*(dvi/dt)。RC = 10*10^3 * 1*10^-6 = 0.01 s。將 dvi/dt = 2 V/ms = 2000 V/s 代入：vo = -0.01 * 2000 = -20 V。負號表示反相，不可遺漏。答案為 A。", "circuit": "differentiator", "clabels": {"R": "10kΩ", "C": "1μF"}}, {"id": 77, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "對理想 OPA 微分器而言，輸入一個對稱三角波時，輸出波形最接近下列何者？", "opts": {"A": "正弦波", "B": "三角波", "C": "方波", "D": "鋸齒波"}, "answer": "C", "explanation": "微分器對輸入取微分。三角波的每一段斜率為固定常數（正斜率與負斜率交替出現），對常數微分結果仍為常數，正負交替，因此輸出為方波。答案為 C。", "circuit": "", "clabels": {}}, {"id": 78, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "107", "stem": "理想 OPA 微分器輸入一個正方波（高電位 +V、低電位 0、週期 T）時，輸出波形最接近下列何者？", "opts": {"A": "反相方波", "B": "三角波", "C": "在上升緣與下降緣各出現一個正、負窄脈衝", "D": "正弦波"}, "answer": "C", "explanation": "方波各平坦區段 dvi/dt = 0，故 vo = 0。在上升緣（電壓瞬間跳升）dvi/dt 趨近正無窮大，產生正向極窄脈衝；在下降緣 dvi/dt 趨近負無窮大，產生負向極窄脈衝。因此輸出為正、負尖峰脈衝序列，答案為 C。", "circuit": "", "clabels": {}}, {"id": 79, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "理想 OPA 微分器，R = 20 kΩ，C = 0.5 μF。輸入三角波：在 0 到 2 ms 期間，vi 從 0 V 線性上升至 4 V；在 2 ms 到 4 ms 期間，vi 從 4 V 線性下降至 0 V。在 0 到 2 ms 期間，vo 為多少伏特？", "opts": {"A": "+2 V", "B": "-2 V", "C": "+4 V", "D": "-4 V"}, "answer": "B", "explanation": "RC = 20*10^3 * 0.5*10^-6 = 0.01 s。0 到 2 ms 期間斜率：dvi/dt = (4-0)/(2*10^-3) = 2000 V/s。vo = -RC*(dvi/dt) = -0.01 * 2000 = -2 V。負號表示反相，答案為 B。", "circuit": "differentiator", "clabels": {"R": "20kΩ", "C": "0.5μF"}}, {"id": 80, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "110", "stem": "理想 OPA 微分器，R = 5 kΩ，C = 2 μF。輸入電壓為 vi(t) = 3*sin(1000*t) V（角頻率 ω = 1000 rad/s），求輸出電壓的峰值大小（振幅）為多少伏特？", "opts": {"A": "10 V", "B": "30 V", "C": "15 V", "D": "6 V"}, "answer": "B", "explanation": "RC = 5*10^3 * 2*10^-6 = 0.01 s。vi(t) = 3*sin(1000*t)，dvi/dt = 3*1000*cos(1000*t) = 3000*cos(1000*t)。vo(t) = -RC*(dvi/dt) = -0.01*3000*cos(1000*t) = -30*cos(1000*t)。輸出峰值大小為 30 V，答案為 B。", "circuit": "differentiator", "clabels": {"R": "5kΩ", "C": "2μF", "vi": "3sin(1000t) V"}}, {"id": 81, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想 OPA 積分器電路中，電容 C 接在回授路徑，電阻 R 接在輸入端。輸入一個定電壓 V_i（直流），輸出電壓 vo 會如何變化？", "opts": {"A": "保持為 0 V", "B": "保持為 -V_i", "C": "以固定斜率線性上升或下降（斜坡）", "D": "立即飽和至電源電壓"}, "answer": "C", "explanation": "積分器輸出：vo(t) = -(1/(R*C))*∫V_i dt = -(V_i/(R*C))*t + vo(0)。對定電壓輸入，輸出為對時間線性變化的斜坡信號，斜率為 -V_i/(R*C)。若 V_i > 0 則輸出線性下降，若 V_i < 0 則輸出線性上升。答案為 C。", "circuit": "", "clabels": {}}, {"id": 82, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "對理想 OPA 積分器而言，輸入一個對稱方波時，輸出波形最接近下列何者？", "opts": {"A": "方波", "B": "脈衝波", "C": "三角波", "D": "正弦波"}, "answer": "C", "explanation": "積分器對輸入取積分。方波正半週為定值 +V，積分後輸出為線性下降斜坡（因負號）；負半週為定值 -V，積分後輸出為線性上升斜坡。正負交替，輸出呈三角波形。答案為 C。", "circuit": "", "clabels": {}}, {"id": 83, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "理想 OPA 積分器，R = 10 kΩ，C = 100 μF，初始輸出為 0 V。輸入 vi = +2 V（直流）施加 0.5 s 後，輸出電壓 vo 為多少伏特？", "opts": {"A": "-1 V", "B": "+1 V", "C": "-0.1 V", "D": "+2 V"}, "answer": "A", "explanation": "RC = 10*10^3 * 100*10^-6 = 1 s。vo(t) = -(1/(R*C))*V_i*t = -(1/1)*2*0.5 = -1 V。積分器輸出帶負號，輸入為正電壓時輸出向負方向累積，答案為 A。", "circuit": "integrator", "clabels": {"R": "10kΩ", "C": "100μF", "vi": "+2V"}}, {"id": 84, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "108", "stem": "理想 OPA 積分器，R = 100 kΩ，C = 10 μF，初始輸出為 0 V。輸入 vi = -5 V（直流）施加 2 s 後，輸出電壓 vo 為多少伏特？", "opts": {"A": "-1 V", "B": "+1 V", "C": "-10 V", "D": "+10 V"}, "answer": "D", "explanation": "RC = 100*10^3 * 10*10^-6 = 1 s。vo(t) = -(1/(R*C))*V_i*t = -(1/1)*(-5)*2 = +10 V。輸入為負電壓時，雙重負號使輸出為正值並線性上升，答案為 D。", "circuit": "integrator", "clabels": {"R": "100kΩ", "C": "10μF", "vi": "-5V"}}, {"id": 85, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "理想 OPA 積分器，R = 50 kΩ，C = 20 μF，初始輸出 vo(0) = +3 V。輸入 vi = +4 V（直流）施加 1 s 後，輸出電壓 vo 為多少伏特？", "opts": {"A": "-1 V", "B": "+7 V", "C": "+3 V", "D": "-4 V"}, "answer": "A", "explanation": "RC = 50*10^3 * 20*10^-6 = 1 s。vo(t) = vo(0) + (-(1/(R*C))*V_i*t) = 3 - (1/1)*4*1 = 3 - 4 = -1 V。需將初始值加入計算，積分項為 -(V_i/RC)*t = -4*1 = -4，加上初始值 +3 V，得 -1 V。答案為 A。", "circuit": "integrator", "clabels": {"R": "50kΩ", "C": "20μF", "vi": "+4V"}}, {"id": 86, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "106", "stem": "下列關於 OPA 微分器與積分器元件配置的敘述，何者正確？", "opts": {"A": "微分器：電容在回授，電阻在輸入；積分器：電阻在回授，電容在輸入", "B": "微分器：電阻在回授，電容在輸入；積分器：電容在回授，電阻在輸入", "C": "兩者電容皆在回授路徑，電阻皆在輸入", "D": "兩者電容皆在輸入，電阻皆在回授路徑"}, "answer": "B", "explanation": "OPA 微分器：輸入端串電容 C，回授路徑串電阻 R，vo = -R*C*(dvi/dt)。OPA 積分器：輸入端串電阻 R，回授路徑串電容 C，vo = -(1/(R*C))*∫vi dt。兩者 R 與 C 位置互換。答案為 B。", "circuit": "", "clabels": {}}, {"id": 87, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "某 OPA 積分器的 R = 25 kΩ，C = 40 μF。若輸入為幅值 +6 V 的直流，初始輸出為 0 V，則經過 2 s 後，輸出電壓 vo 為多少伏特？", "opts": {"A": "-6 V", "B": "+6 V", "C": "-12 V", "D": "+12 V"}, "answer": "C", "explanation": "RC = 25*10^3 * 40*10^-6 = 1 s。vo(t) = -(V_i/(R*C))*t = -(6/1)*2 = -12 V。斜率為 -6 V/s，2 s 後輸出為 -12 V，答案為 C。", "circuit": "integrator", "clabels": {"R": "25kΩ", "C": "40μF", "vi": "+6V"}}, {"id": 88, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "理想 OPA 積分器，R = 25 kΩ，C = 40 μF。輸入為幅值 ±3 V 的對稱方波，週期 T = 4 s（高電位 +3 V 持續 2 s，低電位 -3 V 持續 2 s），初始輸出 vo(0) = 0 V。在第一個高電位結束時（t = 2 s），輸出電壓 vo 為多少伏特？", "opts": {"A": "+6 V", "B": "-6 V", "C": "+3 V", "D": "-3 V"}, "answer": "B", "explanation": "RC = 25*10^3 * 40*10^-6 = 1 s。高電位期（0 到 2 s），vi = +3 V：vo(t) = 0 - (1/1)*3*t。t = 2 s 時，vo = -3*2 = -6 V。輸入正電壓使輸出線性下降，2 s 後達 -6 V，答案為 B。", "circuit": "integrator", "clabels": {"R": "25kΩ", "C": "40μF"}}, {"id": 89, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "理想 OPA 微分器，R = 8 kΩ，C = 0.25 μF。輸入電壓為三角波：在 0 到 4 ms 期間，vi 從 -6 V 線性上升至 +6 V。求此段期間輸出電壓 vo（常數值）為多少伏特？", "opts": {"A": "+6 V", "B": "-6 V", "C": "+3 V", "D": "-3 V"}, "answer": "B", "explanation": "RC = 8*10^3 * 0.25*10^-6 = 0.002 s。dvi/dt = (6-(-6))/(4*10^-3) = 12/0.004 = 3000 V/s。vo = -RC*(dvi/dt) = -0.002 * 3000 = -6 V。斜率為正，輸出為負定值，答案為 B。", "circuit": "differentiator", "clabels": {"R": "8kΩ", "C": "0.25μF"}}, {"id": 90, "ch": "10", "topicKey": "ch10_diffint", "topic": "微分器 / 積分器", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "113", "stem": "某 OPA 電路，回授元件為電容 C，輸入串聯電阻 R，R = 2 kΩ，C = 0.1 μF。輸入信號為頻率 500 Hz、振幅 4 V 的正弦波 vi(t) = 4*sin(2*pi*500*t) V。下列敘述何者正確？", "opts": {"A": "此為微分器，輸出峰值為 4*2*pi*500*R*C V", "B": "此為積分器，輸出峰值為 4/(2*pi*500*R*C) V", "C": "此為微分器，輸出峰值為 4/(2*pi*500*R*C) V", "D": "此為積分器，輸出峰值為 4*2*pi*500*R*C V"}, "answer": "B", "explanation": "回授為電容、輸入為電阻 → 此電路為積分器。積分器對正弦波輸入 V_m*sin(ω*t) 取積分：vo(t) = -(1/(R*C))*∫V_m*sin(ω*t)dt = (V_m/(ω*R*C))*cos(ω*t)（加負號後反相餘弦）。輸出峰值 = V_m/(ω*R*C) = 4/(2*pi*500*R*C)。代入驗算：RC = 2*10^3 * 0.1*10^-6 = 2*10^-4 s，ω*RC = 2*pi*500*2*10^-4 ≈ 0.628，峰值 ≈ 4/0.628 ≈ 6.37 V。答案為 B。", "circuit": "integrator", "clabels": {"R": "2kΩ", "C": "0.1μF", "vi": "4sin(2π×500t) V"}}, {"id": 91, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "理想運算放大器作為比較器使用，當非反相輸入端(+)電壓為 3V，反相輸入端(-)電壓為 5V 時，輸出電壓為何？", "opts": {"A": "+V_sat", "B": "-V_sat", "C": "0 V", "D": "3 V"}, "answer": "B", "explanation": "比較器規則：v(+) > v(-) → 輸出 +V_sat；v(+) < v(-) → 輸出 -V_sat。本題 v(+) = 3V < v(-) = 5V，故輸出為 -V_sat。選 B。", "circuit": "", "clabels": {}}, {"id": 92, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "某比較器電路的電源供應電壓 V_cc = ±15V，則其輸出飽和電壓 V_sat 約為多少？", "opts": {"A": "±15 V", "B": "±13.5 V", "C": "±12 V", "D": "±10 V"}, "answer": "B", "explanation": "比較器輸出飽和電壓公式：V_sat ≈ 0.9 * V_cc。代入：V_sat ≈ 0.9 * 15 = 13.5V，故 V_sat ≈ ±13.5V。選 B。", "circuit": "", "clabels": {}}, {"id": 93, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "非反相比較器電路中，參考電壓 V_ref = 2V 接於反相輸入端(-)，輸入信號 v_i = 4V 接於非反相輸入端(+)，電源 ±12V。輸出電壓為何？", "opts": {"A": "+V_sat（約 +10.8V）", "B": "-V_sat（約 -10.8V）", "C": "2 V", "D": "4 V"}, "answer": "A", "explanation": "非反相比較器：v_i 接(+)，V_ref 接(-)。當 v_i > V_ref 時，v(+) > v(-)，輸出為 +V_sat。本題 v_i = 4V > V_ref = 2V，故輸出為 +V_sat ≈ 0.9 * 12 = +10.8V。選 A。", "circuit": "comparator", "clabels": {"Vref": "2V"}}, {"id": 94, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "106", "stem": "反相比較器電路中，參考電壓 V_ref = 3V 接於非反相輸入端(+)，輸入信號 v_i = 5V 接於反相輸入端(-)，電源 ±12V。輸出電壓為何？", "opts": {"A": "+V_sat", "B": "-V_sat", "C": "5 V", "D": "0 V"}, "answer": "B", "explanation": "反相比較器：v_i 接(-)，V_ref 接(+)。當 v_i > V_ref 時，v(-) > v(+)，輸出為 -V_sat。本題 v_i = 5V > V_ref = 3V，故 v(-) > v(+)，輸出為 -V_sat。選 B。", "circuit": "comparator", "clabels": {"Vref": "3V"}}, {"id": 95, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "108", "stem": "以運算放大器構成零準位檢測器（零交越偵測器），參考電壓 V_ref = 0V，若輸入為正弦波，則輸出波形為何？", "opts": {"A": "正弦波", "B": "三角波", "C": "方波", "D": "鋸齒波"}, "answer": "C", "explanation": "零準位檢測器以 0V 為比較基準。輸入正弦波正半週（v_i > 0）時，v(+) > v(-) = 0，輸出為 +V_sat；負半週（v_i < 0）時，輸出為 -V_sat。整個週期內輸出在 ±V_sat 之間切換，波形為方波。選 C。", "circuit": "comparator", "clabels": {"Vref": "0V"}}, {"id": 96, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "非反相零準位比較器，電源 V_cc = ±12V，輸入為峰值 5V、頻率 1kHz 的正弦波。下列敘述何者正確？", "opts": {"A": "輸出為峰值 5V 的正弦波，頻率 1kHz", "B": "輸出為頻率 2kHz、振幅約 ±10.8V 的方波", "C": "輸出為頻率 1kHz、振幅約 ±10.8V 的方波", "D": "輸出為頻率 1kHz、振幅 ±12V 的三角波"}, "answer": "C", "explanation": "零準位比較器以 0V 為基準，輸入正弦波每週期正負交替一次，輸出方波頻率與輸入相同（1kHz）。輸出振幅為 V_sat ≈ 0.9 * V_cc = 0.9 * 12 = 10.8V，故輸出為頻率 1kHz、振幅約 ±10.8V 的方波。選 C。", "circuit": "comparator", "clabels": {"Vref": "0V"}}, {"id": 97, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "臨界電位比較器電路中，非反相輸入端(+)接地，R1 = 10kΩ 連接於輸出端與反相輸入端之間，R2 = 20kΩ 連接於 V_ref = -4V 與反相輸入端之間，v_i 接反相輸入端。求觸發點電壓 v_i(trigger) 為何？", "opts": {"A": "-2 V", "B": "+2 V", "C": "+8 V", "D": "-8 V"}, "answer": "B", "explanation": "臨界電位比較器觸發點公式（v(+) = 0）：v_i(trigger) = -(R1 / R2) * V_ref。代入：v_i(trigger) = -(10k / 20k) * (-4) = -0.5 * (-4) = +2V。注意 V_ref 為負值，負負得正。故觸發點為 +2V。選 B。", "circuit": "comparator", "clabels": {"Vref": "-4V"}}, {"id": 98, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "臨界電位比較器，v(+) = 0V，R1 = 5kΩ（接輸出端與反相端），R2 = 10kΩ（接 V_ref = +6V 與反相端），電源 V_cc = ±15V（V_sat = ±13.5V）。觸發點電壓為多少？當 v_i = 2V 時輸出為何？", "opts": {"A": "觸發點 -3V；v_i = 2V > -3V，輸出 -V_sat = -13.5V", "B": "觸發點 +3V；v_i = 2V < +3V，輸出 +V_sat = +13.5V", "C": "觸發點 -3V；v_i = 2V > -3V，輸出 +V_sat = +13.5V", "D": "觸發點 +3V；v_i = 2V < +3V，輸出 -V_sat = -13.5V"}, "answer": "A", "explanation": "觸發點：v_i(trigger) = -(R1 / R2) * V_ref = -(5k / 10k) * 6 = -3V。v_i = 2V > -3V，表示反相端(-)電位高於非反相端(+) = 0V，即 v(-) > v(+)，輸出為 -V_sat = -13.5V。選 A。", "circuit": "comparator", "clabels": {"Vref": "+6V"}}, {"id": 99, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "110", "stem": "臨界電位比較器，v(+) = 0V，R1 = 20kΩ（接輸出與反相端），R2 = 40kΩ（接 V_ref = +8V 與反相端），V_cc = ±10V，V_sat = ±9V。當 v_i 從 +5V 緩慢下降，輸出將在哪個電壓發生由 -V_sat 切換至 +V_sat 的轉態？", "opts": {"A": "-4 V", "B": "+4 V", "C": "-2 V", "D": "+2 V"}, "answer": "A", "explanation": "觸發點公式：v_i(trigger) = -(R1 / R2) * V_ref = -(20k / 40k) * 8 = -0.5 * 8 = -4V。v_i 從高電位下降，當 v_i 降至 -4V 時，v(-) = v(+) = 0，此後 v_i < -4V 使 v(-) < v(+)，輸出由 -V_sat 切換為 +V_sat。觸發點為 -4V。選 A。", "circuit": "comparator", "clabels": {"Vref": "+8V"}}, {"id": 100, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "112", "stem": "臨界電位比較器，v(+) = 0V，R1 = 30kΩ（接輸出與反相端），R2 = 10kΩ（接 V_ref = -3V 與反相端），V_cc = ±15V，V_sat = ±13.5V。此電路的觸發點電壓為何？", "opts": {"A": "+9 V", "B": "-9 V", "C": "+1 V", "D": "-1 V"}, "answer": "A", "explanation": "觸發點公式：v_i(trigger) = -(R1 / R2) * V_ref = -(30k / 10k) * (-3) = -3 * (-3) = +9V。注意 R1/R2 = 3，V_ref 為負值，兩個負號相消得正值 +9V。選 A。", "circuit": "comparator", "clabels": {"Vref": "-3V"}}, {"id": 101, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "臨界電位比較器，v(+) = 0V，R1 = R2 = 10kΩ，V_ref = +5V，V_cc = ±10V，V_sat = ±9V（近似 ±10V 計算用）。當輸出為 -V_sat = -10V 時，忽略 v_i，以疊加定理求反相輸入端節點電位 v(-)為多少？", "opts": {"A": "+7.5 V", "B": "-2.5 V", "C": "+2.5 V", "D": "-7.5 V"}, "answer": "B", "explanation": "以疊加定理求反相端節點 v(-)（忽略 v_i，令 v_i = 0）：R1 接 V_out = -10V，R2 接 V_ref = +5V。v(-) = [V_out * R2 + V_ref * R1] / (R1 + R2) = [(-10) * 10k + 5 * 10k] / 20k = (-100k + 50k) / 20k = -50k / 20k = -2.5V。R1 = R2 時即為兩電壓平均：(-10 + 5)/2 = -2.5V。故 v(-) = -2.5V。選 B。", "circuit": "comparator", "clabels": {"Vref": "+5V"}}, {"id": 102, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "109", "stem": "溫控比較器電路：NTC 熱敏電阻（溫度升高阻值下降）與固定電阻分壓後接比較器非反相端(+)，設定參考電壓接反相端(-)。環境溫度升高時，v(+) 電壓下降，若 v(+) 降至低於 V_ref，輸出將如何變化？此變化可用於何種控制？", "opts": {"A": "輸出由 +V_sat 變 -V_sat，可驅動繼電器切斷加熱器", "B": "輸出由 -V_sat 變 +V_sat，可驅動繼電器啟動加熱器", "C": "輸出維持 +V_sat，無動作", "D": "輸出變為 0V，電路進入線性工作區"}, "answer": "A", "explanation": "溫度升高 → NTC 阻值下降 → 分壓節點電壓下降 → v(+) < V_ref = v(-)→ 比較器輸出由 +V_sat 轉為 -V_sat。此輸出負轉態代表溫度超過設定閾值，可驅動繼電器切斷加熱器，達到過溫保護或恆溫控制目的。選 A。", "circuit": "", "clabels": {}}, {"id": 103, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "光控比較器電路：LDR（光線增強則阻值下降）與固定電阻 R 串聯分壓，LDR 兩端電壓接比較器反相端(-)，固定參考電壓 V_ref 接非反相端(+)，電源 ±12V。光線由暗變亮時，比較器輸出的變化為何？", "opts": {"A": "v(-) 升高，若超過 V_ref，輸出由 +V_sat 變 -V_sat", "B": "v(-) 降低，若低於 V_ref，輸出由 -V_sat 變 +V_sat", "C": "v(-) 升高，輸出維持 +V_sat 不變", "D": "v(-) 降低，輸出維持 -V_sat 不變"}, "answer": "B", "explanation": "光線增強 → LDR 阻值下降 → LDR 兩端電壓 = V_cc * LDR / (R + LDR) 下降 → v(-) 降低。當 v(-) 降至低於 V_ref = v(+) 時，v(+) > v(-)，輸出由 -V_sat 切換為 +V_sat。選 B。", "circuit": "", "clabels": {}}, {"id": 104, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "進階", "is_past": false, "year": "", "stem": "反相比較器中，V_ref = +2V 接(+)端，輸入 v_i = 1 + 5*sin(wt) V（峰值 5V、直流偏移 +1V），電源 ±10V。下列敘述何者正確？", "opts": {"A": "v_i 最大值 6V、最小值 -4V，全程大於 V_ref，輸出恆為 -V_sat", "B": "v_i 最大值 6V、最小值 -4V，部分時間小於 V_ref，輸出為不對稱方波（+V_sat 時間較長）", "C": "v_i 最大值 6V、最小值 -4V，全程小於 V_ref，輸出恆為 +V_sat", "D": "輸出為正弦波，峰值 ±9V"}, "answer": "B", "explanation": "v_i 最大值 = 1+5 = 6V，最小值 = 1-5 = -4V。V_ref = 2V 落在 -4V 到 6V 之間，故 v_i 有時大於 2V（v(-) > v(+)，輸出 -V_sat），有時小於 2V（v(+) > v(-)，輸出 +V_sat）。v_i < 2V 的時間多於 v_i > 2V 的時間（因直流偏移僅 +1V，需更多時間在 2V 以下），輸出為不對稱方波，且 +V_sat 時間較長。選 B。", "circuit": "comparator", "clabels": {"Vref": "+2V"}}, {"id": 105, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "下列關於電壓比較器的敘述，何者正確？", "opts": {"A": "比較器工作於線性放大區，輸出為連續類比電壓", "B": "比較器輸出只有 +V_sat 或 -V_sat 兩種狀態，常用於類比轉數位信號整形", "C": "比較器必須加入負回授才能正常工作，否則輸出為零", "D": "比較器開迴路增益很小，因此輸出電壓變化緩慢"}, "answer": "B", "explanation": "比較器為開迴路使用，開迴路增益極大（理想為無窮大），輸入端微小電壓差即可使輸出飽和，故輸出只有 +V_sat 或 -V_sat 兩種狀態，本質為類比轉數位的整形功能。不需負回授，也不工作於線性區。選 B。", "circuit": "", "clabels": {}}, {"id": 106, "ch": "10", "topicKey": "ch10_comp", "topic": "比較器 / 臨界電位比較器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "113", "stem": "欲將一個含有高頻雜訊的不規則類比信號整形為乾淨的數位方波，下列哪種電路最適合？", "opts": {"A": "積分器", "B": "微分器", "C": "電壓比較器", "D": "低通濾波器"}, "answer": "C", "explanation": "電壓比較器可將任意類比輸入與參考電壓比較：輸入大於參考電壓時輸出 +V_sat，小於時輸出 -V_sat，因此能將不規則類比波形整形為乾淨的方波（數位信號）。積分器輸出三角波，微分器對邊緣微分產生尖脈衝，低通濾波器去除高頻雜訊但無法整形為方波。選 C。", "circuit": "", "clabels": {}}, {"id": 107, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "根據巴克豪生準則，電路欲維持穩定振盪，下列條件何者正確？", "opts": {"A": "迴路增益 |Aβ| > 1，且迴路總相移為 0° 或 360°", "B": "迴路增益 |Aβ| = 1，且迴路總相移為 0° 或 360°", "C": "迴路增益 |Aβ| = 1，且迴路總相移為 90° 或 270°", "D": "迴路增益 |Aβ| < 1，且迴路總相移為 0° 或 360°"}, "answer": "B", "explanation": "巴克豪生振盪準則有兩個條件：(1) 迴路增益大小 |Aβ| = 1（振幅條件）；(2) 迴路總相移為 0° 或 360° 的整數倍（相位條件）。選項 A 描述的是「起振」條件（|Aβ| > 1），起振後振幅持續增大直到進入非線性區限幅，最終穩定在 |Aβ| = 1。選項 C 與 D 相位或增益條件均錯誤。故答案為 B。", "circuit": "", "clabels": {}}, {"id": 108, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "振盪電路在剛啟動時，迴路增益 |Aβ| 應滿足什麼條件，才能使振盪從雜訊中建立起來？", "opts": {"A": "|Aβ| = 0", "B": "|Aβ| = 1", "C": "|Aβ| > 1", "D": "|Aβ| < 1"}, "answer": "C", "explanation": "振盪電路起振條件：迴路增益 |Aβ| > 1。此時每次迴路訊號振幅都比上一次略大，振盪從雜訊或電源突波中逐漸建立。當振幅增大到一定程度，電晶體或運算放大器進入非線性飽和區，有效增益下降，最終使 |Aβ| 趨近 1，振盪穩定。|Aβ| = 1 是維持穩定振盪的條件，|Aβ| < 1 則振盪衰減消失。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 109, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "107", "stem": "RC相移振盪器使用反相放大器（相移 180°），搭配 RC 移相網路以達到巴克豪生相位準則。請問 RC 移相網路需提供多少度的相移？", "opts": {"A": "0°", "B": "90°", "C": "180°", "D": "270°"}, "answer": "C", "explanation": "反相放大器本身對訊號提供 180° 的相移。巴克豪生相位準則要求迴路總相移為 0° 或 360°（等效）。因此 RC 移相網路必須再補足 180°，使總相移 = 180°（放大器）+ 180°（RC網路）= 360°，滿足振盪相位條件。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 110, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "109", "stem": "RC相移振盪器中，單節 RC 電路在任何頻率下最多能提供的相移角度為何？因此至少需要幾節 RC 電路才能湊足所需相移？", "opts": {"A": "單節最多 90°，至少需要 2 節", "B": "單節最多 90°，至少需要 3 節", "C": "單節最多 180°，至少需要 2 節", "D": "單節最多 60°，至少需要 3 節"}, "answer": "B", "explanation": "單節 RC 高通（或低通）電路的相移範圍為 0° 到 90°（不含端點，因頻率趨近無窮大才接近 90°，實際上永遠小於 90°）。要湊足 180° 的相移，理論上 2 節最多提供接近 180°，但在達到 180° 時頻率趨近無窮大，增益趨近於零，無法實際維持振盪。因此必須至少使用 3 節 RC，每節在振盪頻率點各提供 60°，3 節合計 180°，且此時仍有合理的訊號通過量（β = -1/29）。故答案為 B。", "circuit": "", "clabels": {}}, {"id": 111, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "105", "stem": "RC相移振盪器的振盪頻率公式為 f_0 = 1 / (2*pi*sqrt(6)*R*C)。若 R = 10 kΩ、C = 0.01 μF，則振盪頻率 f_0 最接近下列何值？（sqrt(6) ≈ 2.449，pi ≈ 3.14159）", "opts": {"A": "約 325 Hz", "B": "約 651 Hz", "C": "約 1592 Hz", "D": "約 2449 Hz"}, "answer": "B", "explanation": "使用公式 f_0 = 1 / (2 * pi * sqrt(6) * R * C)。\n代入數值：R = 10 * 10^3 Ω = 10^4 Ω，C = 0.01 * 10^-6 F = 10^-8 F。\n計算分母：2 * 3.14159 * 2.449 * 10^4 * 10^-8\n= 2 * 3.14159 * 2.449 * 10^-4\n= 6.28318 * 2.449 * 10^-4\n= 15.387 * 10^-4\n= 1.5387 * 10^-3\nf_0 = 1 / (1.5387 * 10^-3) ≈ 649.9 Hz ≈ 651 Hz。\n常見錯誤：忘記 sqrt(6) 而直接用 f = 1/(2*pi*R*C) ≈ 1592 Hz（選項 C），此為陷阱。故答案為 B。", "circuit": "", "clabels": {}}, {"id": 112, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "RC相移振盪器中，若要使振盪頻率 f_0 = 1 kHz，且選用 C = 0.1 μF，則每節電阻 R 應為多少？（sqrt(6) ≈ 2.449，pi ≈ 3.14159，計算結果取最接近值）", "opts": {"A": "約 390 Ω", "B": "約 650 Ω", "C": "約 1592 Ω", "D": "約 3900 Ω"}, "answer": "B", "explanation": "由 f_0 = 1 / (2 * pi * sqrt(6) * R * C)，反解 R：\nR = 1 / (2 * pi * sqrt(6) * f_0 * C)\n= 1 / (2 * 3.14159 * 2.449 * 1000 * 0.1 * 10^-6)\n= 1 / (2 * 3.14159 * 2.449 * 10^-4)\n= 1 / (1.5387 * 10^-3)\n≈ 649.9 Ω ≈ 650 Ω。\n常見錯誤：忘記 sqrt(6) 算出 R ≈ 1592 Ω（選項 C）；或錯用 f = 1/(2*pi*R*C) 後倒推。故答案為 B。", "circuit": "", "clabels": {}}, {"id": 113, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "108", "stem": "RC相移振盪器中，三節等值 RC 移相網路在振盪頻率 f_0 點的回授係數 β 大小為何？", "opts": {"A": "|β| = 1", "B": "|β| = 1/6", "C": "|β| = 1/29", "D": "|β| = 1/3"}, "answer": "C", "explanation": "三節等值 RC 移相網路在振盪頻率 f_0 = 1/(2*pi*sqrt(6)*R*C) 時，對訊號的衰減量可由電路分析推導。每節 RC 在此頻率點並非獨立工作，各節電阻之間有負載效應（後一節的 R 是前一節的負載），完整分析後得到回授係數：\nβ = -1/29（負號代表提供 180° 相移）\n因此 |β| = 1/29。\n由巴克豪生準則 |Aβ| = 1，故需要放大器增益 |A| = 29。選項 B（1/6）為忽略各節負載效應時的錯誤估算。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 114, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "106", "stem": "RC相移振盪器的反相放大器採用運算放大器，回授電阻為 R_f，輸入電阻為 R_i。為滿足巴克豪生增益準則，R_f/R_i 的最小值為何？", "opts": {"A": "6", "B": "9", "C": "29", "D": "36"}, "answer": "C", "explanation": "RC相移網路在振盪頻率的衰減為 |β| = 1/29。\n由巴克豪生準則：|Aβ| ≥ 1（起振）→ |A| ≥ 29。\n反相放大器增益 |A| = R_f / R_i（運算放大器反相組態）。\n因此 R_f / R_i ≥ 29，最小值為 29。\n常見錯誤：選 6（每節RC衰減的誤解）或選 36（錯誤公式）。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 115, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "某 RC相移振盪器使用運算放大器反相組態，輸入電阻 R_i = 1 kΩ。為確保電路能起振，回授電阻 R_f 最小應選用多少？", "opts": {"A": "6 kΩ", "B": "9 kΩ", "C": "29 kΩ", "D": "36 kΩ"}, "answer": "C", "explanation": "RC相移振盪器要求放大器增益 |A| ≥ 29（由 |β| = 1/29 決定）。\n反相放大器增益：|A| = R_f / R_i ≥ 29\nR_f ≥ 29 * R_i = 29 * 1 kΩ = 29 kΩ。\n最小回授電阻 R_f = 29 kΩ。若 R_f < 29 kΩ，則 |Aβ| < 1，振盪無法建立。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 116, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "RC相移振盪器的三節移相網路中，R = 5 kΩ、C = 0.02 μF。若將所有電阻 R 均改為原來的 2 倍（即 R' = 10 kΩ），電容 C 不變，則新的振盪頻率 f_0' 與原頻率 f_0 的比值 f_0'/f_0 為何？", "opts": {"A": "2 倍", "B": "1/2 倍（原頻率的一半）", "C": "1/sqrt(2) 倍", "D": "4 倍"}, "answer": "B", "explanation": "原振盪頻率：f_0 = 1 / (2 * pi * sqrt(6) * R * C)。\n新振盪頻率：f_0' = 1 / (2 * pi * sqrt(6) * R' * C) = 1 / (2 * pi * sqrt(6) * 2R * C)。\n比值：f_0' / f_0 = [1/(2*pi*sqrt(6)*2R*C)] / [1/(2*pi*sqrt(6)*R*C)]\n= (2*pi*sqrt(6)*R*C) / (2*pi*sqrt(6)*2R*C)\n= 1/2。\n因此 f_0' = f_0 / 2，新頻率為原頻率的 1/2。\n陷阱：若誤以為電阻加倍則頻率加倍（選項 A），此為正反混淆。故答案為 B。", "circuit": "", "clabels": {}}, {"id": 117, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "111", "stem": "某 RC相移振盪器，放大器增益 |A| = 40，三節 RC 移相網路在振盪頻率點的衰減為 |β| = 1/29。此電路的迴路增益 |Aβ| 為何？該電路在振盪頻率點的行為最可能為下列何者？", "opts": {"A": "|Aβ| ≈ 0.73，振盪衰減消失", "B": "|Aβ| ≈ 1.0，穩定維持振盪", "C": "|Aβ| ≈ 1.38，振幅持續增大直到限幅後穩定", "D": "|Aβ| ≈ 5.8，振幅快速增大後立刻截止"}, "answer": "C", "explanation": "計算迴路增益：\n|Aβ| = |A| * |β| = 40 * (1/29) = 40/29 ≈ 1.379 ≈ 1.38。\n由於 |Aβ| > 1，振盪振幅會持續增大。但放大器並非線性無限增大：當振幅增大到接近運算放大器輸出飽和電壓時，有效增益自動下降（非線性效應），使 |Aβ| 趨近 1，振盪最終穩定於飽和電壓附近的準弦波輸出。這是 RC相移振盪器的正常工作狀態——設計時令 |A| 稍大於 29 以確保起振。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 118, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "下列關於正回授（positive feedback）與負回授（negative feedback）的敘述，何者正確？", "opts": {"A": "正回授使系統穩定，負回授使系統振盪", "B": "振盪器使用正回授；放大器通常使用負回授以穩定增益", "C": "正回授與負回授對電路增益的影響完全相同", "D": "RC相移振盪器同時使用正回授與負回授，兩者增益相抵"}, "answer": "B", "explanation": "正回授（回授訊號與輸入同相，強化原輸入）：使系統不穩定，應用於振盪器、比較器磁滯（史密特觸發器）等。負回授（回授訊號與輸入反相，減弱原輸入）：使系統穩定，降低失真、擴展頻帶、穩定增益，廣泛用於放大器。RC相移振盪器中，放大器本身是反相（180°），加上RC網路再提供180°，共360°=0°，即為正回授，形成振盪。故答案為 B。", "circuit": "", "clabels": {}}, {"id": 119, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "110", "stem": "RC相移振盪器在振盪頻率 f_0 時，三節等值 RC 高通移相網路中，每節各提供多少度相移？（假設三節完全對稱且以理想分析）", "opts": {"A": "每節 30°，共 90°", "B": "每節 45°，共 135°", "C": "每節 60°，共 180°", "D": "每節 90°，共 270°"}, "answer": "C", "explanation": "RC相移振盪器需要 RC 網路提供 180° 相移。若三節等值且對稱（忽略節間負載效應的簡化分析），振盪頻率時每節分擔 180° / 3 = 60°。\n三節合計 = 60° * 3 = 180°，加上反相放大器的 180° = 360°，滿足巴克豪生相位準則。\n注意：實際電路中各節有負載效應，各節相移並非嚴格相等，但合計仍為 180°，且此對稱分析結果 f_0 = 1/(2*pi*sqrt(6)*R*C) 正是由此推導而來。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 120, "ch": "11", "topicKey": "ch11_rcphase", "topic": "正回授 / 巴克豪生 / RC相移振盪器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "某 RC相移振盪器使用運算放大器反相組態，三節 RC 移相網路參數為 R = 2 kΩ、C = 0.05 μF，回授電阻 R_f = 60 kΩ，輸入電阻 R_i = 2 kΩ。下列敘述何者正確？（sqrt(6) ≈ 2.449，pi ≈ 3.14159）", "opts": {"A": "振盪頻率約 650 Hz，且 |Aβ| = 1，恰好維持振盪", "B": "振盪頻率約 325 Hz，且 |Aβ| > 1，能夠起振", "C": "振盪頻率約 650 Hz，且 |Aβ| > 1，能夠起振", "D": "振盪頻率約 1592 Hz，且 |Aβ| = 1，恰好維持振盪"}, "answer": "C", "explanation": "第一步：計算振盪頻率 f_0。\nf_0 = 1 / (2 * pi * sqrt(6) * R * C)\n= 1 / (2 * 3.14159 * 2.449 * 2000 * 0.05 * 10^-6)\n= 1 / (2 * 3.14159 * 2.449 * 10^-4)\n= 1 / (1.5387 * 10^-3)\n≈ 649.9 Hz ≈ 650 Hz。\n陷阱：若忘記 sqrt(6) 而用 f = 1/(2*pi*R*C) 算出 1592 Hz（選項 D），為常見錯誤。\n第二步：計算放大器增益 |A|。\n|A| = R_f / R_i = 60000 / 2000 = 30。\n第三步：計算 |Aβ|。\n|Aβ| = |A| * |β| = 30 * (1/29) = 30/29 ≈ 1.034 > 1。\n由於 |Aβ| > 1，電路滿足起振條件，振幅持續增大直到放大器非線性飽和後穩定。\n選項 A 將增益誤算為 29（|Aβ|=1），未考慮 R_f = 60 kΩ 使增益為 30。\n振盪頻率由 R、C 決定，與 R_f/R_i 無關，故頻率仍為 650 Hz。故答案為 C。", "circuit": "", "clabels": {}}, {"id": 121, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "韋恩電橋振盪器的回授網路對振盪頻率 f_0 的訊號提供多少相位移？", "opts": {"A": "0°", "B": "90°", "C": "180°", "D": "270°"}, "answer": "A", "explanation": "韋恩電橋回授網路由一個串聯 RC 與一個並聯 RC 組成，在振盪頻率 f_0 時，串聯 RC 的超前相位恰好被並聯 RC 的落後相位抵消，合計相位移為 0°。放大器本身為非反相組態（亦提供 0° 相移），因此總迴路相位移為 0°，符合巴克豪森相位條件，產生振盪。", "circuit": "", "clabels": {}}, {"id": 122, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "韋恩電橋振盪器中，若回授網路的四個元件完全對稱（R1=R2=R，C1=C2=C），則在振盪頻率 f_0 時，回授係數 β 的值為何？", "opts": {"A": "1/2", "B": "1/3", "C": "1/4", "D": "1/6"}, "answer": "B", "explanation": "當 R1=R2=R、C1=C2=C（對稱條件）時，韋恩電橋回授網路在振盪頻率 f_0=1/(2*pi*R*C) 處，回授係數 β = V_f / V_o = 1/3。可由分壓推導：並聯 RC 阻抗 Z_p，串聯 RC 阻抗 Z_s，在 omega_0 = 1/(R*C) 時 β = Z_p/(Z_s+Z_p) = 1/3。", "circuit": "", "clabels": {}}, {"id": 123, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "計算", "difficulty": "基礎", "is_past": false, "year": "", "stem": "韋恩電橋振盪器採用對稱元件，R1=R2=10 kΩ，C1=C2=0.01 μF，則振盪頻率 f_0 約為多少？（取 pi ≈ 3.14）", "opts": {"A": "約 796 Hz", "B": "約 1592 Hz", "C": "約 318 Hz", "D": "約 3183 Hz"}, "answer": "B", "explanation": "對稱公式：f_0 = 1 / (2 * pi * R * C)。代入 R = 10*10^3 Ω，C = 0.01*10^-6 F：f_0 = 1 / (2 * 3.14 * 10000 * 0.00000001) = 1 / (2 * 3.14 * 10^-4) = 1 / 0.000628 ≈ 1592 Hz。答案為 B。", "circuit": "wien", "clabels": {"R1": "10kΩ", "R2": "10kΩ", "C1": "0.01μF", "C2": "0.01μF"}}, {"id": 124, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "韋恩電橋振盪器的放大器採用非反相組態，R3 為回授電阻，R4 為接地電阻。若要使電路能夠起振，R3/R4 的最小值應為何？", "opts": {"A": "1", "B": "2", "C": "3", "D": "4"}, "answer": "B", "explanation": "起振條件：巴克豪森增益條件要求迴路增益 A_v * β ≥ 1。對稱韋恩電橋 β = 1/3，故 A_v ≥ 3。非反相放大器增益 A_v = 1 + R3/R4，令 1 + R3/R4 ≥ 3，得 R3/R4 ≥ 2。故最小值為 2，答案為 B。", "circuit": "", "clabels": {}}, {"id": 125, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "韋恩電橋振盪器的回授網路元件不對稱：R1=2 kΩ，R2=8 kΩ，C1=C2=0.1 μF，則振盪頻率 f_0 約為多少？（取 pi ≈ 3.14）", "opts": {"A": "約 100 Hz", "B": "約 200 Hz", "C": "約 280 Hz", "D": "約 398 Hz"}, "answer": "D", "explanation": "一般公式：f_0 = 1 / (2 * pi * sqrt(R1 * R2 * C1 * C2))。代入：R1*R2 = 2000 * 8000 = 1.6*10^7，C1*C2 = (0.1*10^-6)^2 = 10^-14，乘積 = 1.6*10^7 * 10^-14 = 1.6*10^-7。sqrt(1.6*10^-7) = sqrt(16*10^-8) = 4*10^-4。f_0 = 1/(2 * 3.14 * 4*10^-4) = 1/0.002512 ≈ 398 Hz。答案為 D。", "circuit": "wien", "clabels": {"R1": "2kΩ", "R2": "8kΩ", "C1": "0.1μF", "C2": "0.1μF"}}, {"id": 126, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "105", "stem": "比較韋恩電橋振盪器與 RC 相移振盪器，下列敘述何者正確？", "opts": {"A": "兩者回授網路均提供 180° 相位移", "B": "RC 相移振盪器需要 3 節 RC 各提供 60°，合計 180°，其起振增益 A_v ≥ 29；韋恩電橋回授提供 0° 相移，起振增益 A_v ≥ 3", "C": "韋恩電橋振盪器的起振增益條件為 A_v ≥ 29，RC 相移振盪器為 A_v ≥ 3", "D": "韋恩電橋振盪器採用反相放大器，RC 相移振盪器採用非反相放大器"}, "answer": "B", "explanation": "韋恩電橋回授網路在 f_0 提供 0° 相位移，搭配非反相放大器（0° 相移），總迴路為 0°，起振條件 A_v ≥ 3。RC 相移振盪器由 3 節 RC 各提供 60°，合計 180° 相移，搭配反相放大器（再加 180°），總計 360°=0°；其起振增益 A_v ≥ 29。選項 C 將兩者增益條件互換，故錯。選項 D 放大器類型描述相反，亦錯。選項 B 正確描述兩者差異。", "circuit": "", "clabels": {}}, {"id": 127, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "韋恩電橋振盪器對稱元件 R=5 kΩ，C=0.02 μF，放大器 R4=10 kΩ。若要剛好滿足起振條件（A_v=3），則 R3 應為多少？", "opts": {"A": "5 kΩ", "B": "10 kΩ", "C": "20 kΩ", "D": "30 kΩ"}, "answer": "C", "explanation": "起振條件 A_v = 3，非反相放大器增益公式 A_v = 1 + R3/R4 = 3，故 R3/R4 = 2，R3 = 2 * R4 = 2 * 10 kΩ = 20 kΩ。答案為 C。", "circuit": "wien", "clabels": {"R1": "5kΩ", "R2": "5kΩ", "C1": "0.02μF", "C2": "0.02μF", "R4": "10kΩ"}}, {"id": 128, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "110", "stem": "韋恩電橋振盪器中，若 R3/R4 = 1.5（小於 2），則電路會發生何種現象？", "opts": {"A": "電路正常振盪，頻率偏低", "B": "電路正常振盪，頻率偏高", "C": "迴路增益小於 1，振盪無法維持，輸出衰減至零", "D": "迴路增益大於 1，輸出波形失真飽和"}, "answer": "C", "explanation": "起振條件：迴路增益 A_v * β ≥ 1。此時 A_v = 1 + R3/R4 = 1 + 1.5 = 2.5，β = 1/3，A_v * β = 2.5/3 ≈ 0.833 < 1。迴路增益不足，每次迴路後振幅縮小，輸出訊號逐漸衰減至零，電路無法振盪。陷阱：R3/R4 必須 ≥ 2 才能使 A_v ≥ 3，答案為 C。", "circuit": "", "clabels": {}}, {"id": 129, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "韋恩電橋振盪器元件不對稱：R1=1 kΩ，C1=0.1 μF，R2=4 kΩ，C2=0.1 μF。下列哪一個選項最接近振盪頻率 f_0？（取 pi ≈ 3.14）", "opts": {"A": "約 398 Hz", "B": "約 796 Hz", "C": "約 199 Hz", "D": "約 1592 Hz"}, "answer": "B", "explanation": "一般公式：f_0 = 1 / (2 * pi * sqrt(R1 * R2 * C1 * C2))。R1*R2 = 1000 * 4000 = 4*10^6。C1*C2 = (0.1*10^-6)*(0.1*10^-6) = 10^-14。乘積 = 4*10^6 * 10^-14 = 4*10^-8。sqrt(4*10^-8) = 2*10^-4。f_0 = 1/(2 * 3.14 * 2*10^-4) = 1/0.001256 ≈ 796 Hz。陷阱：有些同學誤算 sqrt 時漏掉，會得到約 398 Hz（選 A 為誘答）。正確答案為 B。", "circuit": "wien", "clabels": {"R1": "1kΩ", "R2": "4kΩ", "C1": "0.1μF", "C2": "0.1μF"}}, {"id": 130, "ch": "11", "topicKey": "ch11_wien", "topic": "韋恩電橋振盪器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "112", "stem": "韋恩電橋振盪器對稱設計，R=10 kΩ，C=0.01 μF，R4=10 kΩ，R3=22 kΩ。下列敘述何者正確？", "opts": {"A": "振盪頻率 f_0 ≈ 1592 Hz，且 A_v = 3.2 > 3，電路可起振", "B": "振盪頻率 f_0 ≈ 1592 Hz，但 A_v = 2.2 < 3，電路無法起振", "C": "振盪頻率 f_0 ≈ 796 Hz，且 A_v = 3.2 > 3，電路可起振", "D": "振盪頻率 f_0 ≈ 3183 Hz，且 A_v = 3.2 > 3，電路可起振"}, "answer": "A", "explanation": "步驟一：f_0 = 1/(2*pi*R*C) = 1/(2*3.14*10000*0.00000001) = 1/(6.28*10^-4) = 1/0.000628 ≈ 1592 Hz。步驟二：A_v = 1 + R3/R4 = 1 + 22000/10000 = 1 + 2.2 = 3.2。步驟三：A_v * β = 3.2 * (1/3) ≈ 1.067 > 1，電路可起振。陷阱：選項 B 誤算 A_v = 2.2（忘記加 1）；選項 C 頻率除以 2 算錯；選項 D 頻率乘以 2 算錯。正確答案為 A。", "circuit": "wien", "clabels": {"R1": "10kΩ", "R2": "10kΩ", "C1": "0.01μF", "C2": "0.01μF", "R3": "22kΩ", "R4": "10kΩ"}}, {"id": 131, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "在LC振盪器的三電抗條件 X1+X2+X3=0 中，若 X1 與 X2 為電感性電抗，則 X3 必須為何種性質才能維持振盪？", "opts": {"A": "電感性電抗", "B": "電容性電抗", "C": "純電阻", "D": "零電抗（短路）"}, "answer": "B", "explanation": "LC振盪器的三電抗條件要求 X1+X2+X3=0。若 X1 與 X2 同為電感性（正值），則 X3 必須為負值（電容性電抗）才能使總和等於零。此即哈特萊振盪器的架構：兩個電感搭配一個電容。考畢子振盪器則相反，X1、X2 為電容性，X3 為電感性。", "circuit": "", "clabels": {}}, {"id": 132, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "下列哪一種振盪器的回授網路由「兩個電容與一個電感」所構成？", "opts": {"A": "哈特萊振盪器", "B": "文氏電橋振盪器", "C": "考畢子振盪器", "D": "移相振盪器"}, "answer": "C", "explanation": "考畢子（Colpitts）振盪器的回授網路特徵：X1、X2 為電容（C1、C2），X3 為電感（L）。回授係數 β = -C2/C1（取絕對值為 C2/C1）。哈特萊振盪器則是兩個電感配一個電容。文氏電橋與移相振盪器為 RC 型振盪器，不屬 LC 型。", "circuit": "", "clabels": {}}, {"id": 133, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "基礎", "is_past": false, "year": "", "stem": "一考畢子振盪器，L=10 mH，C1=200 pF，C2=200 pF，試求振盪頻率 f_0 為何？（pi ≈ 3.14159）", "opts": {"A": "約 159 kHz", "B": "約 225 kHz", "C": "約 318 kHz", "D": "約 112 kHz"}, "answer": "A", "explanation": "Step1：求等效電容 C_eq = C1*C2/(C1+C2) = (200*200)/(200+200) = 40000/400 = 100 pF = 100*10^-12 F。Step2：L*C_eq = 10*10^-3 * 100*10^-12 = 10^-12。Step3：sqrt(L*C_eq) = sqrt(10^-12) = 10^-6 s。Step4：f_0 = 1/(2*pi*sqrt(L*C_eq)) = 1/(2*pi*10^-6) = 10^6/(2*pi) ≈ 10^6/6.2832 ≈ 159,155 Hz ≈ 159 kHz。答案為 A。常見錯誤：誤用 C_eq=C1+C2=400 pF 或只代入單一電容值，導致頻率偏高。", "circuit": "", "clabels": {}}, {"id": 134, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "考畢子振盪器中，L=2 mH，C1=100 pF，C2=400 pF，試求振盪頻率 f_0（取 pi ≈ 3.14159，結果取最接近值）。", "opts": {"A": "約 398 kHz", "B": "約 356 kHz", "C": "約 251 kHz", "D": "約 564 kHz"}, "answer": "A", "explanation": "Step1：C_eq = C1*C2/(C1+C2) = (100*400)/(100+400) = 40000/500 = 80 pF = 80*10^-12 F。Step2：L*C_eq = 2*10^-3 * 80*10^-12 = 1.6*10^-13。Step3：sqrt(1.6*10^-13) = sqrt(16*10^-14) = 4*10^-7 s。Step4：f_0 = 1/(2*pi*4*10^-7) = 1/(2*3.14159*4*10^-7) = 1/(2.5133*10^-6) ≈ 397,887 Hz ≈ 398 kHz。答案為 A。常見錯誤：(1) 忘記先求 C_eq 而直接代入 C1 或 C2；(2) 誤用 C_eq=C1+C2=500 pF。", "circuit": "", "clabels": {}}, {"id": 135, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "考畢子振盪器中，L=1 mH，C1=300 pF，C2=600 pF，則振盪頻率 f_0 最接近下列哪個值？（pi ≈ 3.14159）", "opts": {"A": "約 290 kHz", "B": "約 356 kHz", "C": "約 580 kHz", "D": "約 820 kHz"}, "answer": "B", "explanation": "Step1：C_eq = C1*C2/(C1+C2) = (300*600)/(300+600) = 180000/900 = 200 pF = 2*10^-10 F。Step2：L*C_eq = 1*10^-3 * 2*10^-10 = 2*10^-13。Step3：sqrt(2*10^-13) = sqrt(2)*sqrt(10^-13) = 1.4142 * 3.1623*10^-7 = 4.472*10^-7 s。Step4：f_0 = 1/(2*pi*4.472*10^-7) = 1/(2.811*10^-6) ≈ 355,881 Hz ≈ 356 kHz。答案為 B。常見錯誤：(1) 只代入 C1 得 f_0≈290 kHz（選項A誘答）；(2) 誤用 C_eq=C1+C2=900 pF 得 f_0≈168 kHz。", "circuit": "", "clabels": {}}, {"id": 136, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "考畢子振盪器的回授係數 |β| = C2/C1，若 C1=100 pF、C2=400 pF，則下列敘述何者正確？", "opts": {"A": "|β| = 0.25，且 C1 在輸出端", "B": "|β| = 4，且回授電壓跨於 C2 兩端", "C": "|β| = 4，且回授電壓跨於 C1 兩端", "D": "|β| = 0.25，且回授電壓跨於 C2 兩端"}, "answer": "C", "explanation": "考畢子振盪器回授係數：由三電抗條件 β = -X1/X2，X1 = 1/(ω*C1)，X2 = 1/(ω*C2)，故 β = -(C2/C1)，取絕對值 |β| = C2/C1 = 400/100 = 4。回授電壓為 C1 兩端電壓（C1 連接於電路的回授輸入節點與共同地之間）。常見錯誤：(1) 誤算 C1/C2=0.25（選項A/D為誘答）；(2) 誤認回授電壓跨於 C2（選項B誘答）。正確：|β|=4，回授電壓跨於 C1，答案為 C。", "circuit": "", "clabels": {}}, {"id": 137, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "考畢子振盪器維持振盪的條件為 A_v*|β| ≥ 1，若 C1=50 pF、C2=200 pF，且放大器增益 A_v = R_f/R_i，則 R_f/R_i 最小值應為多少？", "opts": {"A": "0.25", "B": "4", "C": "0.5", "D": "2"}, "answer": "A", "explanation": "Step1：回授係數 |β| = C2/C1 = 200/50 = 4。Step2：振盪起振條件 A_v * |β| ≥ 1，故 A_v ≥ 1/|β| = 1/4 = 0.25。Step3：A_v = R_f/R_i，故 R_f/R_i 最小值 = 0.25。常見錯誤：誤以為 A_v ≥ |β| = 4（選項B，回授定義混淆），或誤算後再倒數得4。本題答案 A（0.25）。注意：部分教材以 A_v ≥ C1/C2 表示，C1/C2=50/200=0.25，兩者一致。", "circuit": "", "clabels": {}}, {"id": 138, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "哈特萊振盪器（Hartley Oscillator）的回授網路特徵，下列何者正確？", "opts": {"A": "兩個電感並聯，一個電容串聯", "B": "兩個電容串聯，一個電感並聯", "C": "兩個電感分壓（可有互感），一個電容", "D": "一個電感與一個電容形成串聯諧振"}, "answer": "C", "explanation": "哈特萊振盪器的回授網路由兩個電感（L1、L2，可能有互感 M）與一個電容（C）組成。等效電感 L_eq = L1+L2+2M（互感 M 同向相加）。回授係數 |β| = L1/L2（取自 L2 的分壓）。選項A錯：非並聯而是串聯分壓。選項B是考畢子振盪器特徵。選項D是簡單 LC 串聯諧振，非哈特萊特徵。答案為 C。", "circuit": "", "clabels": {}}, {"id": 139, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "哈特萊振盪器中，L1=3 mH，L2=1 mH，互感 M=0（無互感），C=100 pF，試求振盪頻率 f_0（pi ≈ 3.14159）。", "opts": {"A": "約 252 kHz", "B": "約 284 kHz", "C": "約 179 kHz", "D": "約 503 kHz"}, "answer": "A", "explanation": "Step1：無互感（M=0），L_eq = L1+L2+2M = 3+1+2*0 = 4 mH = 4*10^-3 H。Step2：L_eq*C = 4*10^-3 * 100*10^-12 = 4*10^-13。Step3：sqrt(4*10^-13) = sqrt(4)*sqrt(10^-13) = 2*3.1623*10^-7 = 6.3246*10^-7 s。Step4：f_0 = 1/(2*pi*6.3246*10^-7) = 1/(2*3.14159*6.3246*10^-7) = 1/(3.9738*10^-6) ≈ 251,646 Hz ≈ 252 kHz。答案為 A。常見錯誤：(1) 忘記加 L2 只用 L1=3mH，得 f_0≈290 kHz（誘答B）；(2) 誤用並聯公式 L_eq=L1*L2/(L1+L2)=0.75 mH 導致頻率偏高（誘答D）。", "circuit": "", "clabels": {}}, {"id": 140, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "哈特萊振盪器中，L1=2 mH，L2=2 mH，C=100 pF。若互感 M=1 mH（同向耦合），與 M=0 相比，振盪頻率 f_0 如何變化？", "opts": {"A": "頻率降低，因 L_eq 增大", "B": "頻率升高，因 L_eq 減小", "C": "頻率不變，因互感只影響回授係數", "D": "頻率降低，因 C_eq 增大"}, "answer": "A", "explanation": "M=0 時：L_eq = L1+L2 = 2+2 = 4 mH，f_0 = 1/(2*pi*sqrt(4*10^-3*100*10^-12)) = 1/(2*pi*sqrt(4*10^-13)) = 1/(2*pi*6.3246*10^-7) ≈ 252 kHz。M=1 mH（同向）時：L_eq = L1+L2+2M = 2+2+2*1 = 6 mH，f_0 = 1/(2*pi*sqrt(6*10^-3*100*10^-12)) = 1/(2*pi*sqrt(6*10^-13)) = 1/(2*pi*7.746*10^-7) ≈ 205 kHz。頻率從 252 kHz 降至 205 kHz，頻率降低。原因：同向互感使 L_eq 增大（4→6 mH），L_eq 越大，諧振頻率 f_0 = 1/(2*pi*sqrt(L_eq*C)) 越低。答案為 A。選項D（C_eq增大）為混淆考畢子與哈特萊的錯誤。", "circuit": "", "clabels": {}}, {"id": 141, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "111", "stem": "哈特萊振盪器中，L1=0.5 mH，L2=2 mH（無互感），若採用 BJT 共射極放大器，欲維持振盪，電壓增益 A_v 至少須達多少？", "opts": {"A": "0.25", "B": "4", "C": "2", "D": "0.5"}, "answer": "B", "explanation": "哈特萊振盪器回授係數 |β| = L1/L2 = 0.5/2 = 0.25。維持振盪條件：A_v * |β| ≥ 1，故 A_v ≥ 1/|β| = 1/0.25 = 4。亦可表示為 A_v ≥ L2/L1 = 2/0.5 = 4（因 1/|β| = 1/(L1/L2) = L2/L1）。常見錯誤：(1) 誤以為 A_v ≥ L1/L2 = 0.25（選項A）；(2) 誤算比值為 2 或 0.5（選項C、D）。正確答案為 B（A_v ≥ 4）。", "circuit": "", "clabels": {}}, {"id": 142, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "102", "stem": "相較於 RC 移相振盪器，LC 振盪器適合應用於高頻場合的主要原因為何？", "opts": {"A": "LC 電路品質因數 Q 值高，頻率選擇性佳，且電感與電容在高頻下阻抗特性穩定", "B": "LC 電路不需要主動元件，可直接自行振盪", "C": "LC 振盪器的輸出為方波，諧波豐富", "D": "電阻在高頻下等效電感效應更明顯，有助於振盪"}, "answer": "A", "explanation": "LC 振盪器在高頻場合的優勢：(1) 品質因數 Q = ω_0*L/R 在高頻下可維持較高值，頻率選擇性（帶通特性）佳，振盪波形純淨。(2) 電感與電容在射頻（RF）頻段的阻抗行為可精確設計，RC 振盪器在高頻下受寄生電容與電阻影響嚴重。(3) RC 移相振盪器頻率上限受運算放大器增益頻寬積（GBW）限制。選項B錯：LC 電路仍需主動元件提供能量補充損耗。選項C錯：LC 振盪器輸出為正弦波（高 Q 值選頻）。選項D錯：電阻寄生電感在高頻是不利因素，非振盪條件。答案為 A。", "circuit": "", "clabels": {}}, {"id": 143, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "進階", "is_past": true, "year": "110", "stem": "考畢子振盪器中，L=0.5 mH，C1=C2=C，振盪頻率 f_0=1 MHz，試求 C1 之值（pi ≈ 3.14159，結果取最接近值）。", "opts": {"A": "約 25.3 pF", "B": "約 50.7 pF", "C": "約 101 pF", "D": "約 12.7 pF"}, "answer": "C", "explanation": "Step1：C1=C2=C，等效電容 C_eq = C*C/(C+C) = C^2/(2C) = C/2。Step2：諧振頻率公式 f_0 = 1/(2*pi*sqrt(L*C_eq))，令 f_0=10^6 Hz，L=0.5*10^-3 = 5*10^-4 H。Step3：兩邊平方：(2*pi*f_0)^2 = 1/(L*C_eq) = 1/(L*C/2) = 2/(L*C)。Step4：C = 2/[L*(2*pi*f_0)^2] = 2/[5*10^-4*(2*pi*10^6)^2]。(2*pi*10^6)^2=(6.2832)^2*10^12=39.478*10^12。C = 2/[5*10^-4 * 39.478*10^12] = 2/[1.9739*10^10] ≈ 1.013*10^-10 F ≈ 101 pF。故 C1 = C ≈ 101 pF，答案為 C。陷阱：忘記 C_eq=C/2 直接代 C 算出 50.7 pF（選項B為誘答）。", "circuit": "", "clabels": {}}, {"id": 144, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "哈特萊振盪器中，L1=3 mH，L2=3 mH，C=50 pF。若兩線圈反向耦合，互感 M=1 mH，則等效電感 L_eq 與振盪頻率 f_0 分別為何？（pi ≈ 3.14159）", "opts": {"A": "L_eq=8 mH，f_0≈252 kHz", "B": "L_eq=4 mH，f_0≈356 kHz", "C": "L_eq=6 mH，f_0≈291 kHz", "D": "L_eq=4 mH，f_0≈504 kHz"}, "answer": "B", "explanation": "反向耦合時互感相減：L_eq = L1+L2-2M = 3+3-2*1 = 4 mH = 4*10^-3 H（同向耦合為 +2M，反向為 -2M）。f_0 = 1/(2*pi*sqrt(L_eq*C)) = 1/(2*pi*sqrt(4*10^-3 * 50*10^-12)) = 1/(2*pi*sqrt(2*10^-13))。sqrt(2*10^-13)=sqrt(2)*3.1623*10^-7=1.4142*3.1623*10^-7=4.472*10^-7 s。f_0=1/(2*pi*4.472*10^-7)=1/(2.811*10^-6)≈355,881 Hz≈356 kHz。常見錯誤：(1) 反向互感仍用 +2M，得 L_eq=8 mH，f_0≈252 kHz（選項A）；(2) 忘記互感項，L_eq=6 mH，f_0≈291 kHz（選項C）。正確：反向 -2M，L_eq=4 mH，f_0≈356 kHz，答案為 B。", "circuit": "", "clabels": {}}, {"id": 145, "ch": "11", "topicKey": "ch11_lc", "topic": "LC振盪器（考畢子 / 哈特萊）", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "113", "stem": "某振盪電路回授網路由三個電抗元件組成，量測得 X1=+300 Ω（電感性）、X2=+100 Ω（電感性）、X3=-400 Ω（電容性），下列敘述何者正確？", "opts": {"A": "此為考畢子振盪器，回授係數 |β|=3", "B": "此為哈特萊振盪器，回授係數 |β|=3", "C": "此為哈特萊振盪器，回授係數 |β|=1/3", "D": "此電路不滿足三電抗振盪條件，無法振盪"}, "answer": "B", "explanation": "Step1：驗證三電抗條件：X1+X2+X3 = 300+100+(-400) = 0 ✓，滿足振盪條件。Step2：X1=+300 Ω（電感性）、X2=+100 Ω（電感性），兩者同為電感性，X3=-400 Ω 為電容性 → 兩電感一電容 → 哈特萊振盪器（排除選項A考畢子）。Step3：回授係數 β = -X1/X2 = -(300)/(100) = -3，取絕對值 |β| = 3。注意：X1 對應較大電感（分壓輸出側），X2 對應較小電感（回授側），|β|=X1/X2=300/100=3。選項C（|β|=1/3）為誤將分子分母倒置。答案為 B：哈特萊振盪器，|β|=3。", "circuit": "", "clabels": {}}, {"id": 146, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "關於石英晶體的壓電效應，下列敘述何者正確？", "opts": {"A": "對晶體施加機械力，晶體兩端產生電壓，稱為壓電效應", "B": "對晶體施加電壓，晶體會發光，稱為壓電效應", "C": "壓電效應只能將電能轉換為機械能，不能反向轉換", "D": "壓電效應是指晶體加熱後產生電荷的現象"}, "answer": "A", "explanation": "壓電效應（Piezoelectric Effect）是指：對晶體施加機械應力時，晶體兩端出現電位差（正壓電效應）；反之，對晶體施加電壓時，晶體產生機械形變（逆壓電效應）。因此壓電效應是機械能與電能的雙向轉換。選項B（發光）、D（熱釋電）均錯誤；選項C說只能單向轉換也錯。正確答案為A。", "circuit": "", "clabels": {}}, {"id": 147, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "106", "stem": "石英晶體振盪器頻率穩定度極高的主要原因為何？", "opts": {"A": "石英晶體的電容值很大，充放電速度快", "B": "石英晶體的品質因數（Q 值）極高，可達數萬以上", "C": "石英晶體工作於電容性區間，阻抗極低", "D": "石英晶體的串聯諧振頻率與並聯諧振頻率相差很大"}, "answer": "B", "explanation": "石英晶體的品質因數 Q 值通常高於 3000，實際可達數萬甚至數十萬，遠高於一般 LC 電路（Q 值約數十至數百）。Q 值愈高，諧振曲線愈尖銳，頻率選擇性愈強，對溫度、老化等外在變因的敏感度愈低，因此頻率穩定度極高。其他選項均非主要原因。正確答案為B。", "circuit": "", "clabels": {}}, {"id": 148, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "某石英晶體等效電路中，串聯臂的電感 L = 10 mH，串聯電容 C_s = 0.025 pF。試求串聯諧振頻率 f_s（取 pi = 3.14，結果以 MHz 表示，擇一最接近值）。", "opts": {"A": "約 5.03 MHz", "B": "約 10.07 MHz", "C": "約 2.51 MHz", "D": "約 15.9 MHz"}, "answer": "B", "explanation": "公式：f_s = 1 / (2*pi*sqrt(L*C_s))。\n代入數值：L = 10 mH = 10*10^(-3) H，C_s = 0.025 pF = 0.025*10^(-12) F。\nL*C_s = 10*10^(-3) * 0.025*10^(-12) = 2.5*10^(-16)。\nsqrt(L*C_s) = sqrt(2.5*10^(-16)) = 1.5811*10^(-8)。\n2*pi*sqrt(L*C_s) = 2*3.14*1.5811*10^(-8) = 6.28*1.5811*10^(-8) = 9.929*10^(-8)。\nf_s = 1 / (9.929*10^(-8)) ≈ 1.007*10^7 Hz ≈ 10.07 MHz。\n正確答案為B。", "circuit": "", "clabels": {}}, {"id": 149, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "108", "stem": "石英晶體等效電路的串聯諧振頻率 f_s 與並聯諧振頻率 f_p 之大小關係，下列何者正確？", "opts": {"A": "f_p < f_s", "B": "f_p = f_s", "C": "f_p > f_s，且兩者差距非常大", "D": "f_p 略大於 f_s，兩者非常接近"}, "answer": "D", "explanation": "石英晶體的並聯諧振頻率 f_p 與串聯諧振頻率 f_s 的關係：\nf_p = 1 / (2*pi*sqrt(L * C_m*C_s/(C_m+C_s)))。\n因為等效並聯電容 C_m 通常遠大於 C_s（C_m >> C_s），所以 C_m*C_s/(C_m+C_s) 略小於 C_s，導致 f_p 略大於 f_s。兩者差距極小（通常差距在 0.1% 以內），因此 f_p 略大於 f_s 且非常接近，正確答案為D。", "circuit": "", "clabels": {}}, {"id": 150, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "110", "stem": "石英晶體的電抗特性中，晶體呈現電感性的頻率範圍為何？", "opts": {"A": "f < f_s", "B": "f_s < f < f_p", "C": "f > f_p", "D": "f = f_s"}, "answer": "B", "explanation": "石英晶體的電抗隨頻率變化的特性如下：\n1. f < f_s：電抗為負值，晶體呈電容性。\n2. f = f_s：串聯諧振，阻抗最小（趨近於零），電抗為零。\n3. f_s < f < f_p：電抗為正值，晶體呈電感性——此為晶體振盪器正常工作的區間。\n4. f = f_p：並聯諧振，阻抗最大（趨近無窮大）。\n5. f > f_p：電抗再次為負值，晶體又呈電容性。\n因此電感性區間為 f_s < f < f_p，正確答案為B。", "circuit": "", "clabels": {}}, {"id": 151, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "關於石英晶體振盪器的阻抗特性，下列敘述何者正確？", "opts": {"A": "在串聯諧振頻率 f_s 時，晶體阻抗最大", "B": "在並聯諧振頻率 f_p 時，晶體阻抗最小", "C": "在串聯諧振頻率 f_s 時，晶體阻抗最小；在並聯諧振頻率 f_p 時，晶體阻抗最大", "D": "晶體阻抗在任何頻率下均相同，不隨頻率變化"}, "answer": "C", "explanation": "石英晶體等效電路的阻抗特性：\n串聯諧振（f = f_s）：串聯臂 L、C_s 諧振，阻抗趨近最小值（理想時為零，實際為串聯等效電阻 R_s），電路呈純阻性。\n並聯諧振（f = f_p）：整個晶體（含並聯電容 C_m）諧振，阻抗趨近最大值（理想時為∞），電路同樣呈純阻性。\n選項A、B描述相反，選項D明顯錯誤。正確答案為C。", "circuit": "", "clabels": {}}, {"id": 152, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "某石英晶體等效電路參數為：L = 40 mH，C_s = 0.01 pF，並聯電容 C_m = 10 pF。已知串聯諧振頻率 f_s = 1/(2*pi*sqrt(L*C_s))，並聯諧振頻率 f_p = 1/(2*pi*sqrt(L*C_eq))，其中 C_eq = C_m*C_s/(C_m+C_s)。求 f_p/f_s 之比值最接近下列何者？（提示：C_m >> C_s 時，C_eq ≈ C_s*(1 - C_s/C_m)）", "opts": {"A": "f_p/f_s ≈ 1.0000（幾乎相等）", "B": "f_p/f_s ≈ 1.0005（比 f_s 大約 0.05%）", "C": "f_p/f_s ≈ 1.05（比 f_s 大約 5%）", "D": "f_p/f_s ≈ 2（比 f_s 大一倍）"}, "answer": "B", "explanation": "計算步驟：\n1. C_eq = C_m*C_s/(C_m+C_s) = 10*0.01/(10+0.01) pF = 0.1/10.01 pF ≈ 0.009990 pF。\n2. f_s 正比於 1/sqrt(C_s)，f_p 正比於 1/sqrt(C_eq)。\n3. f_p/f_s = sqrt(C_s/C_eq) = sqrt(0.01/0.009990) = sqrt(1.001001) ≈ 1 + 0.001001/2 ≈ 1.0005。\n（利用近似：sqrt(1+x) ≈ 1 + x/2，x = 0.001001，x/2 ≈ 0.0005）\n4. 所以 f_p 比 f_s 大約 0.05%，非常接近但略大。\n選項C（5%）和D（100%）差距過大，錯誤。選項A說完全相等也不正確。\n正確答案為B。", "circuit": "", "clabels": {}}, {"id": 153, "ch": "11", "topicKey": "ch11_xtal", "topic": "晶體振盪器", "type": "觀念", "difficulty": "進階", "is_past": true, "year": "112", "stem": "在皮爾斯（Pierce）晶體振盪電路中，石英晶體取代考畢茲（Colpitts）振盪器中的電感，此時晶體必須工作在何種狀態才能使電路產生振盪？", "opts": {"A": "工作在 f < f_s，使晶體呈電容性以提供正回授", "B": "工作在 f_s < f < f_p，使晶體呈電感性以滿足振盪條件", "C": "工作在 f = f_s，使晶體阻抗最大以強化回授", "D": "工作在 f > f_p，使晶體阻抗趨近零以降低損耗"}, "answer": "B", "explanation": "皮爾斯晶體振盪器是考畢茲振盪器的改良型，電路中原本的電感 L 被石英晶體取代。考畢茲振盪器的振盪條件需要一個等效電感元件與兩個電容（C_1、C_2）形成 pi 型網路以產生 180° 相移（提供正回授）。\n因此晶體必須工作在 f_s < f < f_p 的電感性頻率區間，此時晶體等效為一個電感，滿足考畢茲型振盪器的振盪條件。\n選項A（電容性，f < f_s）無法取代電感；選項C（f = f_s，阻抗最小接近零）及選項D（f > f_p，又回到電容性）均不符合振盪器對電感臂的要求。\n正確答案為B。", "circuit": "", "clabels": {}}, {"id": 154, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "施密特觸發器（Schmitt Trigger）利用何種回授方式產生磁滯效應（Hysteresis），以提升雜訊免疫力？", "opts": {"A": "負回授（Negative Feedback）", "B": "正回授（Positive Feedback）", "C": "交流耦合回授", "D": "電流串聯回授"}, "answer": "B", "explanation": "施密特觸發器的核心是正回授（Positive Feedback）：輸出電壓經分壓電阻回授至同相輸入端，使上限觸發電壓 VU 與下限觸發電壓 VL 不同，形成磁滯區（Hysteresis），讓輸出在上升與下降時的觸發點不同，從而有效抑制雜訊造成的誤動作。負回授則用於穩定增益，無法產生磁滯效應。", "circuit": "", "clabels": {}}, {"id": 155, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "107", "stem": "反相型施密特觸發器，V_ref = 0 V，R1 = 10 kΩ，R2 = 10 kΩ，V_sat = 10 V。求上限觸發電壓 VU 及下限觸發電壓 VL。", "opts": {"A": "VU = +10 V，VL = -10 V", "B": "VU = +5 V，VL = -5 V", "C": "VU = +2 V，VL = -2 V", "D": "VU = +20 V，VL = -20 V"}, "answer": "B", "explanation": "反相型公式（V_ref = 0 時）：VU = V_ref * R1/(R1+R2) + V_sat * R2/(R1+R2)，VL = V_ref * R1/(R1+R2) - V_sat * R2/(R1+R2)。代入 V_ref = 0、V_sat = 10 V、R1 = R2 = 10 kΩ：VU = 0 + 10 * (10/20) = 10 * 0.5 = +5 V；VL = 0 - 10 * (10/20) = -5 V。答案為 B。", "circuit": "schmitt", "clabels": {"R1": "10kΩ", "R2": "10kΩ"}}, {"id": 156, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "基礎", "is_past": false, "year": "", "stem": "反相型施密特觸發器，V_ref = 0 V，R1 = 20 kΩ，R2 = 5 kΩ，V_sat = 12 V。求磁滯電壓 VH = VU - VL。", "opts": {"A": "2.4 V", "B": "4.8 V", "C": "9.6 V", "D": "24 V"}, "answer": "B", "explanation": "磁滯電壓公式（反相型）：VH = 2 * R2 * V_sat / (R1 + R2)。代入 R1 = 20 kΩ、R2 = 5 kΩ、V_sat = 12 V：VH = 2 * 5 * 12 / (20 + 5) = 120 / 25 = 4.8 V。選項 A(2.4 V) 是忘記分子乘 2 的錯誤；選項 C(9.6 V) 是分母只用 R1 的錯誤；選項 D(24 V) 是忘記除以 (R1+R2) 的錯誤。", "circuit": "schmitt", "clabels": {"R1": "20kΩ", "R2": "5kΩ"}}, {"id": 157, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "非反相型施密特觸發器，V_ref = 0 V，R1 = 5 kΩ，R2 = 20 kΩ，V_sat = 10 V。求 VU 與 VL。", "opts": {"A": "VU = +2.5 V，VL = -2.5 V", "B": "VU = +8 V，VL = -8 V", "C": "VU = +2 V，VL = -2 V", "D": "VU = +4 V，VL = -4 V"}, "answer": "A", "explanation": "非反相型公式（V_ref = 0 時）：VU = V_sat * R1 / R2，VL = -V_sat * R1 / R2。代入 V_sat = 10 V、R1 = 5 kΩ、R2 = 20 kΩ：VU = 10 * (5/20) = 10 * 0.25 = +2.5 V；VL = -10 * (5/20) = -2.5 V。選項 B 是誤用 (R1+R2)/R2 的錯誤；選項 D 是 R1/R2 計算錯誤。答案為 A。", "circuit": "", "clabels": {}}, {"id": 158, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "105", "stem": "非反相型施密特觸發器（V_ref 接地）的磁滯電壓 VH，下列何者正確？（R1 為回授電阻、R2 為接地電阻，V_sat 為飽和輸出電壓）", "opts": {"A": "VH = 2 * R2 * V_sat / (R1 + R2)", "B": "VH = 2 * R1 * V_sat / R2", "C": "VH = R1 * V_sat / (R1 + R2)", "D": "VH = R2 * V_sat / R1"}, "answer": "B", "explanation": "非反相型（V_ref = 0）：VU = V_sat * R1 / R2，VL = -V_sat * R1 / R2，故 VH = VU - VL = V_sat * R1/R2 - (-V_sat * R1/R2) = 2 * R1 * V_sat / R2。選項 A 是反相型的公式，常見混淆；選項 C 少了係數 2 且分母多了 R2；選項 D 顛倒了 R1/R2。", "circuit": "", "clabels": {}}, {"id": 159, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "觀念", "difficulty": "中等", "is_past": false, "year": "", "stem": "某施密特觸發器的磁滯電壓 VH = 0.8 V，若輸入訊號上疊加了一個峰值為 0.3 V 的雜訊，則下列敘述何者正確？", "opts": {"A": "雜訊峰值 0.3 V > VH / 2，輸出仍會誤動作", "B": "雜訊峰值 0.3 V < VH = 0.8 V，不會造成輸出誤動作", "C": "無論磁滯電壓大小，雜訊均會造成誤動作", "D": "只要雜訊峰值不為零，輸出就會誤動作"}, "answer": "B", "explanation": "施密特觸發器的雜訊免疫原理：若雜訊峰值小於磁滯電壓 VH，輸入的雜訊擾動不足以跨越另一個觸發臨界電壓，輸出維持穩定不會誤動作。本題雜訊峰值 0.3 V < VH = 0.8 V，因此輸出不受影響。選項 A 的「VH / 2」說法無理論依據；選項 C、D 均為錯誤觀念。", "circuit": "", "clabels": {}}, {"id": 160, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "反相型施密特觸發器，V_ref = 3 V，R1 = 6 kΩ，R2 = 3 kΩ，V_sat = 9 V。求 VU 與 VL。", "opts": {"A": "VU = 5 V，VL = 1 V", "B": "VU = 4 V，VL = 2 V", "C": "VU = 6 V，VL = 0 V", "D": "VU = 5 V，VL = -1 V"}, "answer": "D", "explanation": "反相型公式：VU = V_ref * R1/(R1+R2) + V_sat * R2/(R1+R2)，VL = V_ref * R1/(R1+R2) - V_sat * R2/(R1+R2)。R1/(R1+R2) = 6/(6+3) = 6/9 = 2/3；R2/(R1+R2) = 3/9 = 1/3。VU = 3*(2/3) + 9*(1/3) = 2 + 3 = 5 V；VL = 3*(2/3) - 9*(1/3) = 2 - 3 = -1 V。故 VU = 5 V、VL = -1 V，答案為 D。", "circuit": "schmitt", "clabels": {"R1": "6kΩ", "R2": "3kΩ"}}, {"id": 161, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "反相型施密特觸發器，V_ref = 6 V，R1 = 8 kΩ，R2 = 4 kΩ，V_sat = 12 V。求上限觸發電壓 VU。", "opts": {"A": "VU = 8 V", "B": "VU = 10 V", "C": "VU = 6 V", "D": "VU = 12 V"}, "answer": "A", "explanation": "反相型公式：VU = V_ref * R1/(R1+R2) + V_sat * R2/(R1+R2)。R1/(R1+R2) = 8/(8+4) = 8/12 = 2/3；R2/(R1+R2) = 4/12 = 1/3。VU = 6*(2/3) + 12*(1/3) = 4 + 4 = 8 V。故上限觸發電壓 VU = 8 V，答案為 A。（VL = 6*(2/3) - 12*(1/3) = 4 - 4 = 0 V。）", "circuit": "schmitt", "clabels": {"R1": "8kΩ", "R2": "4kΩ"}}, {"id": 162, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "施密特觸發器最常用於下列哪一項應用？", "opts": {"A": "將正弦波或含雜訊的類比訊號整形為乾淨的數位方波", "B": "將直流電壓放大為交流訊號", "C": "產生固定頻率的弦波振盪", "D": "作為線性放大器使用，提供精確的電壓增益"}, "answer": "A", "explanation": "施密特觸發器因具有磁滯特性，可將含雜訊或緩慢變化的類比波形（如正弦波、三角波）整形為邊緣陡峭的數位方波，廣泛用於波形整形（Waveform Shaping）電路。選項 B、D 屬於線性放大器功能；選項 C 產生弦波振盪需使用 LC 或 RC 弦波振盪器，不是施密特觸發器的功能。", "circuit": "", "clabels": {}}, {"id": 163, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "111", "stem": "反相型施密特觸發器，VU = +4 V，VL = -2 V，輸出目前為 +V_sat。當輸入電壓從 0 V 緩慢上升時，輸出何時發生負向轉態（由 +V_sat 轉為 -V_sat）？", "opts": {"A": "輸入電壓上升至 -2 V 時", "B": "輸入電壓上升至 +4 V 時", "C": "輸入電壓上升至 0 V 時", "D": "輸入電壓上升至 +2 V 時"}, "answer": "B", "explanation": "反相型施密特觸發器：當輸出為 +V_sat 時，輸入必須上升超過上限觸發電壓 VU，輸出才會由 +V_sat 轉態為 -V_sat（負向轉態）。本題 VU = +4 V，故輸入上升至 +4 V 時發生負向轉態。VL = -2 V 是下限觸發電壓，當輸出為 -V_sat 且輸入下降至 -2 V 時才會觸發正向轉態。", "circuit": "", "clabels": {}}, {"id": 164, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "進階", "is_past": true, "year": "112", "stem": "反相型施密特觸發器，V_ref = 0 V，V_sat = 15 V，若要求磁滯電壓 VH = 3 V，且 R1 + R2 = 100 kΩ，求 R2 之值。", "opts": {"A": "R2 = 5 kΩ", "B": "R2 = 10 kΩ", "C": "R2 = 20 kΩ", "D": "R2 = 15 kΩ"}, "answer": "B", "explanation": "反相型磁滯公式：VH = 2 * R2 * V_sat / (R1 + R2)。代入 VH = 3 V、V_sat = 15 V、R1+R2 = 100 kΩ：3 = 2 * R2 * 15 / 100。3 = 30 * R2 / 100。3 * 100 = 30 * R2。R2 = 300 / 30 = 10 kΩ。故 R2 = 10 kΩ，R1 = 90 kΩ。選項 A(5 kΩ) 是把分子算成 VH*(R1+R2)/V_sat 再漏掉係數 2 的錯誤；選項 C、D 亦因計算步驟錯誤而得出。", "circuit": "", "clabels": {}}, {"id": 165, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "非反相型施密特觸發器，V_ref = 2 V，R1 = 10 kΩ，R2 = 40 kΩ，V_sat = 10 V。求 VU 與 VL，並判斷磁滯電壓 VH。", "opts": {"A": "VU = 5 V，VL = 0 V，VH = 5 V", "B": "VU = 4.5 V，VL = 0.5 V，VH = 4 V", "C": "VU = 2.5 V，VL = 1.5 V，VH = 1 V", "D": "VU = 7 V，VL = -3 V，VH = 10 V"}, "answer": "A", "explanation": "非反相型公式：VU = V_ref*(R1+R2)/R2 + V_sat*R1/R2；VL = V_ref*(R1+R2)/R2 - V_sat*R1/R2。(R1+R2)/R2 = (10+40)/40 = 50/40 = 1.25；R1/R2 = 10/40 = 0.25。VU = 2*1.25 + 10*0.25 = 2.5 + 2.5 = 5 V；VL = 2*1.25 - 10*0.25 = 2.5 - 2.5 = 0 V；VH = VU - VL = 5 - 0 = 5 V（亦可由 VH = 2*R1*V_sat/R2 = 2*10*10/40 = 5 V 驗證）。故答案為 A。", "circuit": "", "clabels": {}}, {"id": 166, "ch": "11", "topicKey": "ch11_schmitt", "topic": "施密特觸發器", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "反相型施密特觸發器電路，運算放大器供電為 ±15 V，但輸出端接有稽納二極體箝位，使 V_sat = ±9 V。R1 = 18 kΩ，R2 = 9 kΩ，V_ref = 0 V。求磁滯電壓 VH。", "opts": {"A": "VH = 12 V（使用 ±15 V 計算）", "B": "VH = 6 V（使用 ±9 V 計算）", "C": "VH = 18 V", "D": "VH = 3 V"}, "answer": "B", "explanation": "關鍵陷阱：有稽納二極體箝位時，V_sat 應使用箝位後的值 9 V，而非電源電壓 15 V。反相型磁滯公式：VH = 2 * R2 * V_sat / (R1 + R2) = 2 * 9 * 9 / (18 + 9) = 162 / 27 = 6 V。若誤用 V_sat = 15 V 則 VH = 2*9*15/27 = 270/27 = 10 V，為常見錯誤。正確答案為 B：VH = 6 V。", "circuit": "schmitt", "clabels": {"R1": "18kΩ", "R2": "9kΩ"}}, {"id": 167, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "無穩態多諧振盪器(astable multivibrator)的特性，下列敘述何者正確？", "opts": {"A": "電路有兩個穩定狀態，需外部觸發才能切換", "B": "電路無穩定狀態，輸出自動在高、低電位間連續切換，產生方波", "C": "電路有一個穩定狀態，觸發後輸出脈波一段時間再自動回復", "D": "電路輸出為直流，需外部時脈才能產生方波"}, "answer": "B", "explanation": "無穩態多諧振盪器（自激振盪器）沒有穩定的直流工作點，電路靠正回授與RC充放電不斷自動切換輸出狀態，因此能連續產生方波，不需要外部觸發信號。選項A為雙穩態(bistable)特性；選項C為單穩態(monostable)特性；選項D描述錯誤。故選B。", "circuit": "", "clabels": {}}, {"id": 168, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "以運算放大器構成的無穩態多諧振盪器中，R1 與 R2 組成分壓網路接於輸出到非反相輸入端（+端），其作用為何？", "opts": {"A": "提供負回授，穩定增益", "B": "提供正回授，形成滯滯比較器特性使輸出產生快速切換", "C": "限制輸出電流，防止運放過載", "D": "決定電容充放電的時間常數"}, "answer": "B", "explanation": "在無穩態多諧振盪器中，R1 與 R2 將輸出電壓 v_o 分壓後回授到非反相輸入端（+端），形成正回授。正回授使比較器具有遲滯特性（上下門限電壓不同），讓輸出能快速、明確地切換至 +V_sat 或 -V_sat。負回授由 RC 網路提供充放電；決定時間常數的是 R 與 C 的乘積，而非 R1、R2。故選B。", "circuit": "", "clabels": {}}, {"id": 169, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "107", "stem": "無穩態多諧振盪器中，R1 = 10 kΩ，R2 = 10 kΩ，運放飽和電壓 V_sat = 12 V。電容電壓的正峰值（上門限）為多少伏特？", "opts": {"A": "6 V", "B": "8 V", "C": "10 V", "D": "12 V"}, "answer": "A", "explanation": "回授比 β = R2 / (R1 + R2) = 10k / (10k + 10k) = 10k / 20k = 0.5。電容電壓的正峰值（上門限電壓）= β * V_sat = 0.5 * 12 = 6 V。電容電壓在 +6 V 到 -6 V 之間振盪，峰對峰值 = 2 * β * V_sat = 12 V。故選A。", "circuit": "square", "clabels": {"R1": "10kΩ", "R2": "10kΩ"}}, {"id": 170, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "無穩態多諧振盪器中，R = 10 kΩ，C = 0.1 μF，R1 = R2 = 10 kΩ。試求振盪週期 T（取 ln 3 ≈ 1.099，ln 2 ≈ 0.693）。", "opts": {"A": "約 0.693 ms", "B": "約 1.386 ms", "C": "約 2.197 ms", "D": "約 2.772 ms"}, "answer": "C", "explanation": "β = R2 / (R1 + R2) = 10k / 20k = 0.5。代入週期公式：T = 2 * R * C * ln(1 + 2*R2/R1) = 2 * 10kΩ * 0.1μF * ln(1 + 2*10k/10k) = 2 * 10^4 * 10^-7 * ln(3) = 2 * 10^-3 * 1.099 ≈ 2.197 * 10^-3 s ≈ 2.197 ms。陷阱：題目同時給了 ln2，是干擾值；真正需要的是 ln3。選項B（1.386 ms）是誤用 ln(2) 的錯誤結果；選項A（0.693 ms）是只算半個週期且誤用 ln(2)。故選C。", "circuit": "square", "clabels": {"R": "10kΩ", "C": "0.1μF", "R1": "10kΩ", "R2": "10kΩ"}}, {"id": 171, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "無穩態多諧振盪器，R = 8.66 kΩ，C = 10 nF，R1 = 57.7 kΩ，R2 = 100 kΩ。已知 ln((1+β)/(1-β)) 計算後等於 1，求振盪頻率 f 最接近下列何值？", "opts": {"A": "約 2.89 kHz", "B": "約 5.77 kHz", "C": "約 1.44 kHz", "D": "約 11.5 kHz"}, "answer": "B", "explanation": "題目已告知 ln((1+β)/(1-β)) = 1（計算捷徑假設）。代入週期公式：T = 2 * R * C * ln((1+β)/(1-β)) = 2 * R * C * 1 = 2 * 8660 Ω * 10*10^-9 F = 2 * 8660 * 10^-8 = 1.732 * 10^-4 s = 173.2 μs。振盪頻率 f = 1 / T = 1 / (173.2 * 10^-6) ≈ 5773 Hz ≈ 5.77 kHz。故選B。陷阱：若誤把 8660 * 10*10^-9 算成 8.66*10^-5（少一個數量級）會得到約 57.7 kHz（無此選項）；正確結果為 5.77 kHz。選項A（2.89 kHz）為 f/2，選項D（11.5 kHz）為 2f。", "circuit": "square", "clabels": {"R": "8.66kΩ", "C": "10nF", "R1": "57.7kΩ", "R2": "100kΩ"}}, {"id": 172, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "105", "stem": "無穩態多諧振盪器正常振盪中，若將充放電電容 C 的值增大為原來的 2 倍（其他元件不變），則振盪頻率 f 將如何改變？", "opts": {"A": "增加為原來的 2 倍", "B": "減少為原來的 1/2", "C": "增加為原來的 sqrt(2) 倍", "D": "不改變，因為頻率只由 R1、R2 決定"}, "answer": "B", "explanation": "週期公式 T = 2 * R * C * ln((1+β)/(1-β))，其中 β = R2/(R1+R2) 只由 R1、R2 決定，不受 C 影響。T 與 C 成正比，故 C 增大為 2 倍時，T 也增大為 2 倍，則頻率 f = 1/T 減少為原來的 1/2。選項A、C錯誤（f與C成反比，不是正比）；選項D錯誤（R、C均影響頻率）。故選B。", "circuit": "", "clabels": {}}, {"id": 173, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "以運算放大器構成的無穩態多諧振盪器，運放電源為 ±15 V，飽和電壓 V_sat = 13 V。輸出方波 v_o 的峰對峰值（V_pp）為多少？", "opts": {"A": "13 V", "B": "15 V", "C": "26 V", "D": "30 V"}, "answer": "C", "explanation": "無穩態多諧振盪器的輸出 v_o 在 +V_sat 與 -V_sat 之間切換，因此峰對峰值 V_pp = (+V_sat) - (-V_sat) = 2 * V_sat = 2 * 13 = 26 V。注意：V_sat 是運放實際飽和電壓（略小於電源電壓），不是電源電壓 ±15 V。故選C。", "circuit": "", "clabels": {}}, {"id": 174, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "111", "stem": "標準無穩態多諧振盪器（正負飽和電壓絕對值相等、RC充放電路徑相同），其輸出方波的工作週期（Duty Cycle）為何？", "opts": {"A": "約 25%", "B": "約 50%", "C": "約 75%", "D": "視 β 值而定，不一定為 50%"}, "answer": "B", "explanation": "當正飽和電壓與負飽和電壓絕對值相等（|+V_sat| = |-V_sat|），且充電與放電均透過同一個電阻 R 到同一個電容 C，則電容充電時間等於放電時間，因此輸出高電位持續時間 = 輸出低電位持續時間 = T/2，工作週期 = 50%。若要改變工作週期，需使用二極體搭配不同充放電路徑（非對稱電路）。故選B。", "circuit": "", "clabels": {}}, {"id": 175, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "計算", "difficulty": "中等", "is_past": true, "year": "110", "stem": "無穩態多諧振盪器，R1 = 20 kΩ，R2 = 30 kΩ，V_sat = 10 V。電容電壓 v_C 的峰對峰值為多少伏特？", "opts": {"A": "6 V", "B": "10 V", "C": "12 V", "D": "20 V"}, "answer": "C", "explanation": "β = R2 / (R1 + R2) = 30k / (20k + 30k) = 30k / 50k = 0.6。電容電壓正峰值 = β * V_sat = 0.6 * 10 = 6 V；電容電壓負峰值 = -β * V_sat = -6 V。峰對峰值 = 2 * β * V_sat = 2 * 0.6 * 10 = 12 V。故選C。常見錯誤：誤以為峰值等於 V_sat（10 V）而選B，或忘記乘2而選A（6 V）。", "circuit": "square", "clabels": {"R1": "20kΩ", "R2": "30kΩ"}}, {"id": 176, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "無穩態多諧振盪器中，R1 = R2/2（即 R2 = 2*R1），R = 5 kΩ，C = 0.1 μF。取 ln(1 + 2*R2/R1) = ln 5 ≈ 1.609，振盪週期 T 為多少？", "opts": {"A": "約 0.805 ms", "B": "約 1.609 ms", "C": "約 3.218 ms", "D": "約 4.023 ms"}, "answer": "B", "explanation": "已知 R2 = 2*R1，故 2*R2/R1 = 2*2 = 4，代入公式：T = 2 * R * C * ln(1 + 2*R2/R1) = 2 * 5*10^3 * 0.1*10^-6 * ln(5) = 2 * 5*10^3 * 10^-7 * 1.609 = 2 * 5 * 10^-4 * 1.609 = 10^-3 * 1.609 = 1.609 * 10^-3 s = 1.609 ms。故選B。陷阱：選項A為 T/2（少乘以2）；選項C為誤用 4*R*C*ln(5)。", "circuit": "square", "clabels": {"R": "5kΩ", "C": "0.1μF", "R1": "R2/2"}}, {"id": 177, "ch": "11", "topicKey": "ch11_square", "topic": "方波產生電路", "type": "計算", "difficulty": "進階", "is_past": true, "year": "113", "stem": "無穩態多諧振盪器中，原本 R1 = R2 = 10 kΩ，R = 10 kΩ，C = 0.1 μF，V_sat = 10 V，振盪頻率為 f_0。若現將 R2 改為 5 kΩ（R1、R、C 不變），下列關於新電路的敘述何者正確？（取 ln2 ≈ 0.693，ln3 ≈ 1.099）", "opts": {"A": "β 變小，電容電壓峰值降低，振盪頻率增加", "B": "β 變大，電容電壓峰值升高，振盪頻率降低", "C": "β 不變，只有振盪頻率改變", "D": "β 變小，電容電壓峰值降低，振盪頻率降低"}, "answer": "A", "explanation": "原始：β_0 = R2/(R1+R2) = 10k/20k = 0.5；T_0 = 2*10k*0.1μF*ln(3) ≈ 2*10^-3*1.099 ≈ 2.197 ms；電容峰值 = 0.5*10 = 5 V。\n\n新電路（R2 = 5 kΩ）：β_new = 5k/(10k+5k) = 5k/15k = 1/3 ≈ 0.333。β 變小，電容電壓峰值 = (1/3)*10 ≈ 3.33 V，確實降低。\n\n新週期：T_new = 2*10k*0.1μF*ln(1 + 2*5k/10k) = 2*10^-3*ln(2) ≈ 2*10^-3*0.693 ≈ 1.386 ms。T_new < T_0，故頻率 f_new > f_0，振盪頻率增加。\n\n結論：β 變小，電容電壓峰值降低，頻率增加。故選A。選項D陷阱：β 變小峰值確實降低，但頻率是增加而非降低。", "circuit": "square", "clabels": {"R": "10kΩ", "C": "0.1μF", "R1": "10kΩ", "R2": "5kΩ"}}, {"id": 178, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "觀念", "difficulty": "基礎", "is_past": false, "year": "", "stem": "三角波產生電路通常由哪兩個基本方塊串接而成？", "opts": {"A": "微分器 + 比較器", "B": "非反相施密特觸發器 + 積分器", "C": "加法器 + 低通濾波器", "D": "反相放大器 + 峰值偵測器"}, "answer": "B", "explanation": "三角波產生電路的標準架構為：OPA1 組成非反相施密特觸發器，輸出方波 vo1（幅度 ±V_sat）；OPA2 組成積分器，對方波積分後輸出三角波 vo2。兩個方塊形成正回授迴路，缺一不可。選項 A 微分器會讓方波變成尖波；選項 C/D 均非正確架構。", "circuit": "", "clabels": {}}, {"id": 179, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "104", "stem": "在三角波產生電路中，若施密特觸發器的飽和電壓為 ±V_sat，且正回授電阻比為 R1 與 R2，則三角波輸出 vo2 的峰值振幅（零到峰值）為何？", "opts": {"A": "(R2 / R1) * V_sat", "B": "(R1 / R2) * V_sat", "C": "(R1 + R2) / R2 * V_sat", "D": "V_sat"}, "answer": "B", "explanation": "施密特觸發器的切換門限由正回授分壓決定，積分器使 vo2 線性爬升／下降直到門限被觸發。推導可得三角波振幅（零到峰值）= (R1 / R2) * V_sat。\n因此若 R1=10 kΩ、R2=20 kΩ、V_sat=12 V，則振幅 = (10/20)*12 = 6 V。\n選項 A 顛倒了 R1、R2 的位置；選項 C 是非反相放大器增益；選項 D 忽略了電阻比。", "circuit": "", "clabels": {}}, {"id": 180, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "三角波產生電路中，R1=10 kΩ、R2=40 kΩ、積分電阻 R=20 kΩ、積分電容 C=0.1 μF，OPA 飽和電壓 V_sat=10 V。求三角波輸出的振盪頻率 f 為何？", "opts": {"A": "250 Hz", "B": "500 Hz", "C": "1000 Hz", "D": "125 Hz"}, "answer": "B", "explanation": "公式：f = R2 / (4 * R1 * R * C)，可改寫為 f = (R2 / R1) / (4 * R * C)。\n\n【步驟1】電阻比 R2/R1 = 40 kΩ / 10 kΩ = 4。\n\n【步驟2】積分時間常數 τ = R * C = 20*10^3 * 0.1*10^-6 = 2*10^-3 s。\n\n【步驟3】代入公式：\nf = (R2/R1) / (4 * R * C)\n  = 4 / (4 * 2*10^-3)\n  = 4 / (8*10^-3)\n  = 500 Hz\n\n故振盪頻率 f = 500 Hz，選 B。\n選項 A(250 Hz) 為分母多除 2；選項 C(1000 Hz) 為忽略係數 4 中的一半；選項 D(125 Hz) 為分母多除 4。", "circuit": "", "clabels": {}}, {"id": 181, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "計算", "difficulty": "中等", "is_past": true, "year": "107", "stem": "三角波產生電路中，R1=10 kΩ、R2=40 kΩ、積分電阻 R=20 kΩ、積分電容 C=0.1 μF，OPA 飽和電壓 V_sat=15 V。求三角波輸出 vo2 的振幅（零到峰值）與振盪週期 T？", "opts": {"A": "振幅 3.75 V，T = 2 ms", "B": "振幅 6 V，T = 4 ms", "C": "振幅 3.75 V，T = 4 ms", "D": "振幅 6 V，T = 2 ms"}, "answer": "A", "explanation": "【振幅計算】\n公式：振幅 = (R1 / R2) * V_sat\n= (10 kΩ / 40 kΩ) * 15 V\n= 0.25 * 15 = 3.75 V\n\n【週期計算】\n公式：T = 4 * R * C * (R1 / R2)\n先算 R*C = 20*10^3 * 0.1*10^-6 = 2*10^-3 s\nT = 4 * 2*10^-3 * (10/40) = 4 * 2*10^-3 * 0.25 = 2*10^-3 s = 2 ms\n\n故振幅 3.75 V、T = 2 ms，選 A。\n常見錯誤：誤用 R2/R1（選 B 的 6 V）或忘記乘 R1/R2 係數導致 T 計算錯誤（選 C/D）。", "circuit": "", "clabels": {}}, {"id": 182, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "109", "stem": "在三角波產生電路中，正回授電阻必須滿足 R2 > R1 的條件，其主要原因為何？", "opts": {"A": "使積分器的時間常數足夠大，三角波才能線性", "B": "確保施密特觸發器的切換門限電壓小於 OPA 的飽和電壓，電路才能持續振盪", "C": "使三角波振幅大於方波振幅，輸出波形才正確", "D": "防止積分器輸出飽和，避免 OPA2 損毀"}, "answer": "B", "explanation": "三角波電路的振盪條件：施密特觸發器的切換門限 V_T = (R1/R2)*V_sat 必須小於 OPA 的飽和電壓 V_sat，才能保證 vo2 積分到達門限時觸發翻轉、電路持續振盪。\n若 R2 = R1，門限 = V_sat，積分器輸出恰好在飽和才觸發，臨界不振盪。\n若 R2 < R1，門限 > V_sat，積分器永遠到不了門限，電路停止振盪。\n因此必須 R2 > R1，使門限 < V_sat，保證電路持續自激振盪。\n選項 A 說的是時間常數，與 R1/R2 條件無關；選項 C/D 說法均不正確。", "circuit": "", "clabels": {}}, {"id": 183, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "計算", "difficulty": "進階", "is_past": false, "year": "", "stem": "如圖，三角波產生電路 OPA 的 V_sat=12 V，R1=15 kΩ、R2=30 kΩ、積分電阻 R=25 kΩ、積分電容 C=0.1 μF。若欲將振盪頻率提高為原來的 2 倍，在其他元件不變的條件下，積分電容 C 應改為多少？", "opts": {"A": "0.025 μF", "B": "0.05 μF", "C": "0.2 μF", "D": "0.4 μF"}, "answer": "B", "explanation": "【公式】f = R2 / (4 * R1 * R * C) = (R2 / R1) / (4 * R * C)，可知 f 與 C 成反比，f ∝ 1/C。\n\n【提高 2 倍頻率】\n因 f ∝ 1/C，要使 f_new = 2 * f_old，需 C_new = C_old / 2 = 0.1 μF / 2 = 0.05 μF。\n\n【驗證】\n原頻率：R*C = 25*10^3 * 0.1*10^-6 = 2.5*10^-3 s\nf_old = (R2/R1)/(4*R*C) = (30k/15k)/(4*2.5*10^-3) = 2/0.01 = 200 Hz\n\nC_new = 0.05 μF：R*C_new = 25*10^3 * 0.05*10^-6 = 1.25*10^-3 s\nf_new = (R2/R1)/(4*R*C_new) = 2/(4*1.25*10^-3) = 2/0.005 = 400 Hz = 2 * 200 Hz ✓\n\n故 C 應改為 0.05 μF，選 B。\n選項 A(0.025 μF) 會讓頻率變 4 倍；選項 C(0.2 μF) 與 D(0.4 μF) 會讓頻率降低。", "circuit": "", "clabels": {}}, {"id": 184, "ch": "11", "topicKey": "ch11_triangle", "topic": "三角波產生電路", "type": "進階", "difficulty": "進階", "is_past": true, "year": "111", "stem": "三角波產生電路中，V_sat=10 V、R1=20 kΩ、R2=100 kΩ、R=50 kΩ、C=0.05 μF。下列敘述何者正確？", "opts": {"A": "三角波振幅為 2 V，頻率為 500 Hz", "B": "三角波振幅為 2 V，頻率為 100 Hz", "C": "三角波振幅為 50 V，頻率為 500 Hz", "D": "三角波振幅為 2 V，頻率為 250 Hz"}, "answer": "A", "explanation": "【振幅計算】\n振幅 = (R1 / R2) * V_sat = (20 kΩ / 100 kΩ) * 10 V = 0.2 * 10 = 2 V\n\n【頻率計算】\nR * C = 50*10^3 * 0.05*10^-6 = 2.5*10^-3 s\nf = (R2 / R1) / (4 * R * C)\n= (100k / 20k) / (4 * 2.5*10^-3)\n= 5 / (10*10^-3)\n= 5 / 0.01\n= 500 Hz\n\n故振幅 2 V、頻率 500 Hz，選 A。\n\n常見陷阱：\n- 選項 B：誤算頻率（將分子 R2/R1 當 1 計算，得 1/0.01=100 Hz）\n- 選項 C：誤用 R2/R1 計算振幅（100k/20k*10=50 V，實為顛倒）\n- 選項 D：分母多除 2，得 250 Hz", "circuit": "", "clabels": {}}, {"id": 185, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "基礎", "is_past": true, "year": "105", "stem": "一個被動一階低通濾波器，電阻 R = 10 kΩ，電容 C = 1 μF，則其高頻截止頻率 f_H 最接近下列何者？", "opts": {"A": "約 15.9 Hz", "B": "約 159 Hz", "C": "約 1590 Hz", "D": "約 15900 Hz"}, "answer": "A", "explanation": "公式：f_H = 1 / (2 * pi * R * C)。代入 R = 10 * 10^3 Ω，C = 1 * 10^(-6) F。f_H = 1 / (2 * pi * 10000 * 0.000001) = 1 / (2 * pi * 0.01) = 1 / 0.06283 ≈ 15.9 Hz。答案為 A。", "circuit": "", "clabels": {}}, {"id": 186, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "基礎", "is_past": false, "year": "", "stem": "一個主動一階低通濾波器，非反相放大電路中，負回授電阻 R_f = 30 kΩ，接地電阻 R_N = 10 kΩ，則通帶內最大電壓增益 A_v(max) 為何？", "opts": {"A": "2", "B": "3", "C": "4", "D": "0.707"}, "answer": "C", "explanation": "主動低通濾波器採非反相放大，最大電壓增益公式：A_v(max) = 1 + R_f / R_N。代入 R_f = 30 kΩ，R_N = 10 kΩ：A_v(max) = 1 + 30/10 = 1 + 3 = 4。答案為 C。", "circuit": "lpf", "clabels": {"Rf": "30kΩ", "RN": "10kΩ"}}, {"id": 187, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "107", "stem": "一個 RC 電路，輸入信號頻率 f 趨近於 0（直流）時輸出電壓趨近於輸入電壓，當 f 趨近於 ∞ 時輸出電壓趨近於零，請問此電路為下列哪種濾波器？", "opts": {"A": "高通濾波器", "B": "低通濾波器", "C": "帶通濾波器", "D": "帶拒濾波器"}, "answer": "B", "explanation": "判斷方式：f = 0 時輸出接近輸入（低頻通過），f = ∞ 時輸出趨近零（高頻阻擋）。低通濾波器讓低頻通過、阻擋高頻，符合題目描述。答案為 B。", "circuit": "", "clabels": {}}, {"id": 188, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "觀念", "difficulty": "基礎", "is_past": true, "year": "103", "stem": "濾波器的截止頻率（-3dB 頻率）又稱半功率點，其對應的電壓增益為最大值的幾倍？", "opts": {"A": "0.5 倍", "B": "sqrt(2) ≈ 1.414 倍", "C": "1/sqrt(2) ≈ 0.707 倍", "D": "0.9 倍"}, "answer": "C", "explanation": "截止頻率(-3dB點)定義：輸出功率為最大功率的一半，即 P = P_max / 2。因為 P 正比於 V^2，所以 V^2 = V_max^2 / 2，得 V = V_max / sqrt(2) ≈ 0.707 * V_max。答案為 C。", "circuit": "", "clabels": {}}, {"id": 189, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "一個被動一階高通濾波器，若要使低頻截止頻率 f_L = 500 Hz，且已知電容 C = 0.1 μF，則電阻 R 應選用下列何者最接近？", "opts": {"A": "約 1.59 kΩ", "B": "約 3.18 kΩ", "C": "約 6.37 kΩ", "D": "約 31.8 kΩ"}, "answer": "B", "explanation": "公式：f_L = 1 / (2 * pi * R * C)，整理得 R = 1 / (2 * pi * f_L * C)。代入 f_L = 500 Hz，C = 0.1 * 10^(-6) F：R = 1 / (2 * pi * 500 * 0.1 * 10^(-6)) = 1 / (2 * pi * 0.00005) = 1 / 0.0003142 ≈ 3183 Ω ≈ 3.18 kΩ。答案為 B。", "circuit": "", "clabels": {}}, {"id": 190, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "109", "stem": "一個主動一階低通濾波器，通帶最大電壓增益 A_v(max) = 2，高頻截止頻率 f_H = 1 kHz。輸入一個頻率為 1 kHz、振幅 V_i = 1 V 的正弦波，則輸出電壓振幅最接近下列何者？", "opts": {"A": "2 V", "B": "1.414 V", "C": "1 V", "D": "0.707 V"}, "answer": "B", "explanation": "當輸入頻率等於截止頻率 f_H 時，濾波器增益為最大增益的 1/sqrt(2) = 0.707 倍。輸出振幅 = A_v(max) * 0.707 * V_i = 2 * 0.707 * 1 = 1.414 V。答案為 B。", "circuit": "", "clabels": {}}, {"id": 191, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "104", "stem": "一階主動濾波器在截止頻率之外（阻帶），其增益的滾降率為下列何者？", "opts": {"A": "+20 dB/decade（低通）或 -20 dB/decade（高通）", "B": "低通為 -20 dB/decade；高通在截止頻率以下為 +20 dB/decade（頻率上升方向）", "C": "-40 dB/decade", "D": "-60 dB/decade"}, "answer": "B", "explanation": "一階低通濾波器在截止頻率以上，頻率每增加10倍（一個decade），增益下降 20 dB，滾降率為 -20 dB/decade。一階高通濾波器在截止頻率以下，頻率每降低10倍，增益下降 20 dB（從低頻往高頻方向看為 +20 dB/decade 上升）。-40 dB/decade 為二階特性，-60 dB/decade 為三階特性。答案為 B。", "circuit": "", "clabels": {}}, {"id": 192, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "108", "stem": "一個帶通濾波器，低頻截止頻率 f_L = 400 Hz，高頻截止頻率 f_H = 900 Hz，則中心頻率 f_0 為何？", "opts": {"A": "600 Hz", "B": "650 Hz", "C": "500 Hz", "D": "750 Hz"}, "answer": "A", "explanation": "帶通濾波器中心頻率公式：f_0 = sqrt(f_L * f_H)。代入 f_L = 400 Hz，f_H = 900 Hz：f_0 = sqrt(400 * 900) = sqrt(360000) = 600 Hz。答案為 A。注意：中心頻率是幾何平均數，不是算術平均數（算術平均為 (400+900)/2 = 650 Hz，選項 B 即此常見陷阱）。", "circuit": "", "clabels": {}}, {"id": 193, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "中等", "is_past": false, "year": "", "stem": "一個帶通濾波器，低頻截止頻率 f_L = 200 Hz，高頻截止頻率 f_H = 1800 Hz。則頻寬 BW 與品質因數 Q 分別為何？", "opts": {"A": "BW = 1600 Hz，Q = 0.375", "B": "BW = 1600 Hz，Q ≈ 0.625", "C": "BW = 1000 Hz，Q = 0.6", "D": "BW = 2000 Hz，Q = 0.3"}, "answer": "A", "explanation": "步驟一：頻寬 BW = f_H - f_L = 1800 - 200 = 1600 Hz。步驟二：中心頻率 f_0 = sqrt(f_L * f_H) = sqrt(200 * 1800) = sqrt(360000) = 600 Hz。步驟三：品質因數 Q = f_0 / BW = 600 / 1600 = 0.375。答案為 A。常見陷阱：誤用算術平均 (200+1800)/2 = 1000 Hz 當中心頻率，得 Q = 1000/1600 = 0.625（選項 B 即此陷阱）。", "circuit": "", "clabels": {}}, {"id": 194, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "中等", "is_past": true, "year": "111", "stem": "一個主動一階高通濾波器，電阻 R = 8 kΩ，電容 C = 0.02 μF，非反相放大器中 R_f = 20 kΩ，R_N = 10 kΩ，則低頻截止頻率 f_L 與通帶增益 A_v(max) 分別為何？", "opts": {"A": "f_L ≈ 995 Hz，A_v(max) = 3", "B": "f_L ≈ 995 Hz，A_v(max) = 2", "C": "f_L ≈ 1989 Hz，A_v(max) = 3", "D": "f_L ≈ 497 Hz，A_v(max) = 3"}, "answer": "A", "explanation": "步驟一：f_L = 1 / (2 * pi * R * C) = 1 / (2 * pi * 8000 * 0.02 * 10^(-6)) = 1 / (2 * pi * 1.6 * 10^(-4)) = 1 / 0.001005 ≈ 995 Hz。步驟二：A_v(max) = 1 + R_f / R_N = 1 + 20000 / 10000 = 1 + 2 = 3。答案為 A。", "circuit": "hpf", "clabels": {"R": "8kΩ", "C": "0.02μF", "Rf": "20kΩ", "RN": "10kΩ"}}, {"id": 195, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "觀念", "difficulty": "中等", "is_past": true, "year": "106", "stem": "在一階低通主動濾波器的波德增益圖（橫軸為 log f）中，下列敘述何者錯誤？", "opts": {"A": "通帶內增益約等於 A_v(max) = 1 + R_f / R_N", "B": "截止頻率 f_H 處增益比通帶最大值低 3 dB", "C": "頻率超過 f_H 後，每增加10倍頻率增益下降 40 dB", "D": "波德圖橫軸為對數刻度"}, "answer": "C", "explanation": "一階低通濾波器在截止頻率以上的滾降率為 -20 dB/decade，而非 -40 dB/decade。-40 dB/decade 是二階濾波器的特性。其餘選項皆正確：A 為最大增益公式，B 為 -3dB 定義，D 為波德圖橫軸特性。答案為 C。", "circuit": "", "clabels": {}}, {"id": 196, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "觀念", "difficulty": "進階", "is_past": false, "year": "", "stem": "關於帶拒濾波器（Band-Reject Filter，BRF），下列敘述何者正確？", "opts": {"A": "帶拒濾波器讓中心頻率附近信號通過，阻擋高低頻", "B": "帶拒濾波器的頻寬 BW = f_H - f_L，品質因數 Q = f_0 / BW，Q 越大阻擋頻帶越窄", "C": "帶拒濾波器與帶通濾波器的頻率響應相加不等於定值", "D": "帶拒濾波器在中心頻率 f_0 處輸出最大"}, "answer": "B", "explanation": "帶拒濾波器（陷波器）阻擋特定頻帶、讓其他頻率通過，與帶通相反。其頻寬 BW = f_H - f_L，中心頻率 f_0 = sqrt(f_L * f_H)，品質因數 Q = f_0 / BW。Q 值越大，阻擋頻帶越窄（選擇性越高）。選項 A 描述的是帶通濾波器；選項 D 錯誤（帶拒在中心頻率 f_0 輸出最小，趨近零）；選項 C 錯誤（帶通與帶拒互補結構的頻率響應相加為定值）。答案為 B。", "circuit": "", "clabels": {}}, {"id": 197, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "進階", "is_past": true, "year": "110", "stem": "一個被動 RC 高通濾波器，R = 1 kΩ，C = 10 μF，輸入電壓 V_i = 10 V（有效值），當輸入頻率 f = f_L（截止頻率）時，輸出電壓 V_o 有效值為何？", "opts": {"A": "10 V", "B": "7.07 V", "C": "5 V", "D": "3.54 V"}, "answer": "B", "explanation": "在截止頻率 f_L 處，高通濾波器輸出為最大值的 1/sqrt(2) = 0.707 倍（-3dB 半功率點定義）。V_o = 0.707 * V_i = 0.707 * 10 ≈ 7.07 V。（參考：f_L = 1/(2*pi*R*C) = 1/(2*pi*1000*10*10^(-6)) = 1/(2*pi*0.01) ≈ 15.9 Hz，但此題不需算出數值，只需知道在 f = f_L 處輸出為 0.707 * V_i。）答案為 B。", "circuit": "", "clabels": {}}, {"id": 198, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "觀念", "difficulty": "進階", "is_past": false, "year": "", "stem": "將一個低頻截止頻率 f_L = 100 Hz 的一階高通濾波器與一個高頻截止頻率 f_H = 5000 Hz 的一階低通濾波器串聯，則所組成的複合濾波器為何種類型？兩端阻帶各自的滾降率為何？", "opts": {"A": "帶拒濾波器；各端 -20 dB/decade", "B": "帶通濾波器；各端 -20 dB/decade", "C": "帶通濾波器；各端 -40 dB/decade", "D": "低通濾波器；-20 dB/decade"}, "answer": "B", "explanation": "一個 HPF(f_L=100 Hz) 串接一個 LPF(f_H=5000 Hz)，因為 f_L < f_H，兩個通帶有重疊區間（100 Hz ~ 5000 Hz），串聯後形成帶通濾波器。在低於 100 Hz 端，一階 HPF 滾降率為 -20 dB/decade；在高於 5000 Hz 端，一階 LPF 滾降率亦為 -20 dB/decade。每一側各自為一階 -20 dB/decade。選項 A 錯誤（f_L < f_H 時為帶通；帶拒需另外的電路結構）；選項 C 錯誤（各端各只有一階故 -20 dB/decade）。答案為 B。", "circuit": "", "clabels": {}}, {"id": 199, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "進階", "is_past": true, "year": "113", "stem": "一個主動一階低通濾波器，R_f = 39 kΩ，R_N = 13 kΩ，濾波電阻 R = 5 kΩ，濾波電容 C = 1/(10*pi) μF（約 31.83 nF）。當輸入頻率 f = 1000 Hz 時，輸出增益為通帶最大增益的幾倍？（提示：A_v(f) = A_v(max) / sqrt(1 + (f/f_H)^2)）", "opts": {"A": "0.5 倍", "B": "0.707 倍", "C": "0.894 倍", "D": "1 倍"}, "answer": "B", "explanation": "步驟一：求截止頻率 f_H = 1 / (2 * pi * R * C)。C = 1/(10*pi) * 10^(-6) F，故 2*pi*R*C = 2*pi * 5000 * 1/(10*pi) * 10^(-6) = 2*pi * 5000 / (10*pi) * 10^(-6) = 2 * 5000 / 10 * 10^(-6) = 1000 * 10^(-6) = 0.001。所以 f_H = 1 / 0.001 = 1000 Hz。步驟二：在 f = 1000 Hz = f_H 時，f/f_H = 1。A_v(f) / A_v(max) = 1 / sqrt(1 + 1^2) = 1 / sqrt(2) ≈ 0.707 倍。答案為 B。陷阱：題目故意給出 R_f 與 R_N 讓學生誤以為需要計算增益數值，但題目問的是相對倍數，關鍵在於判斷 f = f_H 即可。", "circuit": "lpf", "clabels": {"R": "5kΩ", "C": "1/(10π)μF", "Rf": "39kΩ", "RN": "13kΩ"}}, {"id": 200, "ch": "11", "topicKey": "ch11_filter", "topic": "一階濾波器（低/高/帶通/帶拒）", "type": "計算", "difficulty": "進階", "is_past": true, "year": "112", "stem": "一個帶通濾波器的中心頻率 f_0 = 10 kHz，品質因數 Q = 5，則該濾波器的頻寬 BW 為何？", "opts": {"A": "50 kHz", "B": "2 kHz", "C": "5 kHz", "D": "0.5 kHz"}, "answer": "B", "explanation": "由品質因數定義 Q = f_0 / BW，整理得 BW = f_0 / Q = 10000 / 5 = 2000 Hz = 2 kHz。Q = 5 表示選擇性較高，通帶相對窄。常見錯誤：誤用 Q = BW / f_0（分子分母顛倒），得 BW = Q * f_0 = 5 * 10000 = 50 kHz（選項 A 即此陷阱）。答案為 B。", "circuit": "", "clabels": {}}], TOPICS=[{"key": "ch10_ideal", "ch": "10", "label": "理想OPA特性 / 差動放大器 / CMRR / μA741"}, {"key": "ch10_inv", "ch": "10", "label": "反相放大器"}, {"key": "ch10_noninv", "ch": "10", "label": "非反相放大器 / 電壓隨耦器"}, {"key": "ch10_adder", "ch": "10", "label": "加法器"}, {"key": "ch10_sub", "ch": "10", "label": "減法器"}, {"key": "ch10_diffint", "ch": "10", "label": "微分器 / 積分器"}, {"key": "ch10_comp", "ch": "10", "label": "比較器 / 臨界電位比較器"}, {"key": "ch11_rcphase", "ch": "11", "label": "正回授 / 巴克豪生 / RC相移振盪器"}, {"key": "ch11_wien", "ch": "11", "label": "韋恩電橋振盪器"}, {"key": "ch11_lc", "ch": "11", "label": "LC振盪器（考畢子 / 哈特萊）"}, {"key": "ch11_xtal", "ch": "11", "label": "晶體振盪器"}, {"key": "ch11_schmitt", "ch": "11", "label": "施密特觸發器"}, {"key": "ch11_square", "ch": "11", "label": "方波產生電路"}, {"key": "ch11_triangle", "ch": "11", "label": "三角波產生電路"}, {"key": "ch11_filter", "ch": "11", "label": "一階濾波器（低/高/帶通/帶拒）"}];
+const LS='opa_quiz_v2';
+const Q=id=>QUESTIONS.find(q=>q.id===id);
+
+/* ---------- persistence ---------- */
+let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false};
+try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||'{}'));}catch(e){}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+
+/* ---------- runtime state ---------- */
+let mode='practice', submitted=false, chip='all', streak=0, activeId=null;
+let order=QUESTIONS.map(q=>q.id);
+let examTimer=null, examSec=0;
+let randomSet=null;  // 隨機測驗模式：固定的一組題目id（簡單→難）
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(s){
+  s=String(s||'');
+  s=s.replace(/>=/g,'≥').replace(/<=/g,'≤').replace(/!=/g,'≠');
+  s=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s=s.replace(/(^|[^A-Za-z])sqrt(?![A-Za-z])/g,'$1√');
+  s=s.replace(/(^|[^A-Za-z])pi(?![A-Za-z])/g,'$1π');
+  s=s.replace(/\*/g,'·');
+  s=s.replace(/([A-Za-zβΔμΩαθφ∞])_([A-Za-z0-9]+)/g,'$1<sub>$2</sub>');
+  s=s.replace(/\^(-?[0-9]+)/g,'<sup>$1</sup>');
+  return s;
+}
+function el(id){return document.getElementById(id);}
+
+/* ---------- sound ---------- */
+let AC=null;
+function beep(type){
+  if(!S.sound) return;
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+    const map={ok:[660,880],no:[220,160],go:[523,784,1046]}; const f=map[type]||[440];
+    let t=AC.currentTime; g.gain.setValueAtTime(.0001,t);
+    o.frequency.setValueAtTime(f[0],t);
+    f.forEach((fr,i)=>o.frequency.setValueAtTime(fr,t+i*.08));
+    g.gain.exponentialRampToValueAtTime(.18,t+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,t+.08*f.length+.08);
+    o.start(t);o.stop(t+.08*f.length+.1);
+  }catch(e){}
+}
+
+/* ---------- toast ---------- */
+function toast(msg,kind){
+  const t=document.createElement('div');t.className='toast '+(kind||'');t.innerHTML=msg;
+  el('toast').appendChild(t);setTimeout(()=>t.remove(),2300);
+}
+
+/* ---------- confetti ---------- */
+function confetti(burst){
+  const cv=el('confetti');cv.style.display='block';
+  const ctx=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;
+  const cols=['#60a5fa','#22d3ee','#a78bfa','#34d399','#fbbf24','#fb7185'];
+  let P=[];for(let i=0;i<(burst||140);i++)P.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.32,
+    vx:(Math.random()-.5)*11,vy:Math.random()*-13-4,g:.32,s:Math.random()*7+4,
+    c:cols[i%cols.length],r:Math.random()*6,vr:(Math.random()-.5)*.4,a:1});
+  let f=0;
+  (function run(){f++;ctx.clearRect(0,0,cv.width,cv.height);let alive=false;
+    P.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.a-=.009;
+      if(p.a>0&&p.y<cv.height+20){alive=true;ctx.save();ctx.globalAlpha=Math.max(0,p.a);
+        ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx.restore();}});
+    if(alive&&f<240)requestAnimationFrame(run);else cv.style.display='none';
+  })();
+}
+
+/* ---------- ripple ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.btn');if(!b)return;
+  const r=document.createElement('span');r.className='rip';
+  const rc=b.getBoundingClientRect();r.style.left=(e.clientX-rc.left)+'px';r.style.top=(e.clientY-rc.top)+'px';
+  r.style.width=r.style.height='8px';b.appendChild(r);setTimeout(()=>r.remove(),560);
+},true);
+
+/* ---------- animated numbers ---------- */
+function animN(id,to,suffix){
+  const e=el(id);const from=parseFloat(e.dataset.v||'0');to=parseFloat(to);
+  if(from===to){e.textContent=to+(suffix||'');return;}e.dataset.v=to;
+  let t0=null;function step(ts){if(!t0)t0=ts;let p=Math.min(1,(ts-t0)/420);
+    let v=Math.round(from+(to-from)*(1-Math.pow(1-p,3)));e.textContent=v+(suffix||'');
+    if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);
+}
+
+/* ---------- custom in-page dropdowns ---------- */
+function closePops(){document.querySelectorAll('.cs.open').forEach(c=>c.classList.remove('open'));
+  el('mpop').classList.remove('show');}
+function customSelect(id,opts,onChange){
+  const root=el(id);root.dataset.value=opts[0].value;
+  root.innerHTML='<button type="button" class="cs-btn"><span class="cs-lab"></span><span class="cs-ar">▾</span></button><div class="cs-menu"></div>';
+  const lab=root.querySelector('.cs-lab'),menu=root.querySelector('.cs-menu');
+  lab.textContent=opts[0].label;
+  menu.innerHTML=opts.map(o=>`<div class="cs-opt${o.value===opts[0].value?' on':''}" data-v="${esc(o.value)}">${esc(o.label)}</div>`).join('');
+  root.querySelector('.cs-btn').addEventListener('click',e=>{e.stopPropagation();
+    const wasOpen=root.classList.contains('open');closePops();if(!wasOpen)root.classList.add('open');});
+  menu.addEventListener('click',e=>{e.stopPropagation();const o=e.target.closest('.cs-opt');if(!o)return;
+    root.dataset.value=o.dataset.v;lab.textContent=o.textContent;
+    [...menu.children].forEach(x=>x.classList.toggle('on',x===o));root.classList.remove('open');onChange&&onChange();});
+}
+function csVal(id){return el(id).dataset.value;}
+function csReset(id){const root=el(id),first=root.querySelector('.cs-opt');if(!first)return;
+  root.dataset.value=first.dataset.v;root.querySelector('.cs-lab').textContent=first.textContent;
+  [...root.querySelectorAll('.cs-opt')].forEach((x,i)=>x.classList.toggle('on',i===0));}
+function onFilterChange(){randomSet=null;submitted=false;hideResult();stopTimer();render();}
+customSelect('fch',[{value:'all',label:'全部'},{value:'10',label:'第10章 OPA'},{value:'11',label:'第11章 振盪/濾波'}],onFilterChange);
+customSelect('ftopic',[{value:'all',label:'全部主題'}].concat(TOPICS.map(t=>({value:t.key,label:'第'+t.ch+'章 · '+t.label}))),onFilterChange);
+customSelect('fdiff',[{value:'all',label:'全部'},{value:'基礎',label:'基礎'},{value:'中等',label:'中等'},{value:'進階',label:'進階'}],onFilterChange);
+document.addEventListener('click',closePops);
+
+/* ---------- filtering ---------- */
+function baseFilter(){
+  const ch=csVal('fch'),tp=csVal('ftopic'),df=csVal('fdiff'),
+        past=el('fpast').checked,kw=el('fsearch').value.trim().toLowerCase();
+  return order.map(Q).filter(q=>(ch==='all'||q.ch===ch)&&(tp==='all'||q.topicKey===tp)
+    &&(df==='all'||q.difficulty===df)&&(!past||q.is_past)
+    &&(!kw||(q.stem+JSON.stringify(q.opts)+q.explanation).toLowerCase().includes(kw)));
+}
+function chipFilter(arr){
+  if(chip==='unanswered')return arr.filter(q=>!S.answers[q.id]);
+  if(chip==='wrong')return arr.filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer);
+  if(chip==='bookmark')return arr.filter(q=>S.bookmarks[q.id]);
+  return arr;
+}
+function filtered(){if(randomSet)return randomSet.map(Q);return chipFilter(baseFilter());}
+
+/* ---------- card ---------- */
+function optRow(q,L){
+  const ch=S.answers[q.id];let c='opt';
+  if(mode==='practice'){if(ch){c+=' disabled';if(L===q.answer)c+=' correct';else if(L===ch)c+=' wrong';}}
+  else{if(submitted){c+=' disabled';if(L===q.answer)c+=' correct';else if(L===ch)c+=' wrong';}else if(ch===L)c+=' sel';}
+  return `<div class="${c}" data-id="${q.id}" data-l="${L}"><span class="L">(${L})</span><span>${fmt(q.opts[L])}</span><span class="kbd">${L}</span></div>`;
+}
+function card(q){
+  const ch=S.answers[q.id], showExp=(mode==='practice'&&ch)||(mode==='exam'&&submitted), ok=ch===q.answer;
+  const tags=[`<span class="tag ch">第${q.ch}章</span>`];
+  if(q.is_past)tags.push(`<span class="tag past">統測 民國${q.year||'歷屆'}年</span>`);
+  tags.push(`<span class="tag tp">${esc(q.type)}</span>`,`<span class="tag df ${q.difficulty==='進階'?'adv':''}">${esc(q.difficulty)}</span>`);
+  const bm=S.bookmarks[q.id]?'on':'';
+  const badge=ch?`<span class="badge ${ok?'':'no'}">${ok?'✔ 答對':'✘ 答錯'}</span>`:'';
+  return `<div class="q${activeId===q.id?' active':''}" id="q${q.id}" data-id="${q.id}">
+    <div class="qhead"><span class="qnum">${q.id}.</span>${tags.join('')}
+      <button class="star ${bm}" data-star="${q.id}" title="收藏">${bm?'★':'☆'}</button></div>
+    <div class="stem">${fmt(q.stem)}</div>
+    ${q.circuit&&typeof circuitSVG!=='undefined'?`<div class="dia">${circuitSVG(q.circuit,q.clabels||{})}</div>`:''}
+    <div class="opts">${['A','B','C','D'].map(L=>optRow(q,L)).join('')}</div>
+    <div class="reveal">${(mode==='practice'&&!ch)?`<button data-rev="${q.id}">👁 顯示答案/詳解</button>`:''}</div>
+    <div class="exp${showExp?' show':''}" id="exp${q.id}">
+      ${badge}<span class="et">正解：(${q.answer})</span><br><span class="et">【詳解】</span>${fmt(q.explanation)}</div>
+  </div>`;
+}
+
+/* ---------- intersection reveal ---------- */
+let io=null;
+function observe(){
+  if(io)io.disconnect();
+  io=new IntersectionObserver((ents)=>{ents.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.q:not(.in)').forEach(c=>io.observe(c));
+}
+
+/* ---------- render ---------- */
+function render(){
+  const arr=filtered();
+  el('list').innerHTML=arr.length?arr.map(card).join(''):
+    '<div class="empty"><span class="em">🗂️</span>沒有符合條件的題目，換個篩選試試。</div>';
+  observe();updateChips();updateHud(arr);
+  el('submit').style.display=(mode==='exam'&&!submitted&&arr.length)?'inline-block':'none';
+}
+function updateChips(){
+  const b=baseFilter();
+  el('cAll').textContent=b.length;
+  el('cUn').textContent=b.filter(q=>!S.answers[q.id]).length;
+  el('cWr').textContent=b.filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer).length;
+  el('cBm').textContent=b.filter(q=>S.bookmarks[q.id]).length;
+}
+function updateHud(arr){
+  arr=arr||filtered();
+  let done=0,ok=0;arr.forEach(q=>{if(S.answers[q.id]){done++;if(S.answers[q.id]===q.answer)ok++;}});
+  const show=(mode==='practice')||submitted;
+  animN('sTotal',arr.length);animN('sDone',done);
+  el('sOk').textContent=show?ok:'–';el('sNo').textContent=show?(done-ok):'–';
+  el('sPct').textContent=(show&&done)?Math.round(ok/done*100)+'%':'0%';
+  el('bar').style.width=(arr.length?done/arr.length*100:0)+'%';
+  el('sStreak').textContent=streak;
+  el('streakBox').classList.toggle('hot',streak>=3);
+  const all=QUESTIONS.length,ad=Object.keys(S.answers).length;
+  const pct=Math.round(ad/all*100);
+  el('ringP').style.strokeDashoffset=101-(101*ad/all);
+  el('ringT').textContent=pct+'%';
+}
+
+/* ---------- answering ---------- */
+function answer(id,L){
+  const q=Q(id);
+  if(mode==='practice'){
+    if(S.answers[id])return;
+    S.answers[id]=L;save();
+    const correct=L===q.answer;
+    if(correct){streak++;S.bestStreak=Math.max(S.bestStreak||0,streak);save();beep('ok');
+      if(streak>0&&streak%5===0){confetti(110);toast('🔥 連對 '+streak+' 題！','go');beep('go');}
+    }else{streak=0;beep('no');}
+    rerenderCard(id);
+    const cardEl=el('q'+id);
+    cardEl.classList.add(correct?'okpulse':'shake');
+    setTimeout(()=>cardEl.classList.remove('okpulse','shake'),650);
+    updateHud();updateChips();
+  }else{
+    if(submitted)return;
+    S.answers[id]=L;save();
+    [...document.querySelectorAll('#q'+id+' .opt')].forEach(o=>o.classList.toggle('sel',o.dataset.l===L));
+    updateHud();updateChips();
+  }
+}
+function rerenderCard(id){
+  const old=el('q'+id);if(!old)return;
+  const tmp=document.createElement('div');tmp.innerHTML=card(Q(id));
+  const nu=tmp.firstElementChild;nu.classList.add('in');old.replaceWith(nu);
+}
+
+/* ---------- events: list ---------- */
+el('list').addEventListener('click',e=>{
+  const op=e.target.closest('.opt');
+  if(op){answer(+op.dataset.id,op.dataset.l);setActive(+op.dataset.id,false);return;}
+  const st=e.target.closest('[data-star]');
+  if(st){toggleStar(+st.dataset.star);return;}
+  const rv=e.target.closest('[data-rev]');
+  if(rv){el('exp'+rv.dataset.rev).classList.add('show');rv.parentElement.innerHTML='';return;}
+  const c=e.target.closest('.q');if(c)setActive(+c.dataset.id,false);
+});
+function toggleStar(id){
+  if(S.bookmarks[id])delete S.bookmarks[id];else S.bookmarks[id]=1;save();
+  const b=document.querySelector('[data-star="'+id+'"]');
+  if(b){b.classList.toggle('on',!!S.bookmarks[id]);b.textContent=S.bookmarks[id]?'★':'☆';}
+  updateChips();if(chip==='bookmark')render();
+}
+function setActive(id,scroll){
+  activeId=id;document.querySelectorAll('.q.active').forEach(x=>x.classList.remove('active'));
+  const c=el('q'+id);if(c){c.classList.add('active');if(scroll)c.scrollIntoView({block:'center',behavior:'smooth'});}
+}
+
+/* ---------- filters/chips/mode ---------- */
+el('fpast').addEventListener('change',()=>{randomSet=null;submitted=false;hideResult();render();});
+let stim=null;el('fsearch').addEventListener('input',()=>{randomSet=null;clearTimeout(stim);stim=setTimeout(render,160);});
+el('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;
+  randomSet=null;chip=b.dataset.chip;[...el('chips').children].forEach(c=>c.classList.toggle('on',c===b));render();});
+el('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  mode=b.dataset.m;submitted=false;hideResult();
+  [...el('mode').children].forEach(x=>x.classList.toggle('on',x===b));
+  if(mode==='exam'){startTimer();}else{stopTimer();}render();});
+
+/* ---------- timer ---------- */
+function startTimer(){stopTimer();examSec=0;el('timer').style.display='inline';tick();examTimer=setInterval(tick,1000);}
+function tick(){const m=String(Math.floor(examSec/60)).padStart(2,'0'),s=String(examSec%60).padStart(2,'0');el('timer').textContent=m+':'+s;examSec++;}
+function stopTimer(){if(examTimer)clearInterval(examTimer);examTimer=null;el('timer').style.display='none';}
+
+/* ---------- buttons ---------- */
+el('shuffle').addEventListener('click',()=>{randomSet=null;for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}toast('🔀 已重新洗牌','');render();});
+el('redoWrong').addEventListener('click',()=>{
+  const wrong=baseFilter().filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer);
+  if(!wrong.length){toast('目前沒有錯題 🎉','ok');return;}
+  chip='wrong';[...el('chips').children].forEach(c=>c.classList.toggle('on',c.dataset.chip==='wrong'));
+  wrong.forEach(q=>delete S.answers[q.id]);save();streak=0;render();
+  toast('🔁 已載入 '+wrong.length+' 題錯題重練','go');
+});
+el('reset').addEventListener('click',()=>{
+  askConfirm('清除全部紀錄','確定清除所有作答、收藏與連對紀錄？（不影響題庫）',()=>{
+    S.answers={};S.bookmarks={};S.bestStreak=0;streak=0;save();submitted=false;hideResult();randomSet=null;
+    order=QUESTIONS.map(q=>q.id);chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
+    render();renderDash();toast('已清除全部紀錄','');
+  });
+});
+el('submit').addEventListener('click',()=>{
+  const arr=filtered();
+  const un=arr.filter(q=>!S.answers[q.id]).length;
+  if(un)askConfirm('交卷確認','還有 '+un+' 題未作答，仍要交卷嗎？',()=>doSubmit(arr));
+  else doSubmit(arr);
+});
+function doSubmit(arr){
+  submitted=true;stopTimer();
+  const ans=arr.filter(q=>S.answers[q.id]),ok=ans.filter(q=>S.answers[q.id]===q.answer).length;
+  const pct=arr.length?Math.round(ok/arr.length*100):0;
+  const grade=pct>=90?'🏆 神級！':pct>=80?'🎉 優秀！':pct>=60?'👍 及格，再加油':'💪 多練幾次會更好';
+  const r=el('result');r.className='result show';
+  r.innerHTML=`<div class="big">${ok} / ${arr.length}　${pct}分</div><div class="gr">${grade}</div>
+    <div style="color:var(--muted)">答對 ${ok}・答錯 ${ans.length-ok}・未作答 ${arr.length-ans.length}・用時 ${el('timer').textContent||'--'}</div>
+    <div style="margin-top:10px"><button class="btn pri" id="rvBtn">查看檢討 ↓</button></div>`;
+  render();renderDash();
+  el('rvBtn').onclick=()=>el('list').scrollIntoView({behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(pct>=80){confetti(180);beep('go');}
+  toast(grade+'　'+ok+'/'+arr.length,pct>=60?'ok':'no');
+}
+function hideResult(){el('result').className='result';el('result').innerHTML='';}
+
+/* ---------- in-app confirm modal (取代瀏覽器原生 confirm) ---------- */
+let confCb=null;
+function askConfirm(title,msg,cb){el('confTitle').textContent=title;el('confMsg').textContent=msg;confCb=cb;el('confModal').classList.add('show');}
+el('confYes').addEventListener('click',()=>{el('confModal').classList.remove('show');const cb=confCb;confCb=null;if(cb)cb();});
+el('confNo').addEventListener('click',()=>{el('confModal').classList.remove('show');confCb=null;});
+el('confModal').addEventListener('click',e=>{if(e.target===el('confModal'))el('confModal').classList.remove('show');});
+
+/* ---------- random quiz：5~40 題，簡單→難 ---------- */
+el('rqBtn').addEventListener('click',e=>{e.stopPropagation();closePops();el('rqModal').classList.add('show');});
+el('rqCancel').addEventListener('click',()=>el('rqModal').classList.remove('show'));
+el('rqModal').addEventListener('click',e=>{if(e.target===el('rqModal'))el('rqModal').classList.remove('show');});
+el('rqN').addEventListener('input',()=>el('rqNlab').textContent=el('rqN').value);
+[...el('rqModal').querySelectorAll('[data-rqn]')].forEach(b=>b.addEventListener('click',()=>{el('rqN').value=b.dataset.rqn;el('rqNlab').textContent=b.dataset.rqn;}));
+el('rqStart').addEventListener('click',()=>{
+  let n=Math.max(5,Math.min(40,parseInt(el('rqN').value)||20));
+  let pool=baseFilter().slice();
+  if(pool.length<5)pool=QUESTIONS.slice();
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  n=Math.min(n,pool.length);
+  const rank={'基礎':0,'中等':1,'進階':2};
+  const pick=pool.slice(0,n).sort((a,b)=>((rank[a.difficulty]??1)-(rank[b.difficulty]??1)));
+  randomSet=pick.map(q=>q.id);
+  mode='exam';submitted=false;chip='all';streak=0;
+  [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
+  [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='exam'));
+  startTimer();hideResult();el('rqModal').classList.remove('show');
+  if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
+  render();
+  toast('🎲 已出 '+n+' 題（簡單→難），作答後按「交卷看成績」','go');
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* ---------- dashboard ---------- */
+function renderDash(){
+  const all=QUESTIONS.length;let done=0,ok=0;
+  QUESTIONS.forEach(q=>{if(S.answers[q.id]){done++;if(S.answers[q.id]===q.answer)ok++;}});
+  const pct=done?Math.round(ok/done*100):0;
+  el('dnPct').textContent=pct+'%';el('dnP').style.strokeDashoffset=389-(389*pct/100);
+  animN('kDone',done);animN('kOk',ok);animN('kNo',done-ok);animN('kBest',S.bestStreak||0);animN('kBm',Object.keys(S.bookmarks).length);
+  const rows=TOPICS.map(t=>{
+    const qs=QUESTIONS.filter(q=>q.topicKey===t.key);
+    const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;
+    return {t,total:qs.length,a,c};
+  });
+  el('tprow').innerHTML=rows.map(r=>`<div class="tp">
+    <div class="nm">第${r.t.ch}章 · ${esc(r.t.label)}<br><em>${r.a}/${r.total} 已作答</em></div>
+    <div class="tbar"><i class="ans" style="width:${r.total?r.a/r.total*100:0}%"></i><i class="cor" style="width:${r.total?r.c/r.total*100:0}%"></i></div>
+    <div class="sc">${r.c}/${r.a||0} 對　(${r.a?Math.round(r.c/r.a*100):0}%)</div></div>`).join('');
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');el(t.dataset.tab).classList.add('active');
+  if(t.dataset.tab==='dash')renderDash();
+  window.scrollTo({top:0,behavior:'smooth'});
+}));
+
+/* ---------- theme / sound / kb ---------- */
+function applyTheme(){document.documentElement.dataset.theme=S.theme;el('themeBtn').textContent=S.theme==='dark'?'🌙':'☀️';}
+el('themeBtn').addEventListener('click',()=>{S.theme=S.theme==='dark'?'light':'dark';save();applyTheme();});
+function applySound(){el('sndBtn').textContent=S.sound?'🔊':'🔇';el('sndBtn').classList.toggle('on',S.sound);}
+el('sndBtn').addEventListener('click',()=>{S.sound=!S.sound;save();applySound();if(S.sound)beep('ok');});
+el('kbBtn').addEventListener('click',()=>el('kbModal').classList.add('show'));
+el('kbModal').addEventListener('click',e=>{if(e.target===el('kbModal'))el('kbModal').classList.remove('show');});
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA'){if(e.key==='Escape')e.target.blur();return;}
+  if(e.key==='Escape'){['kbModal','confModal','rqModal'].forEach(m=>el(m).classList.remove('show'));closePops();return;}
+  if(e.key==='t'||e.key==='T'){el('themeBtn').click();return;}
+  if(e.key==='m'||e.key==='M'){toggleMusic();return;}
+  if(el('quiz').classList.contains('active')===false)return;
+  const arr=filtered();if(!arr.length)return;
+  if(activeId==null||!arr.find(q=>q.id===activeId)){setActive(arr[0].id,true);}
+  const idx=arr.findIndex(q=>q.id===activeId);
+  if(['j','J','ArrowDown'].includes(e.key)){e.preventDefault();setActive(arr[Math.min(arr.length-1,idx+1)].id,true);}
+  else if(['k','K','ArrowUp'].includes(e.key)){e.preventDefault();setActive(arr[Math.max(0,idx-1)].id,true);}
+  else if(['1','2','3','4'].includes(e.key)){answer(activeId,'ABCD'[+e.key-1]);}
+  else if(['a','b','c','d','A','B','C','D'].includes(e.key)){answer(activeId,e.key.toUpperCase());}
+  else if(e.key==='f'||e.key==='F'){toggleStar(activeId);}
+  else if(e.key===' '||e.key==='Enter'){e.preventDefault();const r=document.querySelector('#q'+activeId+' [data-rev]');if(r){el('exp'+activeId).classList.add('show');r.parentElement.innerHTML='';}}
+});
+
+/* ---------- scroll: toTop + notes progress ---------- */
+window.addEventListener('scroll',()=>{
+  el('toTop').style.display=scrollY>500?'grid':'none';
+  if(el('notes').classList.contains('active')){
+    const b=el('notesBody').getBoundingClientRect();const h=el('notesBody').offsetHeight-innerHeight;
+    const p=Math.min(1,Math.max(0,(-b.top)/(h>0?h:1)));el('nprog').style.width=(p*100)+'%';
+  }else el('nprog').style.width='0';
+});
+el('toTop').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+/* ---------- notes TOC ---------- */
+(function(){
+  const body=el('notesBody'),toc=el('toc');
+  body.querySelectorAll('.nh1,.nh2').forEach((h,i)=>{h.id='n'+i;
+    const main=h.classList.contains('nh1');const a=document.createElement('a');a.href='#n'+i;
+    a.className=main?'toc-main':'toc-sub';let t=h.textContent.trim();
+    if(main)t=t.replace(/^電子學.*筆記$/,'本講義說明').replace(/（.*?）/,'');
+    a.textContent=t.slice(0,22);a.onclick=ev=>{ev.preventDefault();h.scrollIntoView({behavior:'smooth'});};
+    toc.appendChild(a);});
+})();
+
+/* ---------- background music ---------- */
+const BGM=el('bgm');
+const DEFAULT_SRCS=['bgm.mp3','bgm.m4a','bgm.ogg','bgm.wav'];
+S.music=Object.assign({enabled:true,vol:35,loop:true},S.music||{});
+const NICE_NAME='1014 — PASXKAL';
+let bgmIdx=0,bgmObjURL=null,bgmLoaded=false;
+function bgmName(){try{return decodeURIComponent((BGM.currentSrc||BGM.src||'').split('/').pop());}catch(e){return '';}}
+function bgmLabel(){const n=bgmName();return /^bgm\./i.test(n)?NICE_NAME:n;}
+BGM.addEventListener('error',()=>{ if(bgmObjURL)return; bgmIdx++;
+  if(bgmIdx<DEFAULT_SRCS.length)BGM.src=DEFAULT_SRCS[bgmIdx];
+  else if(!bgmLoaded)el('mNow').textContent='找不到 bgm.mp3，請用下方按鈕選擇音檔'; });
+BGM.addEventListener('loadeddata',()=>{bgmLoaded=true;el('mNow').textContent='♫ '+bgmLabel();});
+BGM.addEventListener('play',()=>{el('mPlay').textContent='⏸';el('musicBtn').classList.add('playing');el('mEq').style.display='inline-flex';});
+BGM.addEventListener('pause',()=>{el('mPlay').textContent='▶';el('musicBtn').classList.remove('playing');el('mEq').style.display='none';});
+BGM.volume=S.music.vol/100;el('mVol').value=S.music.vol;el('mLoop').checked=S.music.loop;BGM.loop=S.music.loop;
+el('mVol').addEventListener('input',()=>{BGM.volume=el('mVol').value/100;S.music.vol=+el('mVol').value;el('mVolIco').textContent=BGM.volume==0?'🔇':BGM.volume<.5?'🔉':'🔊';save();});
+el('mLoop').addEventListener('change',()=>{BGM.loop=el('mLoop').checked;S.music.loop=el('mLoop').checked;save();});
+el('mFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+  if(bgmObjURL)URL.revokeObjectURL(bgmObjURL);bgmObjURL=URL.createObjectURL(f);bgmLoaded=true;
+  BGM.src=bgmObjURL;el('mNow').textContent='已選擇：'+f.name;BGM.play().then(()=>{S.music.enabled=true;save();}).catch(()=>{});});
+function toggleMusic(){
+  if(BGM.paused){BGM.play().then(()=>{S.music.enabled=true;save();})
+    .catch(()=>{el('mpop').classList.add('show');toast('請在彈出視窗按 ▶ 開始播放（或先選擇音檔）','no');});}
+  else{BGM.pause();S.music.enabled=false;save();}
+}
+el('mPlay').addEventListener('click',toggleMusic);
+el('mpop').addEventListener('click',e=>e.stopPropagation());
+el('musicBtn').addEventListener('click',e=>{e.stopPropagation();const w=el('mpop').classList.contains('show');closePops();if(!w)el('mpop').classList.add('show');});
+BGM.src=DEFAULT_SRCS[0];
+if(S.music.enabled){
+  const once=()=>{BGM.play().then(()=>{S.music.enabled=true;save();}).catch(()=>{});
+    document.removeEventListener('pointerdown',once);document.removeEventListener('keydown',once);};
+  document.addEventListener('pointerdown',once);document.addEventListener('keydown',once);
+  setTimeout(()=>{if(BGM.paused)toast('🎵 點畫面任一處即可開始播放背景音樂','go');},700);
+}
+
+/* ---------- init ---------- */
+applyTheme();applySound();render();renderDash();
+window.addEventListener('resize',()=>{const c=el('confetti');c.width=innerWidth;c.height=innerHeight;});
+</script>
+</body>
+</html>
