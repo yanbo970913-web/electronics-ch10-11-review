@@ -1,0 +1,20 @@
+{
+  "name": "電子學 第10–11章 互動複習",
+  "short_name": "電子學複習",
+  "description": "運算放大器・振盪電路・濾波器 互動題庫（200題＋電路圖＋筆記）",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b16",
+  "theme_color": "#0b1224",
+  "lang": "zh-Hant",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
