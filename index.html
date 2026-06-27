@@ -1184,10 +1184,14 @@ function render(){
 }
 function updateChips(){
   const b=baseFilter();
+  const hideCorrect=(mode==='exam'&&!submitted);   // don't leak right/wrong during an unsubmitted exam
   el('cAll').textContent=b.length;
   el('cUn').textContent=b.filter(q=>!S.answers[q.id]).length;
-  el('cWr').textContent=b.filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer).length;
+  el('cWr').textContent=hideCorrect?'–':b.filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer).length;
   el('cBm').textContent=b.filter(q=>S.bookmarks[q.id]).length;
+  // lock the 錯題本 chip during an exam so it can't be used to peek
+  const wc=el('chips').querySelector('[data-chip="wrong"]');
+  if(wc){wc.style.opacity=hideCorrect?'.45':'';wc.style.pointerEvents=hideCorrect?'none':'';}
 }
 function updateHud(arr){
   arr=arr||filtered();
@@ -1385,6 +1389,12 @@ el('mockStart').addEventListener('click',()=>{
 
 /* ---------- dashboard ---------- */
 function renderDash(){
+  if(mode==='exam'&&!submitted&&randomSet){   // exam in progress: lock stats to prevent peeking
+    el('dnPct').textContent='🔒';el('dnP').style.strokeDashoffset=389;
+    ['kDone','kOk','kNo','kBest','kBm'].forEach(id=>{el(id).textContent='–';el(id).dataset.v=0;});
+    el('tprow').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">🔒 測驗進行中，交卷後才會顯示成績統計（避免作弊）。</div>';
+    return;
+  }
   const all=QUESTIONS.length;let done=0,ok=0;
   QUESTIONS.forEach(q=>{if(S.answers[q.id]){done++;if(S.answers[q.id]===q.answer)ok++;}});
   const pct=done?Math.round(ok/done*100):0;
