@@ -393,14 +393,42 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px
 .chip.on{box-shadow:0 6px 18px -8px var(--violet)}
 .iconbtn:active{transform:scale(.92)}
 .qnum{text-shadow:0 0 18px color-mix(in srgb,var(--brand) 45%,transparent)}
-@media(max-width:640px){
-  .btn,.chip{min-height:36px}.iconbtn{width:40px;height:40px}.opt{padding:12px 13px;font-size:15px}
-  .stem{font-size:15px}.htitle{font-size:15px}.q{padding:14px 15px}
+/* 防作弊：考試/模擬進行中禁止選取與複製（選項仍可正常點選） */
+body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* ===================== 響應式 RWD（電腦 / 平板 / 手機） ===================== */
+.mbox{max-height:90vh;overflow:auto}
+@media(max-width:1024px){ .wrap{padding:16px 14px 110px} }
+/* 直立平板 / 大手機 ≤760 */
+@media(max-width:760px){
+  .ring{display:none}
+  .logo{width:34px;height:34px;font-size:18px}
+  .htitle{font-size:15px;line-height:1.25}.htitle small{font-size:10.5px}
+  .hwrap{padding:8px 11px;gap:8px}.htools{gap:5px;width:100%}
+  .tabs{order:-1;flex:1 1 100%;justify-content:center}.tab{flex:1;text-align:center;padding:8px 10px;font-size:13px}
+  .panel{position:static;top:auto;padding:12px 13px}            /* 手機不黏頂，避免被加高的頁首擋住 */
+  .hud{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px}.hud .bar{grid-column:1/-1}
+  .st{min-width:0}.st b{font-size:19px}
+  .dtop{gap:14px}.kpis{gap:12px;justify-content:center}
+  .tp{grid-template-columns:1fr;gap:4px}.tp .sc{justify-self:start}
+  .notes{padding:6px 15px 18px}.donut{width:130px;height:130px}
+  .modal{padding:12px}
 }
-@media(max-width:640px){
-  .panel{top:60px}.htitle{font-size:15px}.tab{padding:7px 11px;font-size:13px}
-  .tp{grid-template-columns:1fr;gap:4px}.tp .sc{justify-self:end}
-  .notes{padding:6px 15px 18px}.donut{width:128px;height:128px}
+/* 手機 ≤480 */
+@media(max-width:480px){
+  .iconbtn{width:38px;height:38px}
+  .row{gap:8px}
+  .chips{width:100%}.chip{flex:1 1 auto;min-height:38px;display:inline-flex;align-items:center;justify-content:center}
+  .seg{flex:1 1 100%}.seg button{flex:1}
+  .panel .row .btn{flex:1 1 calc(50% - 8px);text-align:center;min-height:40px}   /* 動作鈕兩欄整齊排列 */
+  .hud{grid-template-columns:repeat(2,1fr)}
+  .opt{font-size:15px;padding:13px 14px}.stem{font-size:15px}.q{padding:14px 14px}
+  .dia{margin:8px -4px}
+}
+/* 極小螢幕 ≤360 */
+@media(max-width:360px){
+  .htitle{font-size:14px}.tab{font-size:12px;padding:7px 7px}
+  .st b{font-size:17px}.st span{font-size:10px}
+  .panel .row .btn{font-size:12.5px;padding:8px 9px}
 }
 </style>
 </head>
@@ -1316,6 +1344,7 @@ function render(){
     '<div class="empty"><span class="em">🗂️</span>沒有符合條件的題目，換個篩選試試。</div>';
   observe();injectAllDias();updateChips();updateHud(arr);
   el('submit').style.display=(mode==='exam'&&!submitted&&arr.length)?'inline-block':'none';
+  document.body.classList.toggle('examlock', mode==='exam'&&!submitted);   // 防作弊：考試中鎖定複製/選取/右鍵
 }
 function updateChips(){
   const b=baseFilter();
@@ -1438,10 +1467,11 @@ function doSubmit(arr){
   const usedStr=isMock?fmtClock(used):(el('timer').textContent||'--');
   const head=isMock?'🎯 模擬考成績':'';
   if(isMock){mockActive=false;stopCountdown();
-    S.mockHistory.unshift({t:Date.now(),n:arr.length,ok:ok,pct:pct,used:used});S.mockHistory=S.mockHistory.slice(0,30);save();}
+    S.mockHistory.unshift({t:Date.now(),n:arr.length,ok:ok,pct:pct,used:used,leaves:mockLeaves});S.mockHistory=S.mockHistory.slice(0,30);save();}
   const r=el('result');r.className='result show';
   r.innerHTML=`${head?`<div style="font-weight:800;color:var(--brand2);margin-bottom:2px">${head}</div>`:''}<div class="big">${ok} / ${arr.length}　${pct}分</div><div class="gr">${grade}</div>
     <div style="color:var(--muted)">答對 ${ok}・答錯 ${ans.length-ok}・未作答 ${arr.length-ans.length}・用時 ${usedStr}</div>
+    ${isMock&&mockLeaves>0?`<div style="color:var(--no);font-weight:800;margin-top:5px">⚠ 作答過程離開測驗畫面 ${mockLeaves} 次（誠信提醒）</div>`:''}
     <div style="margin-top:10px"><button class="btn pri" id="rvBtn">查看檢討 ↓</button></div>`;
   render();renderDash();
   el('rvBtn').onclick=()=>el('list').scrollIntoView({behavior:'smooth'});
@@ -1484,8 +1514,19 @@ el('rqStart').addEventListener('click',()=>{
 });
 
 /* ---------- 考前模擬計時測驗 ---------- */
-let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0;
+let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0, mockLeaves=0;
 S.mockHistory=S.mockHistory||[];
+/* ===== 防作弊機制 ===== */
+function examOn(){return document.body.classList.contains('examlock');}        // 考試/模擬進行中(未交卷)
+// 1) 考試中禁止複製/剪下/右鍵（避免把題目貼去搜尋）
+['copy','cut','contextmenu','selectstart','dragstart'].forEach(ev=>document.addEventListener(ev,e=>{
+  if(examOn()){e.preventDefault();if(ev==='copy'||ev==='cut')toast('🔒 測驗進行中，禁止複製題目','no');}
+},{capture:true}));
+// 2) 偵測離開測驗畫面（切分頁/縮小/切App）→ 計次並記錄
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&mockActive&&!submitted){mockLeaves++;try{paintMock();}catch(e){}}});
+window.addEventListener('focus',()=>{if(mockActive&&!submitted&&mockLeaves>0)toast('⚠ 偵測到你離開測驗畫面（累計 '+mockLeaves+' 次），已記錄於成績','no');});
+// 3) 模擬考進行中，重新整理/關閉前警告（避免中途逃避計時）
+window.addEventListener('beforeunload',e=>{if(mockActive&&!submitted){e.preventDefault();e.returnValue='';}});
 el('mockBtn').addEventListener('click',e=>{e.stopPropagation();closePops();el('mockModal').classList.add('show');});
 el('mockCancel').addEventListener('click',()=>el('mockModal').classList.remove('show'));
 el('mockModal').addEventListener('click',e=>{if(e.target===el('mockModal'))el('mockModal').classList.remove('show');});
@@ -1495,7 +1536,7 @@ function fmtClock(s){const m=Math.floor(s/60),x=s%60;return String(m).padStart(2
 function paintMock(){
   const done=randomSet?randomSet.filter(id=>S.answers[id]).length:0,tot=randomSet?randomSet.length:0;
   const bar=el('mockbar');bar.classList.toggle('warn',mockRemain<=300&&mockRemain>60);bar.classList.toggle('danger',mockRemain<=60);
-  bar.innerHTML='🎯 模擬考　<b>⏱ '+fmtClock(Math.max(0,mockRemain))+'</b>　已答 '+done+' / '+tot;
+  bar.innerHTML='🎯 模擬考　<b>⏱ '+fmtClock(Math.max(0,mockRemain))+'</b>　已答 '+done+' / '+tot+(mockLeaves?'　<span style="color:#fff;background:var(--no);padding:1px 8px;border-radius:999px;font-weight:800">⚠ 離開 '+mockLeaves+' 次</span>':'');
 }
 function stopCountdown(){if(mockTimer)clearInterval(mockTimer);mockTimer=null;el('mockbar').classList.remove('show','warn','danger');}
 function startCountdown(secs){stopTimer();if(mockTimer)clearInterval(mockTimer);mockDur=secs;mockRemain=secs;
@@ -1511,7 +1552,7 @@ el('mockStart').addEventListener('click',()=>{
   const pick=pool.slice(0,Math.min(n,pool.length));
   pick.forEach(q=>delete S.answers[q.id]);save();
   randomSet=pick.map(q=>q.id);
-  mode='exam';submitted=false;chip='all';mockActive=true;streak=0;
+  mode='exam';submitted=false;chip='all';mockActive=true;streak=0;mockLeaves=0;
   [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='exam'));
   hideResult();el('mockModal').classList.remove('show');
