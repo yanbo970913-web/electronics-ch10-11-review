@@ -1716,7 +1716,9 @@ el('authLogout').addEventListener('click',async()=>{try{const sb=await loadSupa(
 /* ---------- 管理員後台：帳號權限管理（呼叫 Edge Function） ---------- */
 async function callAdmin(payload){
   const sb=await loadSupa();
-  const r=await sb.functions.invoke('admin-users',{body:payload});
+  let headers={};
+  try{const s=(await sb.auth.getSession()).data.session;if(s&&s.access_token)headers={Authorization:'Bearer '+s.access_token};}catch(e){}
+  const r=await sb.functions.invoke('admin-users',{body:payload,headers});
   if(r.error){let msg=r.error.message||'呼叫失敗';
     try{const ctx=r.error.context;if(ctx&&typeof ctx.json==='function'){const j=await ctx.json();if(j&&j.error)msg=j.error;}}catch(e){}
     throw new Error(msg);}
