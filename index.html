@@ -376,6 +376,13 @@ svg.ckt{display:block;width:100%;height:auto}
 .modal.show{display:grid;animation:fadeIn .3s}
 .mbox{background:var(--solid);border:1px solid var(--border2);border-radius:18px;padding:22px 24px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .mbox h3{margin:0 0 12px;font-size:18px}
+.fxbody{max-height:64vh;overflow:auto;margin-top:4px;padding-right:4px}
+.fxsec{font-weight:900;color:var(--brand2);margin:15px 0 6px;font-size:14.5px;border-bottom:1px solid var(--border);padding-bottom:5px;position:sticky;top:0;background:var(--solid)}
+.fxsec:first-child{margin-top:2px}
+.fxitem{font-size:13.5px;line-height:1.75;padding:6px 2px;border-bottom:1px dashed var(--border)}
+.fxitem b{display:inline-block;min-width:104px;color:var(--brand);font-weight:800;margin-right:6px;vertical-align:top}
+.fxitem i{color:var(--muted);font-style:normal;font-size:12px}
+@media(max-width:480px){.fxitem b{display:block;min-width:0;margin-bottom:1px}}
 .kk{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--border);font-size:14px}
 .kk:last-child{border:0}
 .kk kbd{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:2px 9px;font-weight:800;font-size:12px}
@@ -531,7 +538,9 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
         <button class="tab" data-tab="dash">📊 統計</button>
         <button class="tab" data-tab="notes">📖 筆記</button>
       </div>
+      <button class="iconbtn" id="instBtn" title="安裝 App" style="display:none">📲</button>
       <button class="iconbtn" id="authBtn" title="登入 / 雲端同步">👤</button>
+      <button class="iconbtn" id="fxBtn" title="公式速查">📐</button>
       <button class="iconbtn" id="musicBtn" title="背景音樂">🎵</button>
       <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵">⌨</button>
       <button class="iconbtn" id="sndBtn" title="音效開關">🔇</button>
@@ -942,6 +951,38 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
   <div class="kk"><span>背景音樂 播放/暫停</span><span><kbd>M</kbd></span></div>
   <div class="kk"><span>關閉視窗</span><span><kbd>Esc</kbd></span></div>
   <div style="margin-top:14px;text-align:right"><button class="btn pri" onclick="document.getElementById('kbModal').classList.remove('show')">了解</button></div>
+</div></div>
+
+<div class="modal" id="fxModal"><div class="mbox" style="max-width:600px;text-align:left">
+  <h3 style="text-align:left">📐 公式速查表 <span style="font-size:12px;color:var(--muted);font-weight:600">考前快速複習</span></h3>
+  <div class="fxbody">
+    <div class="fxsec">⚡ 運算放大器（第10章）</div>
+    <div class="fxitem"><b>理想 OPA</b>Z<sub>i</sub>=∞、Z<sub>o</sub>=0、A<sub>v</sub>=∞、BW=∞、CMRR=∞；虛短路 V₊=V₋、虛斷路 i=0</div>
+    <div class="fxitem"><b>反相放大器</b>A<sub>v</sub> = −R<sub>f</sub>/R<sub>1</sub>，Z<sub>in</sub> = R<sub>1</sub>，虛接地</div>
+    <div class="fxitem"><b>非反相放大器</b>A<sub>v</sub> = 1 + R<sub>f</sub>/R<sub>1</sub>，Z<sub>in</sub> = ∞</div>
+    <div class="fxitem"><b>電壓隨耦器</b>A<sub>v</sub> = 1（緩衝、高輸入低輸出阻抗）</div>
+    <div class="fxitem"><b>反相加法器</b>V<sub>o</sub> = −R<sub>f</sub>(V₁/R₁ + V₂/R₂ + V₃/R₃)；R 相等時 = −(R<sub>f</sub>/R)·ΣV</div>
+    <div class="fxitem"><b>減法器</b>平衡時 V<sub>o</sub> = (R<sub>f</sub>/R₁)(V₂ − V₁)</div>
+    <div class="fxitem"><b>積分器</b>V<sub>o</sub> = −(1/RC)∫V<sub>i</sub> dt（方波→三角波）</div>
+    <div class="fxitem"><b>微分器</b>V<sub>o</sub> = −RC·dV<sub>i</sub>/dt（三角波→方波）</div>
+    <div class="fxitem"><b>比較器</b>V₊>V₋ → +V<sub>sat</sub>；反之 −V<sub>sat</sub>；臨界 V<sub>i</sub> = −(R₁/R₂)V<sub>ref</sub></div>
+    <div class="fxitem"><b>差動 / CMRR</b>V<sub>d</sub>=V<sub>i1</sub>−V<sub>i2</sub>、V<sub>c</sub>=(V<sub>i1</sub>+V<sub>i2</sub>)/2、V<sub>o</sub>=A<sub>d</sub>V<sub>d</sub>+A<sub>c</sub>V<sub>c</sub>；CMRR=|A<sub>d</sub>/A<sub>c</sub>|，dB=20·log CMRR</div>
+    <div class="fxsec">〰️ 振盪電路（第11章）</div>
+    <div class="fxitem"><b>巴克豪生準則</b>|Aβ|=1、總相移=0°(或360°)；起振需 |Aβ|>1</div>
+    <div class="fxitem"><b>RC 相移</b>f₀ = 1/(2π√6·RC)，A ≥ 29（3 節 RC）</div>
+    <div class="fxitem"><b>韋恩電橋</b>f₀ = 1/(2πRC)，A ≥ 3（=1+R₃/R₄，需 R₃/R₄ ≥ 2）</div>
+    <div class="fxitem"><b>考畢子 Colpitts</b>f₀ = 1/(2π√(L·C<sub>eq</sub>))，C<sub>eq</sub>=C₁C₂/(C₁+C₂)，A ≥ C₁/C₂　<i>(兩電容)</i></div>
+    <div class="fxitem"><b>哈特萊 Hartley</b>f₀ = 1/(2π√(L<sub>eq</sub>·C))，L<sub>eq</sub>=L₁+L₂+2M，A ≥ L₂/L₁　<i>(兩電感)</i></div>
+    <div class="fxitem"><b>晶體振盪器</b>Q>3000，極穩定；f<sub>s</sub>&lt;f&lt;f<sub>p</sub> 呈電感性</div>
+    <div class="fxsec">📐 波形整形 / 濾波（第11章）</div>
+    <div class="fxitem"><b>施密特(反相)</b>V<sub>H</sub> = 2R₂·V<sub>sat</sub>/(R₁+R₂)</div>
+    <div class="fxitem"><b>方波(無穩態)</b>T = 2RC·ln(1 + 2R₂/R₁)，f = 1/T；β = R₂/(R₁+R₂)</div>
+    <div class="fxitem"><b>三角波</b>v<sub>o</sub> 振幅 = ±(R₁/R₂)V<sub>sat</sub>，T = 4RC·(R₁/R₂)</div>
+    <div class="fxitem"><b>一階濾波</b>f<sub>c</sub> = 1/(2πRC)；−3dB 點 = 0.707×最大</div>
+    <div class="fxitem"><b>主動濾波增益</b>A<sub>v(max)</sub> = 1 + R<sub>f</sub>/R<sub>N</sub></div>
+    <div class="fxitem"><b>帶通</b>f₀=√(f<sub>L</sub>·f<sub>H</sub>)、BW=f<sub>H</sub>−f<sub>L</sub>、Q=f₀/BW；一階斜率 −20dB/decade</div>
+  </div>
+  <div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="btn pri" id="fxClose">關閉</button></div>
 </div></div>
 
 <div class="mpop" id="mpop">
@@ -1904,12 +1945,17 @@ function renderChProg(){
     data.forEach(function(d,i){const b=bars[i];if(b){b.querySelector('.ans').style.width=d.ap+'%';b.querySelector('.cor').style.width=d.cp+'%';}});});
 }
 /* ---- 今日刷題目標 ---- */
-let daily={goal:20,d:'',c:0};
-try{const _d=JSON.parse(localStorage.getItem('opa_daily')||'null');if(_d&&typeof _d.goal==='number')daily=_d;}catch(e){}
+let daily={goal:20,d:'',c:0,streak:0,last:''};
+try{const _d=JSON.parse(localStorage.getItem('opa_daily')||'null');if(_d&&typeof _d.goal==='number')daily=Object.assign({streak:0,last:''},_d);}catch(e){}
 function todayStr(){const x=new Date();return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate();}
+function yesterdayStr(){const x=new Date(Date.now()-86400000);return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate();}
 function saveDaily(){try{localStorage.setItem('opa_daily',JSON.stringify(daily));}catch(e){}}
-function dailyCheckDay(){const t=todayStr();if(daily.d!==t){daily.d=t;daily.c=0;}}
-function bumpDaily(){dailyCheckDay();const before=daily.c;daily.c++;saveDaily();
+function dailyCheckDay(){const t=todayStr();if(daily.d!==t){daily.d=t;daily.c=0;}}   // 只重置「今日題數」，不動連續天數
+function bumpDaily(){const t=todayStr();
+  if(daily.last!==t){daily.streak=(daily.last===yesterdayStr())?((daily.streak||0)+1):1;daily.last=t;   // 今日第一次作答→更新連續天數
+    if(daily.streak>=3)setTimeout(function(){toast('🔥 連續學習 '+daily.streak+' 天，繼續保持！','go');},400);}
+  if(daily.d!==t){daily.d=t;daily.c=0;}
+  const before=daily.c;daily.c++;saveDaily();
   if(before<daily.goal&&daily.c>=daily.goal){confetti(150);try{beep('go');}catch(e){}toast('🎯 達成今日目標 '+daily.goal+' 題！太強了','go');}
   if(el('dash')&&el('dash').classList.contains('active'))renderDaily();}
 function renderDaily(){
@@ -1921,8 +1967,8 @@ function renderDaily(){
     +'<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="var(--border2)" stroke-width="9"/>'
     +'<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+(done?'var(--ok)':'url(#rg)')+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+CIRC.toFixed(1)+'" stroke-dashoffset="'+off+'" transform="rotate(-90 50 50)" style="transition:stroke-dashoffset .8s"/></svg>'
     +'<b>'+c+'<br><span style="font-size:11px;color:var(--muted)">/ '+goal+'</span></b></div>'
-    +'<div class="dinfo"><div class="dmsg">'+(done?'🎉 今日目標達成！':('今天已刷 '+c+' / '+goal+' 題'))+'</div>'
-    +'<div class="dsub">'+(done?'保持手感，明天再戰！':('再 '+(goal-c)+' 題就達標（'+pct+'%）'))+'</div>'
+    +'<div class="dinfo"><div class="dmsg">'+(done?'🎉 今日目標達成！':('今天已刷 '+c+' / '+goal+' 題'))+(daily.streak>0?' <span style="color:var(--gold)">🔥'+daily.streak+'天</span>':'')+'</div>'
+    +'<div class="dsub">'+(done?'保持手感，明天再戰！':('再 '+(goal-c)+' 題就達標（'+pct+'%）'))+(daily.streak>0?'　連續學習 '+daily.streak+' 天':'')+'</div>'
     +'<div class="dgoal">每日目標：<button data-dg="-5" aria-label="減少目標">−</button><b style="color:var(--text);min-width:34px;text-align:center">'+goal+'</b><button data-dg="5" aria-label="增加目標">＋</button> 題</div>'
     +'</div></div>';
 }
@@ -1975,11 +2021,19 @@ function applySound(){el('sndBtn').textContent=S.sound?'🔊':'🔇';el('sndBtn'
 el('sndBtn').addEventListener('click',()=>{S.sound=!S.sound;save();applySound();if(S.sound)beep('ok');});
 el('kbBtn').addEventListener('click',()=>el('kbModal').classList.add('show'));
 el('kbModal').addEventListener('click',e=>{if(e.target===el('kbModal'))el('kbModal').classList.remove('show');});
+el('fxBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('fxModal').classList.add('show');});
+el('fxClose').addEventListener('click',()=>el('fxModal').classList.remove('show'));
+el('fxModal').addEventListener('click',e=>{if(e.target===el('fxModal'))el('fxModal').classList.remove('show');});
+/* PWA 安裝 */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;const b=el('instBtn');if(b)b.style.display='';});
+el('instBtn').addEventListener('click',async function(){if(!deferredPrompt)return;try{deferredPrompt.prompt();await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;el('instBtn').style.display='none';});
+window.addEventListener('appinstalled',function(){const b=el('instBtn');if(b)b.style.display='none';toast('✅ 已安裝到主畫面，下次可全螢幕開啟','ok');});
 
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA'){if(e.key==='Escape')e.target.blur();return;}
-  if(e.key==='Escape'){if(!mockOn())['kbModal','confModal','rqModal','mockModal','authModal'].forEach(m=>el(m).classList.remove('show'));closePops();return;}
+  if(e.key==='Escape'){if(!mockOn())['kbModal','confModal','rqModal','mockModal','authModal','fxModal'].forEach(m=>el(m).classList.remove('show'));closePops();return;}
   if(e.key==='t'||e.key==='T'){el('themeBtn').click();return;}
   if(e.key==='m'||e.key==='M'){toggleMusic();return;}
   if(el('quiz').classList.contains('active')===false)return;
