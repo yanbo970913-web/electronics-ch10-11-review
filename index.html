@@ -889,7 +889,11 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
     <button class="chip" data-t="30">30 分</button><button class="chip on" data-t="50">50 分</button>
     <button class="chip" data-t="60">60 分</button><button class="chip" data-t="80">80 分</button></div>
   <label class="chk" style="margin-top:13px"><input type="checkbox" id="mockScope"> 只考目前選的章節範圍</label>
-  <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+  <label class="chk" style="margin-top:9px"><input type="checkbox" id="mockStrict" checked> 🛡️ 嚴格監考模式（全螢幕＋偵測切換視窗/離開）</label>
+  <div style="margin-top:12px;background:color-mix(in srgb,var(--no) 12%,transparent);border:1px solid color-mix(in srgb,var(--no) 35%,transparent);border-radius:11px;padding:10px 12px;font-size:12.5px;line-height:1.7;color:var(--text)">
+    <b style="color:var(--no)">⚠ 誠信考試規則</b><br>開始後將進入<b>全螢幕</b>；作答期間<b>禁止複製/右鍵/開發者工具</b>，且系統會<b>偵測並記錄</b>切換分頁、跳出全螢幕、離開視窗的次數，違規次數會顯示在計時條並記入成績單。
+  </div>
+  <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
     <button class="btn" id="mockCancel">取消</button><button class="btn pri" id="mockStart">🎯 開始模擬考</button></div>
 </div></div>
 
@@ -1466,7 +1470,7 @@ function doSubmit(arr){
   const grade=pct>=90?'🏆 神級！':pct>=80?'🎉 優秀！':pct>=60?'👍 及格，再加油':'💪 多練幾次會更好';
   const usedStr=isMock?fmtClock(used):(el('timer').textContent||'--');
   const head=isMock?'🎯 模擬考成績':'';
-  if(isMock){mockActive=false;stopCountdown();
+  if(isMock){mockActive=false;mockStrict=false;stopCountdown();exitFS();
     S.mockHistory.unshift({t:Date.now(),n:arr.length,ok:ok,pct:pct,used:used,leaves:mockLeaves});S.mockHistory=S.mockHistory.slice(0,30);save();}
   const r=el('result');r.className='result show';
   r.innerHTML=`${head?`<div style="font-weight:800;color:var(--brand2);margin-bottom:2px">${head}</div>`:''}<div class="big">${ok} / ${arr.length}　${pct}分</div><div class="gr">${grade}</div>
@@ -1514,19 +1518,44 @@ el('rqStart').addEventListener('click',()=>{
 });
 
 /* ---------- 考前模擬計時測驗 ---------- */
-let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0, mockLeaves=0;
+let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0, mockEndAt=0, mockLeaves=0, mockStrict=false, mockStartTs=0;
 S.mockHistory=S.mockHistory||[];
-/* ===== 防作弊機制 ===== */
-function examOn(){return document.body.classList.contains('examlock');}        // 考試/模擬進行中(未交卷)
-// 1) 考試中禁止複製/剪下/右鍵（避免把題目貼去搜尋）
-['copy','cut','contextmenu','selectstart','dragstart'].forEach(ev=>document.addEventListener(ev,e=>{
-  if(examOn()){e.preventDefault();if(ev==='copy'||ev==='cut')toast('🔒 測驗進行中，禁止複製題目','no');}
-},{capture:true}));
-// 2) 偵測離開測驗畫面（切分頁/縮小/切App）→ 計次並記錄
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&mockActive&&!submitted){mockLeaves++;try{paintMock();}catch(e){}}});
-window.addEventListener('focus',()=>{if(mockActive&&!submitted&&mockLeaves>0)toast('⚠ 偵測到你離開測驗畫面（累計 '+mockLeaves+' 次），已記錄於成績','no');});
-// 3) 模擬考進行中，重新整理/關閉前警告（避免中途逃避計時）
-window.addEventListener('beforeunload',e=>{if(mockActive&&!submitted){e.preventDefault();e.returnValue='';}});
+/* ===== 防作弊機制（強化版・擬真監考） ===== */
+function examOn(){return document.body.classList.contains('examlock');}   // 考試/模擬進行中(未交卷)
+function mockOn(){return mockActive&&!submitted;}
+function fsSupported(){return !!(document.fullscreenEnabled||document.webkitFullscreenEnabled);}
+function enterFS(){if(!fsSupported())return;try{var d=document.documentElement,rf=d.requestFullscreen||d.webkitRequestFullscreen;if(rf)Promise.resolve(rf.call(d)).catch(function(){});}catch(e){}}
+function exitFS(){try{if(document.fullscreenElement){var xf=document.exitFullscreen||document.webkitExitFullscreen;if(xf)Promise.resolve(xf.call(document)).catch(function(){});}}catch(e){}}
+// 統一違規計數（去抖，避免單一動作重複計）
+let lastBump=0;
+function bumpViolation(reason){
+  if(!mockOn()||!mockStrict)return;
+  const now=Date.now();
+  if(now-mockStartTs<1500)return;                 // 開考瞬間進全螢幕的抖動忽略
+  if(now-lastBump<800)return;                     // 去抖
+  lastBump=now;mockLeaves++;try{paintMock();}catch(e){}
+  toast(mockLeaves>=3?('⛔ 第 '+mockLeaves+' 次違規！已記錄並將標註於成績'):('⚠ 偵測到離開測驗（'+reason+'，第 '+mockLeaves+' 次）已記錄'),'no');
+}
+// 1) 考試中禁止複製/剪下/貼上/右鍵/選取/拖曳；複製時順手清空剪貼簿
+['copy','cut','paste','contextmenu','selectstart','dragstart'].forEach(function(ev){document.addEventListener(ev,function(e){
+  if(examOn()){e.preventDefault();if(ev==='copy'||ev==='cut'){try{navigator.clipboard&&navigator.clipboard.writeText('');}catch(_){}toast('🔒 測驗進行中，禁止複製題目','no');}}
+},{capture:true});});
+// 2) 考試中封鎖開發者工具/檢視原始碼/列印/存檔/全選等快捷鍵
+document.addEventListener('keydown',function(e){
+  if(!examOn())return;const k=(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey;
+  if(k==='f12'||(c&&e.shiftKey&&(k==='i'||k==='j'||k==='c'))||(c&&(k==='u'||k==='p'||k==='s'||k==='c'||k==='x'||k==='v'||k==='a'))){
+    e.preventDefault();e.stopPropagation();toast('🔒 測驗進行中，已停用此操作','no');}
+},{capture:true});
+// 3) 偵測離開測驗畫面：切分頁/縮小/切App/切視窗
+document.addEventListener('visibilitychange',function(){if(document.hidden)bumpViolation('切換分頁');});
+window.addEventListener('blur',function(){bumpViolation('切換視窗');});
+// 4) 偵測跳出全螢幕
+document.addEventListener('fullscreenchange',function(){if(mockOn()&&mockStrict&&!document.fullscreenElement)bumpViolation('離開全螢幕');});
+document.addEventListener('webkitfullscreenchange',function(){if(mockOn()&&mockStrict&&!document.webkitFullscreenElement)bumpViolation('離開全螢幕');});
+// 5) 模擬考進行中，重新整理/關閉前警告（避免中途逃避計時）
+window.addEventListener('beforeunload',function(e){if(mockOn()){e.preventDefault();e.returnValue='';}});
+// 點計時條的「回到全螢幕」按鈕
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#fsReenter'))enterFS();});
 el('mockBtn').addEventListener('click',e=>{e.stopPropagation();closePops();el('mockModal').classList.add('show');});
 el('mockCancel').addEventListener('click',()=>el('mockModal').classList.remove('show'));
 el('mockModal').addEventListener('click',e=>{if(e.target===el('mockModal'))el('mockModal').classList.remove('show');});
@@ -1536,14 +1565,17 @@ function fmtClock(s){const m=Math.floor(s/60),x=s%60;return String(m).padStart(2
 function paintMock(){
   const done=randomSet?randomSet.filter(id=>S.answers[id]).length:0,tot=randomSet?randomSet.length:0;
   const bar=el('mockbar');bar.classList.toggle('warn',mockRemain<=300&&mockRemain>60);bar.classList.toggle('danger',mockRemain<=60);
-  bar.innerHTML='🎯 模擬考　<b>⏱ '+fmtClock(Math.max(0,mockRemain))+'</b>　已答 '+done+' / '+tot+(mockLeaves?'　<span style="color:#fff;background:var(--no);padding:1px 8px;border-radius:999px;font-weight:800">⚠ 離開 '+mockLeaves+' 次</span>':'');
+  const needFS=mockStrict&&mockOn()&&fsSupported()&&!document.fullscreenElement&&!document.webkitFullscreenElement;
+  bar.innerHTML='🎯 模擬考　<b>⏱ '+fmtClock(Math.max(0,mockRemain))+'</b>　已答 '+done+' / '+tot
+    +(mockLeaves?'　<span style="color:#fff;background:var(--no);padding:1px 8px;border-radius:999px;font-weight:800">⚠ 離開 '+mockLeaves+' 次</span>':'')
+    +(needFS?'　<button id="fsReenter" class="btn" style="padding:2px 10px;font-size:12px;vertical-align:middle">↩ 回到全螢幕</button>':'');
 }
 function stopCountdown(){if(mockTimer)clearInterval(mockTimer);mockTimer=null;el('mockbar').classList.remove('show','warn','danger');}
-function startCountdown(secs){stopTimer();if(mockTimer)clearInterval(mockTimer);mockDur=secs;mockRemain=secs;
+function startCountdown(secs){stopTimer();if(mockTimer)clearInterval(mockTimer);mockDur=secs;mockEndAt=Date.now()+secs*1000;mockRemain=secs;
   el('mockbar').classList.add('show');paintMock();
-  mockTimer=setInterval(()=>{mockRemain--;paintMock();if(mockRemain<=0){if(mockTimer)clearInterval(mockTimer);mockTimer=null;
+  mockTimer=setInterval(()=>{mockRemain=Math.max(0,Math.round((mockEndAt-Date.now())/1000));paintMock();if(mockRemain<=0){if(mockTimer)clearInterval(mockTimer);mockTimer=null;
     toast('⏰ 時間到，自動交卷！','no');doSubmit(filtered());}},1000);}
-function cancelMock(){if(mockActive&&!submitted){mockActive=false;stopCountdown();}}
+function cancelMock(){if(mockActive&&!submitted){mockActive=false;mockStrict=false;stopCountdown();exitFS();}}
 el('mockStart').addEventListener('click',()=>{
   const n=+el('mockN').querySelector('.on').dataset.n,mins=+el('mockT').querySelector('.on').dataset.t;
   let pool=el('mockScope').checked?baseFilter().slice():QUESTIONS.slice();
@@ -1553,9 +1585,11 @@ el('mockStart').addEventListener('click',()=>{
   pick.forEach(q=>delete S.answers[q.id]);save();
   randomSet=pick.map(q=>q.id);
   mode='exam';submitted=false;chip='all';mockActive=true;streak=0;mockLeaves=0;
+  mockStrict=el('mockStrict')?el('mockStrict').checked:true;mockStartTs=Date.now();
   [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='exam'));
   hideResult();el('mockModal').classList.remove('show');
+  if(mockStrict)enterFS();                                  // 進全螢幕（須在點擊手勢內呼叫）
   if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
   render();startCountdown(mins*60);
   toast('🎯 模擬考開始！'+randomSet.length+' 題・'+mins+' 分鐘','go');
