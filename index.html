@@ -261,6 +261,13 @@ svg.ckt{display:block;width:100%;height:auto}
 .tp .sc{font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dh{font-size:16px;font-weight:900;margin:0 0 10px;color:var(--text)}
 .dh .sub{font-size:12px;color:var(--muted);font-weight:600}
+.radar{width:100%;max-width:400px;display:block;margin:0 auto;overflow:visible}
+.rg-ring{fill:none;stroke:var(--border);stroke-width:1}
+.rg-axis{stroke:var(--border);stroke-width:1}
+.rg-lbl{fill:var(--muted);font-size:10px;font-weight:800;font-family:inherit}
+.rg-ans{fill:color-mix(in srgb,var(--brand) 15%,transparent);stroke:color-mix(in srgb,var(--brand) 48%,transparent);stroke-width:1.5;stroke-linejoin:round}
+.rg-cor{fill:color-mix(in srgb,var(--brand2) 24%,transparent);stroke:var(--brand2);stroke-width:2;stroke-linejoin:round;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--brand2) 50%,transparent))}
+.rg-dot{fill:var(--brand2)}
 
 /* notes */
 #nprog{position:fixed;top:0;left:0;height:3px;width:0;z-index:50;
@@ -485,6 +492,10 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px
             <div class="kpi"><b id="kBm" style="color:var(--violet)">0</b><span>⭐收藏</span></div>
           </div>
         </div>
+      </div>
+      <div class="dcard">
+        <div class="dh">各主題雷達圖 <span class="sub">（亮色＝答對率、淡色＝作答率）</span></div>
+        <div id="radarWrap" style="min-height:280px"></div>
       </div>
       <div class="dcard">
         <div class="dh">各主題熟練度 <span class="sub">（淡色＝已作答比例，亮色＝答對比例）</span></div>
@@ -1511,6 +1522,7 @@ function renderDash(){
     el('dnPct').textContent='🔒';el('dnP').style.strokeDashoffset=389;
     ['kDone','kOk','kNo','kBest','kBm'].forEach(id=>{el(id).textContent='–';el(id).dataset.v=0;});
     el('tprow').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">🔒 測驗進行中，交卷後才會顯示成績統計（避免作弊）。</div>';
+    if(el('radarWrap'))el('radarWrap').innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">🔒 測驗進行中</div>';
     return;
   }
   const all=QUESTIONS.length;let done=0,ok=0;
@@ -1527,6 +1539,31 @@ function renderDash(){
     <div class="nm">第${r.t.ch}章 · ${esc(r.t.label)}<br><em>${r.a}/${r.total} 已作答</em></div>
     <div class="tbar"><i class="ans" style="width:${r.total?r.a/r.total*100:0}%"></i><i class="cor" style="width:${r.total?r.c/r.total*100:0}%"></i></div>
     <div class="sc">${r.c}/${r.a||0} 對　(${r.a?Math.round(r.c/r.a*100):0}%)</div></div>`).join('');
+  renderRadar();
+}
+const RADAR_SHORT={ch10_ideal:'理想OPA',ch10_inv:'反相',ch10_noninv:'非反相',ch10_adder:'加法',ch10_sub:'減法',ch10_diffint:'微積分',ch10_comp:'比較器',ch11_rcphase:'RC相移',ch11_wien:'韋恩',ch11_lc:'LC',ch11_xtal:'晶體',ch11_schmitt:'施密特',ch11_square:'方波',ch11_triangle:'三角波',ch11_filter:'濾波器'};
+function renderRadar(){
+  const wrap=el('radarWrap');if(!wrap)return;
+  const rows=TOPICS.map(t=>{const qs=QUESTIONS.filter(q=>q.topicKey===t.key);
+    const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;
+    return {label:RADAR_SHORT[t.key]||t.label,value:qs.length?c/qs.length:0,answered:qs.length?a/qs.length:0};});
+  const N=rows.length,cx=185,cy=156,R=108;
+  const ang=i=>(Math.PI*2*i/N)-Math.PI/2;
+  const pt=(i,r)=>[Math.round((cx+Math.cos(ang(i))*R*r)*10)/10,Math.round((cy+Math.sin(ang(i))*R*r)*10)/10];
+  let grid='';[0.25,0.5,0.75,1].forEach(g=>{grid+='<polygon class="rg-ring" points="'+rows.map((_,i)=>pt(i,g).join(',')).join(' ')+'"/>';});
+  let axes='',labels='';
+  rows.forEach((r,i)=>{const e=pt(i,1);axes+='<line class="rg-axis" x1="'+cx+'" y1="'+cy+'" x2="'+e[0]+'" y2="'+e[1]+'"/>';
+    const l=pt(i,1.18),a=ang(i),anc=Math.abs(Math.cos(a))<0.34?'middle':(Math.cos(a)>0?'start':'end');
+    labels+='<text class="rg-lbl" x="'+l[0]+'" y="'+(l[1]+3)+'" text-anchor="'+anc+'">'+esc(r.label)+'</text>';});
+  wrap.innerHTML='<svg class="radar" viewBox="0 0 370 312">'+grid+axes+'<polygon id="rgAns" class="rg-ans" points="'+cx+','+cy+'"/><polygon id="rgCor" class="rg-cor" points="'+cx+','+cy+'"/><g id="rgDots"></g>'+labels+'</svg>';
+  let t0=null;
+  function step(ts){if(!t0)t0=ts;const p=Math.min(1,(ts-t0)/850),e=1-Math.pow(1-p,3);
+    const aP=el('rgAns'),cP=el('rgCor'),dG=el('rgDots');if(!aP)return;
+    aP.setAttribute('points',rows.map((r,i)=>pt(i,Math.max(0,r.answered*e)).join(',')).join(' '));
+    cP.setAttribute('points',rows.map((r,i)=>pt(i,Math.max(0,r.value*e)).join(',')).join(' '));
+    dG.innerHTML=rows.map((r,i)=>{const d=pt(i,Math.max(0,r.value*e));return '<circle class="rg-dot" cx="'+d[0]+'" cy="'+d[1]+'" r="2.6"/>';}).join('');
+    if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
 }
 
 /* ---------- tabs ---------- */
