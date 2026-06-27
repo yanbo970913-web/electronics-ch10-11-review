@@ -893,9 +893,9 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
     <button class="chip" data-t="30">30 分</button><button class="chip on" data-t="50">50 分</button>
     <button class="chip" data-t="60">60 分</button><button class="chip" data-t="80">80 分</button></div>
   <label class="chk" style="margin-top:13px"><input type="checkbox" id="mockScope"> 只考目前選的章節範圍</label>
-  <label class="chk" style="margin-top:9px"><input type="checkbox" id="mockStrict" checked> 🛡️ 嚴格監考模式（全螢幕＋偵測切換視窗/離開）</label>
+  <label class="chk" style="margin-top:9px"><input type="checkbox" id="mockStrict" checked> 🛡️ 嚴格監考模式・<b style="color:var(--no)">必開</b>（全螢幕＋偵測切換視窗/離開）</label>
   <div style="margin-top:12px;background:color-mix(in srgb,var(--no) 12%,transparent);border:1px solid color-mix(in srgb,var(--no) 35%,transparent);border-radius:11px;padding:10px 12px;font-size:12.5px;line-height:1.7;color:var(--text)">
-    <b style="color:var(--no)">⚠ 誠信考試規則</b><br>開始後將進入<b>全螢幕</b>；作答期間<b>禁止複製/右鍵/開發者工具</b>，且系統會<b>偵測並記錄</b>切換分頁、跳出全螢幕、離開視窗的次數，違規次數會顯示在計時條並記入成績單。
+    <b style="color:var(--no)">⚠ 誠信考試規則</b><br>開始後將進入<b>全螢幕</b>；作答期間<b>禁止複製/右鍵/開發者工具</b>，且系統會<b>偵測並記錄</b>切換分頁、跳出全螢幕、離開視窗的次數，違規次數會顯示在計時條並記入成績單。<br><b style="color:var(--no)">⛔ 離開次數超過題數的 1/3 將自動交卷。</b>
   </div>
   <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
     <button class="btn" id="mockCancel">取消</button><button class="btn pri" id="mockStart">🎯 開始模擬考</button></div>
@@ -1523,7 +1523,7 @@ el('rqStart').addEventListener('click',()=>{
 });
 
 /* ---------- 考前模擬計時測驗 ---------- */
-let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0, mockEndAt=0, mockLeaves=0, mockStrict=false, mockStartTs=0;
+let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0, mockEndAt=0, mockLeaves=0, mockStrict=false, mockStartTs=0, mockMaxLeaves=0;
 S.mockHistory=S.mockHistory||[];
 /* ===== 防作弊機制（強化版・擬真監考） ===== */
 function examOn(){return document.body.classList.contains('examlock');}   // 考試/模擬進行中(未交卷)
@@ -1531,17 +1531,18 @@ function mockOn(){return mockActive&&!submitted;}
 function fsSupported(){return !!(document.fullscreenEnabled||document.webkitFullscreenEnabled);}
 function enterFS(){if(!fsSupported())return;try{var d=document.documentElement,rf=d.requestFullscreen||d.webkitRequestFullscreen;if(rf)Promise.resolve(rf.call(d)).catch(function(){});}catch(e){}}
 function exitFS(){try{if(document.fullscreenElement){var xf=document.exitFullscreen||document.webkitExitFullscreen;if(xf)Promise.resolve(xf.call(document)).catch(function(){});}}catch(e){}}
-// 統一違規計數（去抖，避免單一動作重複計）＋ 達上限自動交卷
-let lastBump=0, MAX_VIOLATIONS=5;
+// 統一違規計數（去抖）＋ 離開次數超過題數 1/3 自動交卷
+let lastBump=0;
 function bumpViolation(reason){
   if(!mockOn()||!mockStrict)return;
   const now=Date.now();
   if(now-mockStartTs<1500)return;                 // 開考瞬間進全螢幕的抖動忽略
   if(now-lastBump<800)return;                     // 去抖
   lastBump=now;mockLeaves++;try{paintMock();}catch(e){}
-  if(mockLeaves>=MAX_VIOLATIONS){toast('⛔ 違規達 '+mockLeaves+' 次，已自動交卷！','no');try{doSubmit(filtered());}catch(e){}return;}
-  const left=MAX_VIOLATIONS-mockLeaves;
-  toast(mockLeaves>=3?('⛔ 第 '+mockLeaves+' 次違規！再離開 '+left+' 次將自動交卷'):('⚠ 偵測到離開測驗（'+reason+'，第 '+mockLeaves+' 次）已記錄'),'no');
+  const lim=mockMaxLeaves||5;                     // 上限=題數的1/3（無條件進位+1，即「超過1/3」）
+  if(mockLeaves>=lim){toast('⛔ 離開達 '+mockLeaves+' 次（超過題數的 1/3），已自動交卷！','no');try{doSubmit(filtered());}catch(e){}return;}
+  const left=lim-mockLeaves;
+  toast(left<=2?('⛔ 第 '+mockLeaves+' 次離開！再離開 '+left+' 次將自動交卷'):('⚠ 偵測到離開測驗（'+reason+'，第 '+mockLeaves+' 次，上限 '+lim+'）已記錄'),'no');
 }
 // 1) 考試中禁止複製/剪下/貼上/右鍵/選取/拖曳；複製時順手清空剪貼簿
 ['copy','cut','paste','contextmenu','selectstart','dragstart'].forEach(function(ev){document.addEventListener(ev,function(e){
@@ -1586,6 +1587,8 @@ el('mockCancel').addEventListener('click',()=>el('mockModal').classList.remove('
 el('mockModal').addEventListener('click',e=>{if(e.target===el('mockModal'))el('mockModal').classList.remove('show');});
 function chipPick(id){el(id).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;[...el(id).children].forEach(c=>c.classList.toggle('on',c===b));});}
 chipPick('mockN');chipPick('mockT');
+// 嚴格監考模式為必開：不允許取消勾選
+el('mockStrict').addEventListener('click',function(){if(!this.checked){this.checked=true;toast('🛡️ 嚴格監考為必要，無法關閉','no');}});
 function fmtClock(s){const m=Math.floor(s/60),x=s%60;return String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');}
 function paintMock(){
   const done=randomSet?randomSet.filter(id=>S.answers[id]).length:0,tot=randomSet?randomSet.length:0;
@@ -1610,7 +1613,7 @@ el('mockStart').addEventListener('click',()=>{
   pick.forEach(q=>delete S.answers[q.id]);save();
   randomSet=pick.map(q=>q.id);
   mode='exam';submitted=false;chip='all';mockActive=true;streak=0;mockLeaves=0;
-  mockStrict=el('mockStrict')?el('mockStrict').checked:true;mockStartTs=Date.now();
+  mockStrict=true;mockStartTs=Date.now();mockMaxLeaves=Math.floor(randomSet.length/3)+1;   // 嚴格監考必開；離開>題數1/3自動交卷
   [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='exam'));
   hideResult();el('mockModal').classList.remove('show');
