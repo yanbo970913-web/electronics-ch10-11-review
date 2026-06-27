@@ -826,7 +826,16 @@ svg.ckt{display:block;width:100%;height:auto}
   <div id="authedBox" style="display:none">
     <p style="font-size:15px">已登入：<b id="authedName" style="color:var(--brand2)"></b></p>
     <p style="color:var(--muted);font-size:13px">☁️ 雲端同步運作中。在其他裝置用同一帳號登入，就能看到相同的進度與紀錄。</p>
-    <div id="authAdminHint" style="display:none;font-size:12px;color:var(--muted);margin-top:8px">👑 管理員：新增其他登入帳號可在 Supabase 後台 Authentication → Add user（之後會做成 App 內建）。</div>
+    <div id="adminPanel" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:13px">
+      <div style="font-weight:900;font-size:14px;margin-bottom:9px">👑 帳號權限管理</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+        <input class="search" id="adNewUser" style="flex:1;min-width:88px;cursor:text" placeholder="新帳號" autocomplete="off">
+        <input class="search" id="adNewPass" style="flex:1;min-width:88px;cursor:text" placeholder="密碼(≥6碼)" autocomplete="new-password">
+        <button class="btn pri" id="adAdd">＋ 新增</button>
+      </div>
+      <div id="adMsg" style="font-size:12px;min-height:15px;margin:7px 0;color:var(--muted)"></div>
+      <div id="adminList" style="max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
     <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
       <button class="btn" id="authClose">關閉</button><button class="btn danger" id="authLogout">登出</button></div>
   </div>
@@ -1577,7 +1586,7 @@ function updateAuthUI(){
   const b=el('authBtn');
   if(supaUser){b.textContent='✅';b.title='已登入：'+authName();
     el('authForm').style.display='none';el('authedBox').style.display='block';el('authTitle').textContent='👤 帳號';
-    el('authedName').textContent=authName();el('authAdminHint').style.display=isAdmin()?'block':'none';}
+    el('authedName').textContent=authName();el('adminPanel').style.display=isAdmin()?'block':'none';}
   else{b.textContent='👤';b.title='登入 / 雲端同步';
     el('authForm').style.display='block';el('authedBox').style.display='none';el('authTitle').textContent='🔐 登入';}
 }
@@ -1611,7 +1620,7 @@ async function loginWith(u,p,errEl,btn,onOk){
   }catch(err){errEl.textContent='登入失敗：'+((err&&err.message)||'帳號或密碼錯誤');}
   if(btn)btn.disabled=false;
 }
-el('authBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('authModal').classList.add('show');setTimeout(()=>{if(!supaUser)el('authUser').focus();},80);});
+el('authBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('authModal').classList.add('show');setTimeout(()=>{if(!supaUser)el('authUser').focus();},80);if(supaUser&&isAdmin())adminLoadUsers();});
 el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authModal').addEventListener('click',e=>{if(e.target===el('authModal'))el('authModal').classList.remove('show');});
@@ -1620,6 +1629,37 @@ el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('authSubmit'
 el('gSubmit').addEventListener('click',()=>loginWith(el('gUser').value,el('gPass').value,el('gErr'),el('gSubmit'),()=>{el('gPass').value='';}));
 el('gPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('gSubmit').click();});
 el('authLogout').addEventListener('click',async()=>{try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
+/* ---------- 管理員後台：帳號權限管理（呼叫 Edge Function） ---------- */
+async function callAdmin(payload){
+  const sb=await loadSupa();
+  const r=await sb.functions.invoke('admin-users',{body:payload});
+  if(r.error){let msg=r.error.message||'呼叫失敗';
+    try{const ctx=r.error.context;if(ctx&&typeof ctx.json==='function'){const j=await ctx.json();if(j&&j.error)msg=j.error;}}catch(e){}
+    throw new Error(msg);}
+  if(r.data&&r.data.error)throw new Error(r.data.error);
+  return r.data;
+}
+async function adminLoadUsers(){
+  el('adminList').innerHTML='<div style="color:var(--muted);font-size:12px">載入中…</div>';
+  try{const d=await callAdmin({action:'list'});const us=(d&&d.users)||[];
+    el('adminList').innerHTML=us.length?us.map(function(u){return '<div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 10px"><span style="font-weight:700;flex:1">'+esc(u.username)+'</span>'+(u.username==='wesley970913'?'<span class="tag" style="background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)">管理員</span>':'<button class="btn danger" style="padding:4px 10px;font-size:12px" data-del="'+u.id+'" data-un="'+esc(u.username)+'">移除</button>')+'</div>';}).join(''):'<div style="color:var(--muted);font-size:12px">尚無一般帳號</div>';
+  }catch(e){el('adminList').innerHTML='<div style="color:var(--no);font-size:12px">載入失敗：'+esc(e.message)+'（Edge Function 可能尚未部署）</div>';}
+}
+el('adAdd').addEventListener('click',async function(){
+  const u=el('adNewUser').value.trim(),p=el('adNewPass').value;
+  if(!u||!p){el('adMsg').textContent='請輸入帳號與密碼';return;}
+  el('adMsg').textContent='新增中…';el('adAdd').disabled=true;
+  try{await callAdmin({action:'create',username:u,password:p});el('adMsg').textContent='✅ 已新增帳號：'+u;el('adNewUser').value='';el('adNewPass').value='';adminLoadUsers();toast('✅ 已新增帳號 '+u,'ok');}
+  catch(e){el('adMsg').textContent='失敗：'+e.message;}
+  el('adAdd').disabled=false;
+});
+el('adminList').addEventListener('click',function(e){const b=e.target.closest('[data-del]');if(!b)return;
+  const id=b.getAttribute('data-del'),un=b.getAttribute('data-un');
+  askConfirm('移除帳號','確定移除帳號「'+un+'」的使用權限？移除後此帳號將無法再登入。',async function(){
+    el('adMsg').textContent='移除中…';
+    try{await callAdmin({action:'delete',id:id});el('adMsg').textContent='已移除 '+un;adminLoadUsers();toast('已移除 '+un,'');}
+    catch(e){el('adMsg').textContent='失敗：'+e.message;}});
+});
 function hasStoredSession(){try{return Object.keys(localStorage).some(k=>k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0);}catch(e){return false;}}
 async function initAuth(){
   if(!hasStoredSession())return;                       // no session → gate shows the login form
