@@ -346,6 +346,50 @@ svg.ckt{display:block;width:100%;height:auto}
   background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;box-shadow:0 8px 22px -8px var(--brand);transition:var(--tr)}
 .gate-btn:hover{filter:brightness(1.08)}.gate-btn:disabled{opacity:.6;cursor:default}
 .gate-foot{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.7}
+/* ===================== 極致視覺增強 ===================== */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.06s!important}
+  #bg::before,#bg::after,#bg i,.logo,.gate-logo{animation:none!important}
+}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.6;
+  background:radial-gradient(760px 420px at 14% -6%, color-mix(in srgb,var(--brand) 13%,transparent), transparent 60%),
+            radial-gradient(760px 420px at 88% 4%, color-mix(in srgb,var(--violet) 13%,transparent), transparent 60%)}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--brand) 55%,transparent),transparent)}
+.q{position:relative;overflow:hidden}
+.q::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;opacity:0;transition:opacity .45s ease,background var(--tr);
+  background:linear-gradient(180deg,var(--brand),var(--brand2))}
+.q.in::before{opacity:.85}
+.q[data-diff="基礎"]::before{background:linear-gradient(180deg,#22d3ee,#34d399)}
+.q[data-diff="中等"]::before{background:linear-gradient(180deg,#60a5fa,#22d3ee)}
+.q[data-diff="進階"]::before{background:linear-gradient(180deg,#a78bfa,#fb7185)}
+.q.ansok::before{background:linear-gradient(180deg,#34d399,#22d3ee)!important;opacity:1}
+.q.answrong::before{background:linear-gradient(180deg,#fb7185,#f43f5e)!important;opacity:1}
+.q:hover{transform:translateY(-3px);box-shadow:0 16px 44px -12px rgba(0,0,0,.55),0 0 0 1px var(--border2)}
+.opt{transition:transform .2s cubic-bezier(.34,1.45,.5,1),border-color var(--tr),background var(--tr),box-shadow var(--tr)}
+.opt:not(.disabled):hover{box-shadow:0 8px 22px -10px var(--brand)}
+.opt .L{transition:transform var(--tr)}
+.opt:not(.disabled):hover .L{transform:scale(1.18)}
+.opt.correct{box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 60%,transparent),0 10px 26px -12px var(--ok)}
+.btn{transition:transform .15s,border-color var(--tr),box-shadow var(--tr),filter var(--tr)}
+.btn.pri{box-shadow:0 6px 20px -9px var(--brand)}
+.btn.pri:hover{transform:translateY(-2px);box-shadow:0 12px 30px -9px var(--violet)}
+.btn:active{transform:translateY(0) scale(.96)}
+.tab.active{box-shadow:0 6px 20px -9px var(--violet),inset 0 0 0 1px rgba(255,255,255,.14)}
+.view.active{animation:viewIn .5s cubic-bezier(.22,.61,.36,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(14px) scale(.996)}to{opacity:1;transform:none}}
+.result.show{box-shadow:0 18px 54px -14px var(--brand),var(--shadow)}
+.gate-card{box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 70px -24px var(--brand)}
+.mockbar{box-shadow:0 10px 34px -10px var(--brand)}
+.toast{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.chip.on{box-shadow:0 6px 18px -8px var(--violet)}
+.iconbtn:active{transform:scale(.92)}
+.qnum{text-shadow:0 0 18px color-mix(in srgb,var(--brand) 45%,transparent)}
+@media(max-width:640px){
+  .btn,.chip{min-height:36px}.iconbtn{width:40px;height:40px}.opt{padding:12px 13px;font-size:15px}
+  .stem{font-size:15px}.htitle{font-size:15px}.q{padding:14px 15px}
+}
 @media(max-width:640px){
   .panel{top:60px}.htitle{font-size:15px}.tab{padding:7px 11px;font-size:13px}
   .tp{grid-template-columns:1fr;gap:4px}.tp .sc{justify-self:end}
@@ -1211,7 +1255,8 @@ function card(q){
   tags.push(`<span class="tag tp">${esc(q.type)}</span>`,`<span class="tag df ${q.difficulty==='進階'?'adv':''}">${esc(q.difficulty)}</span>`);
   const bm=S.bookmarks[q.id]?'on':'';
   const badge=ch?`<span class="badge ${ok?'':'no'}">${ok?'✔ 答對':'✘ 答錯'}</span>`:'';
-  return `<div class="q${activeId===q.id?' active':''}" id="q${q.id}" data-id="${q.id}">
+  const ansCls=showExp?(ok?' ansok':' answrong'):'';
+  return `<div class="q${activeId===q.id?' active':''}${ansCls}" id="q${q.id}" data-id="${q.id}" data-diff="${esc(q.difficulty)}">
     <div class="qhead"><span class="qnum">${q.id}.</span>${tags.join('')}
       <button class="star ${bm}" data-star="${q.id}" title="收藏">${bm?'★':'☆'}</button></div>
     <div class="stem">${fmt(q.stem)}</div>
