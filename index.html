@@ -298,7 +298,7 @@ svg.ckt{display:block;width:100%;height:auto}
 .submitFab.finalbtn{background:linear-gradient(135deg,var(--ok),var(--brand2));border-color:transparent;animation:finalPulse 1.1s ease-in-out infinite}
 @keyframes finalPulse{0%,100%{box-shadow:0 8px 26px rgba(0,0,0,.4),0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent)}50%{box-shadow:0 8px 26px rgba(0,0,0,.4),0 0 0 10px transparent}}
 #toTop{width:46px;height:46px;border-radius:50%;font-size:20px;display:none;place-items:center}
-#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:94vw;width:max-content}
 .toast{background:var(--solid);border:1px solid var(--border2);color:var(--text);padding:11px 18px;border-radius:13px;
   font-weight:800;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:toastIn .4s,toastOut .4s 1.8s forwards}
 .toast.ok{border-color:var(--ok)} .toast.no{border-color:var(--no)} .toast.go{border-color:var(--gold)}
@@ -366,7 +366,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;op
             radial-gradient(760px 420px at 88% 4%, color-mix(in srgb,var(--violet) 13%,transparent), transparent 60%)}
 header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;
   background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--brand) 55%,transparent),transparent)}
-.q{position:relative;overflow:hidden}
+.q{position:relative;overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto 300px}
 .q::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;opacity:0;transition:opacity .45s ease,background var(--tr);
   background:linear-gradient(180deg,var(--brand),var(--brand2))}
 .q.in::before{opacity:.85}
@@ -1542,6 +1542,12 @@ function mockOn(){return mockActive&&!submitted;}
 function fsSupported(){return !!(document.fullscreenEnabled||document.webkitFullscreenEnabled);}
 function enterFS(){if(!fsSupported())return;try{var d=document.documentElement,rf=d.requestFullscreen||d.webkitRequestFullscreen;if(rf)Promise.resolve(rf.call(d)).catch(function(){});}catch(e){}}
 function exitFS(){try{if(document.fullscreenElement){var xf=document.exitFullscreen||document.webkitExitFullscreen;if(xf)Promise.resolve(xf.call(document)).catch(function(){});}}catch(e){}}
+let fsArmed=false;
+function armAutoFS(){            // 進入系統後第一個操作手勢即自動進全螢幕（瀏覽器規定須由手勢觸發）
+  if(fsArmed||!fsSupported())return;fsArmed=true;
+  var go=function(){['pointerdown','keydown','touchend'].forEach(function(ev){document.removeEventListener(ev,go,true);});if(!document.fullscreenElement)enterFS();};
+  ['pointerdown','keydown','touchend'].forEach(function(ev){document.addEventListener(ev,go,true);});
+}
 // 統一違規計數（去抖）＋ 離開次數超過題數 1/3 自動交卷
 let lastBump=0;
 function bumpViolation(reason){
@@ -1823,7 +1829,7 @@ async function loginWith(u,p,errEl,btn,onOk){
   try{const sb=await loadSupa();
     const r=await sb.auth.signInWithPassword({email:u.toLowerCase()+EMAIL_DOMAIN,password:p});
     if(r.error)throw r.error;
-    supaUser=r.data.user;errEl.textContent='';updateAuthUI();hideGate();loadProgressFor(supaUser.id);await syncOnLogin();
+    supaUser=r.data.user;errEl.textContent='';updateAuthUI();hideGate();armAutoFS();loadProgressFor(supaUser.id);await syncOnLogin();
     if(onOk)onOk();toast('✅ 已登入，雲端同步開啟','ok');
   }catch(err){errEl.textContent='登入失敗：'+((err&&err.message)||'帳號或密碼錯誤');}
   if(btn)btn.disabled=false;
@@ -1888,7 +1894,7 @@ async function initAuth(){
   if(!hasStoredSession())return;                       // no session → gate shows the login form
   el('gateForm').style.display='none';el('gateLoading').style.display='block';
   try{const sb=await loadSupa();const r=await sb.auth.getSession();
-    if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();hideGate();loadProgressFor(supaUser.id);const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();}
+    if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();hideGate();armAutoFS();loadProgressFor(supaUser.id);const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();}
     else{el('gateForm').style.display='block';el('gateLoading').style.display='none';}
   }catch(e){console.warn(e);el('gateForm').style.display='block';el('gateLoading').style.display='none';}
 }
