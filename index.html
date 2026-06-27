@@ -506,6 +506,7 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
       <button class="iconbtn" id="musicBtn" title="背景音樂">🎵</button>
       <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵">⌨</button>
       <button class="iconbtn" id="sndBtn" title="音效開關">🔇</button>
+      <button class="iconbtn" id="fsBtn" title="全螢幕 開/關">⛶</button>
       <button class="iconbtn" id="themeBtn" title="深色 / 淺色">🌙</button>
     </div>
   </div>
@@ -1640,9 +1641,18 @@ function fsSupported(){return !!(document.fullscreenEnabled||document.webkitFull
 function enterFS(){if(!fsSupported())return;try{var d=document.documentElement,rf=d.requestFullscreen||d.webkitRequestFullscreen;if(rf)Promise.resolve(rf.call(d)).catch(function(){});}catch(e){}}
 function exitFS(){try{if(document.fullscreenElement){var xf=document.exitFullscreen||document.webkitExitFullscreen;if(xf)Promise.resolve(xf.call(document)).catch(function(){});}}catch(e){}}
 let fsArmed=false;
+function iosFsHint(){             // iOS Safari 無 Fullscreen API → 提示加入主畫面取得全螢幕
+  try{
+    const isIOS=/iP(hone|od|ad)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
+    const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+    if(isIOS&&!standalone&&!localStorage.getItem('opa_ioshint')){localStorage.setItem('opa_ioshint','1');
+      setTimeout(function(){toast('📱 iPhone/iPad：用 Safari 分享 → 加入主畫面，即可全螢幕使用','go');},1400);}
+  }catch(e){}
+}
 function armAutoFS(){            // 進入系統後第一個操作手勢即自動進全螢幕（瀏覽器規定須由手勢觸發）
-  if(fsArmed||!fsSupported())return;fsArmed=true;
-  var go=function(){['pointerdown','keydown','touchend'].forEach(function(ev){document.removeEventListener(ev,go,true);});if(!document.fullscreenElement)enterFS();};
+  if(!fsSupported()){iosFsHint();return;}
+  if(fsArmed)return;fsArmed=true;
+  var go=function(){['pointerdown','keydown','touchend'].forEach(function(ev){document.removeEventListener(ev,go,true);});if(!document.fullscreenElement&&!document.webkitFullscreenElement)enterFS();};
   ['pointerdown','keydown','touchend'].forEach(function(ev){document.addEventListener(ev,go,true);});
 }
 // 統一違規計數 ＋ 離開次數超過題數 1/3 自動交卷
@@ -1861,6 +1871,10 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 /* ---------- theme / sound / kb ---------- */
 function applyTheme(){document.documentElement.dataset.theme=S.theme;el('themeBtn').textContent=S.theme==='dark'?'🌙':'☀️';}
 el('themeBtn').addEventListener('click',()=>{S.theme=S.theme==='dark'?'light':'dark';save();applyTheme();});
+el('fsBtn').addEventListener('click',()=>{if(document.fullscreenElement||document.webkitFullscreenElement)exitFS();else enterFS();});
+function syncFsBtn(){try{const on=!!(document.fullscreenElement||document.webkitFullscreenElement);el('fsBtn').textContent=on?'🗗':'⛶';el('fsBtn').title=on?'退出全螢幕':'全螢幕 開/關';}catch(e){}}
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev,syncFsBtn));
+if(!fsSupported()){var _fb=el('fsBtn');if(_fb)_fb.style.display='none';}   // 不支援(如 iOS Safari)就隱藏此鍵
 function applySound(){el('sndBtn').textContent=S.sound?'🔊':'🔇';el('sndBtn').classList.toggle('on',S.sound);}
 el('sndBtn').addEventListener('click',()=>{S.sound=!S.sound;save();applySound();if(S.sound)beep('ok');});
 el('kbBtn').addEventListener('click',()=>el('kbModal').classList.add('show'));
@@ -2021,9 +2035,9 @@ el('authBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePo
 el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authModal').addEventListener('click',e=>{if(e.target===el('authModal'))el('authModal').classList.remove('show');});
-el('authSubmit').addEventListener('click',()=>loginWith(el('authUser').value,el('authPass').value,el('authErr'),el('authSubmit'),()=>{el('authModal').classList.remove('show');el('authPass').value='';}));
+el('authSubmit').addEventListener('click',()=>{if(el('authUser').value.trim()&&el('authPass').value)enterFS();loginWith(el('authUser').value,el('authPass').value,el('authErr'),el('authSubmit'),()=>{el('authModal').classList.remove('show');el('authPass').value='';});});
 el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('authSubmit').click();});
-el('gSubmit').addEventListener('click',()=>loginWith(el('gUser').value,el('gPass').value,el('gErr'),el('gSubmit'),()=>{el('gPass').value='';}));
+el('gSubmit').addEventListener('click',()=>{if(el('gUser').value.trim()&&el('gPass').value)enterFS();loginWith(el('gUser').value,el('gPass').value,el('gErr'),el('gSubmit'),()=>{el('gPass').value='';});});
 el('gPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('gSubmit').click();});
 el('authLogout').addEventListener('click',async()=>{hardExitExam();try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;resetProgress();try{render();renderDash();}catch(e){}updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
 /* ---------- 管理員後台：帳號權限管理（呼叫 Edge Function） ---------- */
