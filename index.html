@@ -165,6 +165,15 @@ select:focus,.search:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-
   animation:flow 3s linear infinite;transition:width .5s cubic-bezier(.22,.61,.36,1)}
 @keyframes flow{to{background-position:200% 0}}
 .timer{font-weight:900;font-size:15px;color:var(--gold);font-variant-numeric:tabular-nums}
+.timer.blink{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.3}}
+.mockbar{position:sticky;top:62px;z-index:25;display:none;align-items:center;justify-content:center;gap:14px;
+  padding:9px 14px;margin-bottom:12px;border-radius:13px;font-weight:800;
+  background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;box-shadow:var(--shadow)}
+.mockbar.show{display:flex}
+.mockbar b{font-size:19px;font-variant-numeric:tabular-nums}
+.mockbar.warn{background:linear-gradient(135deg,#d97706,#b45309)}
+.mockbar.danger{background:linear-gradient(135deg,#dc2626,#991b1b);animation:blink 1s steps(2,start) infinite}
 
 /* result banner */
 .result{display:none;text-align:center;border-radius:var(--r);padding:18px;margin-bottom:14px;
@@ -375,6 +384,7 @@ svg.ckt{display:block;width:100%;height:auto}
         </div>
         <span class="seg" id="mode"><button data-m="practice" class="on">練習</button><button data-m="exam">考試</button></span>
         <span class="timer" id="timer" style="display:none">00:00</span>
+        <button class="btn pri" id="mockBtn">🎯 模擬考</button>
         <button class="btn pri" id="rqBtn">🎲 隨機測驗</button>
         <button class="btn" id="shuffle">🔀 洗牌</button>
         <button class="btn" id="redoWrong">🔁 錯題重練</button>
@@ -390,6 +400,7 @@ svg.ckt{display:block;width:100%;height:auto}
         <div class="bar"><i id="bar"></i></div>
       </div>
     </div>
+    <div class="mockbar" id="mockbar"></div>
     <div class="result" id="result"></div>
     <div id="list"></div>
   </section>
@@ -765,6 +776,22 @@ svg.ckt{display:block;width:100%;height:auto}
     <button class="btn" id="rqCancel">取消</button><button class="btn pri" id="rqStart">🎲 開始測驗</button></div>
 </div></div>
 
+<div class="modal" id="mockModal"><div class="mbox">
+  <h3>🎯 考前模擬計時測驗</h3>
+  <p style="color:var(--muted);font-size:13.5px;margin:0 0 12px">隨機抽題、<b style="color:var(--brand2)">倒數計時</b>，作答中不顯示答案；時間到自動交卷，交卷後看成績與檢討。</p>
+  <div style="font-weight:800;font-size:13px;margin:6px 0 5px">題數</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap" id="mockN">
+    <button class="chip on" data-n="20">20 題</button><button class="chip" data-n="30">30 題</button>
+    <button class="chip" data-n="40">40 題</button><button class="chip" data-n="50">50 題</button></div>
+  <div style="font-weight:800;font-size:13px;margin:14px 0 5px">作答時間</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap" id="mockT">
+    <button class="chip" data-t="30">30 分</button><button class="chip on" data-t="50">50 分</button>
+    <button class="chip" data-t="60">60 分</button><button class="chip" data-t="80">80 分</button></div>
+  <label class="chk" style="margin-top:13px"><input type="checkbox" id="mockScope"> 只考目前選的章節範圍</label>
+  <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn" id="mockCancel">取消</button><button class="btn pri" id="mockStart">🎯 開始模擬考</button></div>
+</div></div>
+
 <div class="foot">※ 標示「統測 民國○○年」者為統測歷屆風格／改編題，年份代表該題型常出現的年度區間（OPA・振盪器・濾波器為統測電子學幾乎年年必考），非逐字照抄某份考卷；正式查證請以技專測驗中心公布之歷屆試題為準。　全部 200 題答案均經獨立重算驗證。作答紀錄、收藏、主題與設定自動儲存在本機瀏覽器。</div>
 
 <script>/* ===== SVG circuit schematic library (themed, parameterized) =====
@@ -1075,7 +1102,7 @@ function csVal(id){return el(id).dataset.value;}
 function csReset(id){const root=el(id),first=root.querySelector('.cs-opt');if(!first)return;
   root.dataset.value=first.dataset.v;root.querySelector('.cs-lab').textContent=first.textContent;
   [...root.querySelectorAll('.cs-opt')].forEach((x,i)=>x.classList.toggle('on',i===0));}
-function onFilterChange(){randomSet=null;submitted=false;hideResult();stopTimer();render();}
+function onFilterChange(){cancelMock();randomSet=null;submitted=false;hideResult();stopTimer();render();}
 customSelect('fch',[{value:'all',label:'全部'},{value:'10',label:'第10章 OPA'},{value:'11',label:'第11章 振盪/濾波'}],onFilterChange);
 customSelect('ftopic',[{value:'all',label:'全部主題'}].concat(TOPICS.map(t=>({value:t.key,label:'第'+t.ch+'章 · '+t.label}))),onFilterChange);
 customSelect('fdiff',[{value:'all',label:'全部'},{value:'基礎',label:'基礎'},{value:'中等',label:'中等'},{value:'進階',label:'進階'}],onFilterChange);
@@ -1197,7 +1224,7 @@ function answer(id,L){
     if(submitted)return;
     S.answers[id]=L;save();
     [...document.querySelectorAll('#q'+id+' .opt')].forEach(o=>o.classList.toggle('sel',o.dataset.l===L));
-    updateHud();updateChips();
+    updateHud();updateChips();if(mockActive)paintMock();
   }
 }
 function rerenderCard(id){
@@ -1231,9 +1258,9 @@ function setActive(id,scroll){
 el('fpast').addEventListener('change',()=>{randomSet=null;submitted=false;hideResult();render();});
 let stim=null;el('fsearch').addEventListener('input',()=>{randomSet=null;clearTimeout(stim);stim=setTimeout(render,160);});
 el('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;
-  randomSet=null;chip=b.dataset.chip;[...el('chips').children].forEach(c=>c.classList.toggle('on',c===b));render();});
+  cancelMock();randomSet=null;chip=b.dataset.chip;[...el('chips').children].forEach(c=>c.classList.toggle('on',c===b));render();});
 el('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  mode=b.dataset.m;submitted=false;hideResult();
+  cancelMock();mode=b.dataset.m;submitted=false;hideResult();
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x===b));
   if(mode==='exam'){startTimer();}else{stopTimer();}render();});
 
@@ -1253,7 +1280,7 @@ el('redoWrong').addEventListener('click',()=>{
 });
 el('reset').addEventListener('click',()=>{
   askConfirm('清除全部紀錄','確定清除所有作答、收藏與連對紀錄？（不影響題庫）',()=>{
-    S.answers={};S.bookmarks={};S.bestStreak=0;streak=0;save();submitted=false;hideResult();randomSet=null;
+    cancelMock();S.answers={};S.bookmarks={};S.bestStreak=0;streak=0;save();submitted=false;hideResult();randomSet=null;
     order=QUESTIONS.map(q=>q.id);chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
     render();renderDash();toast('已清除全部紀錄','');
   });
@@ -1266,12 +1293,17 @@ el('submit').addEventListener('click',()=>{
 });
 function doSubmit(arr){
   submitted=true;stopTimer();
+  const isMock=mockActive, used=isMock?(mockDur-Math.max(0,mockRemain)):0;
   const ans=arr.filter(q=>S.answers[q.id]),ok=ans.filter(q=>S.answers[q.id]===q.answer).length;
   const pct=arr.length?Math.round(ok/arr.length*100):0;
   const grade=pct>=90?'🏆 神級！':pct>=80?'🎉 優秀！':pct>=60?'👍 及格，再加油':'💪 多練幾次會更好';
+  const usedStr=isMock?fmtClock(used):(el('timer').textContent||'--');
+  const head=isMock?'🎯 模擬考成績':'';
+  if(isMock){mockActive=false;stopCountdown();
+    S.mockHistory.unshift({t:Date.now(),n:arr.length,ok:ok,pct:pct,used:used});S.mockHistory=S.mockHistory.slice(0,30);save();}
   const r=el('result');r.className='result show';
-  r.innerHTML=`<div class="big">${ok} / ${arr.length}　${pct}分</div><div class="gr">${grade}</div>
-    <div style="color:var(--muted)">答對 ${ok}・答錯 ${ans.length-ok}・未作答 ${arr.length-ans.length}・用時 ${el('timer').textContent||'--'}</div>
+  r.innerHTML=`${head?`<div style="font-weight:800;color:var(--brand2);margin-bottom:2px">${head}</div>`:''}<div class="big">${ok} / ${arr.length}　${pct}分</div><div class="gr">${grade}</div>
+    <div style="color:var(--muted)">答對 ${ok}・答錯 ${ans.length-ok}・未作答 ${arr.length-ans.length}・用時 ${usedStr}</div>
     <div style="margin-top:10px"><button class="btn pri" id="rvBtn">查看檢討 ↓</button></div>`;
   render();renderDash();
   el('rvBtn').onclick=()=>el('list').scrollIntoView({behavior:'smooth'});
@@ -1310,6 +1342,44 @@ el('rqStart').addEventListener('click',()=>{
   if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
   render();
   toast('🎲 已出 '+n+' 題（簡單→難），作答後按「交卷看成績」','go');
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* ---------- 考前模擬計時測驗 ---------- */
+let mockActive=false, mockTimer=null, mockRemain=0, mockDur=0;
+S.mockHistory=S.mockHistory||[];
+el('mockBtn').addEventListener('click',e=>{e.stopPropagation();closePops();el('mockModal').classList.add('show');});
+el('mockCancel').addEventListener('click',()=>el('mockModal').classList.remove('show'));
+el('mockModal').addEventListener('click',e=>{if(e.target===el('mockModal'))el('mockModal').classList.remove('show');});
+function chipPick(id){el(id).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;[...el(id).children].forEach(c=>c.classList.toggle('on',c===b));});}
+chipPick('mockN');chipPick('mockT');
+function fmtClock(s){const m=Math.floor(s/60),x=s%60;return String(m).padStart(2,'0')+':'+String(x).padStart(2,'0');}
+function paintMock(){
+  const done=randomSet?randomSet.filter(id=>S.answers[id]).length:0,tot=randomSet?randomSet.length:0;
+  const bar=el('mockbar');bar.classList.toggle('warn',mockRemain<=300&&mockRemain>60);bar.classList.toggle('danger',mockRemain<=60);
+  bar.innerHTML='🎯 模擬考　<b>⏱ '+fmtClock(Math.max(0,mockRemain))+'</b>　已答 '+done+' / '+tot;
+}
+function stopCountdown(){if(mockTimer)clearInterval(mockTimer);mockTimer=null;el('mockbar').classList.remove('show','warn','danger');}
+function startCountdown(secs){stopTimer();if(mockTimer)clearInterval(mockTimer);mockDur=secs;mockRemain=secs;
+  el('mockbar').classList.add('show');paintMock();
+  mockTimer=setInterval(()=>{mockRemain--;paintMock();if(mockRemain<=0){if(mockTimer)clearInterval(mockTimer);mockTimer=null;
+    toast('⏰ 時間到，自動交卷！','no');doSubmit(filtered());}},1000);}
+function cancelMock(){if(mockActive&&!submitted){mockActive=false;stopCountdown();}}
+el('mockStart').addEventListener('click',()=>{
+  const n=+el('mockN').querySelector('.on').dataset.n,mins=+el('mockT').querySelector('.on').dataset.t;
+  let pool=el('mockScope').checked?baseFilter().slice():QUESTIONS.slice();
+  if(pool.length<5)pool=QUESTIONS.slice();
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const pick=pool.slice(0,Math.min(n,pool.length));
+  pick.forEach(q=>delete S.answers[q.id]);save();
+  randomSet=pick.map(q=>q.id);
+  mode='exam';submitted=false;chip='all';mockActive=true;streak=0;
+  [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
+  [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='exam'));
+  hideResult();el('mockModal').classList.remove('show');
+  if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
+  render();startCountdown(mins*60);
+  toast('🎯 模擬考開始！'+randomSet.length+' 題・'+mins+' 分鐘','go');
   window.scrollTo({top:0,behavior:'smooth'});
 });
 
