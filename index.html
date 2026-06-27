@@ -356,6 +356,7 @@ svg.ckt{display:block;width:100%;height:auto}
         <button class="tab" data-tab="dash">📊 統計</button>
         <button class="tab" data-tab="notes">📖 筆記</button>
       </div>
+      <button class="iconbtn" id="authBtn" title="登入 / 雲端同步">👤</button>
       <button class="iconbtn" id="musicBtn" title="背景音樂">🎵</button>
       <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵">⌨</button>
       <button class="iconbtn" id="sndBtn" title="音效開關">🔇</button>
@@ -792,6 +793,27 @@ svg.ckt{display:block;width:100%;height:auto}
     <button class="btn" id="mockCancel">取消</button><button class="btn pri" id="mockStart">🎯 開始模擬考</button></div>
 </div></div>
 
+<div class="modal" id="authModal"><div class="mbox">
+  <h3 id="authTitle">🔐 登入</h3>
+  <div id="authForm">
+    <p style="color:var(--muted);font-size:13px;margin:0 0 12px">登入後，作答進度・收藏・模擬考紀錄會<b style="color:var(--brand2)">跨裝置雲端同步</b>。</p>
+    <div style="font-weight:800;font-size:13px;margin:8px 0 4px">帳號</div>
+    <input class="search" id="authUser" style="width:100%;cursor:text" placeholder="帳號" autocomplete="username">
+    <div style="font-weight:800;font-size:13px;margin:12px 0 4px">密碼</div>
+    <input class="search" id="authPass" type="password" style="width:100%;cursor:text" placeholder="密碼" autocomplete="current-password">
+    <div id="authErr" style="color:var(--no);font-size:13px;margin-top:9px;min-height:17px"></div>
+    <div style="margin-top:8px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn" id="authCancel">取消</button><button class="btn pri" id="authSubmit">登入</button></div>
+  </div>
+  <div id="authedBox" style="display:none">
+    <p style="font-size:15px">已登入：<b id="authedName" style="color:var(--brand2)"></b></p>
+    <p style="color:var(--muted);font-size:13px">☁️ 雲端同步運作中。在其他裝置用同一帳號登入，就能看到相同的進度與紀錄。</p>
+    <div id="authAdminHint" style="display:none;font-size:12px;color:var(--muted);margin-top:8px">👑 管理員：新增其他登入帳號可在 Supabase 後台 Authentication → Add user（之後會做成 App 內建）。</div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn" id="authClose">關閉</button><button class="btn danger" id="authLogout">登出</button></div>
+  </div>
+</div></div>
+
 <div class="foot">※ 標示「統測 民國○○年」者為統測歷屆風格／改編題，年份代表該題型常出現的年度區間（OPA・振盪器・濾波器為統測電子學幾乎年年必考），非逐字照抄某份考卷；正式查證請以技專測驗中心公布之歷屆試題為準。　全部 200 題答案均經獨立重算驗證。作答紀錄、收藏、主題與設定自動儲存在本機瀏覽器。</div>
 
 <script>/* ===== SVG circuit schematic library (themed, parameterized) =====
@@ -1004,7 +1026,9 @@ const Q=id=>QUESTIONS.find(q=>q.id===id);
 /* ---------- persistence ---------- */
 let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false};
 try{Object.assign(S,JSON.parse(localStorage.getItem(LS)||'{}'));}catch(e){}
-function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}}
+var supaUser=null, pushTimer=null;     // cloud-sync state
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}
+  if(supaUser){clearTimeout(pushTimer);pushTimer=setTimeout(function(){if(typeof pushCloud==='function')pushCloud().catch(function(){});},1500);}}
 
 /* ---------- runtime state ---------- */
 let mode='practice', submitted=false, chip='all', streak=0, activeId=null;
@@ -1503,8 +1527,67 @@ if(S.music.enabled){
   setTimeout(()=>{if(BGM.paused)toast('🎵 點畫面任一處即可開始播放背景音樂','go');},700);
 }
 
+/* ---------- 登入 + 雲端同步 (Supabase) ---------- */
+const SUPA_URL='https://trkuxzghyqcvexxxzbri.supabase.co';
+const SUPA_KEY='sb_publishable_lJxh95mII39hmIvzIPMcoA_vZZFIwz3';
+const EMAIL_DOMAIN='@elec.local';
+let supaClient=null;
+function loadSupa(){return supaClient?Promise.resolve(supaClient):new Promise(function(res,rej){
+  function mk(){try{supaClient=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{persistSession:true,autoRefreshToken:true}});res(supaClient);}catch(e){rej(e);}}
+  if(window.supabase){mk();return;}
+  const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  s.onload=mk;s.onerror=function(){rej(new Error('無法載入雲端模組（請檢查網路）'));};document.head.appendChild(s);});}
+function authName(){return supaUser?String(supaUser.email||'').replace(EMAIL_DOMAIN,''):'';}
+function isAdmin(){return authName().toLowerCase()==='wesley970913';}
+function updateAuthUI(){
+  const b=el('authBtn');
+  if(supaUser){b.textContent='✅';b.title='已登入：'+authName();
+    el('authForm').style.display='none';el('authedBox').style.display='block';el('authTitle').textContent='👤 帳號';
+    el('authedName').textContent=authName();el('authAdminHint').style.display=isAdmin()?'block':'none';}
+  else{b.textContent='👤';b.title='登入 / 雲端同步';
+    el('authForm').style.display='block';el('authedBox').style.display='none';el('authTitle').textContent='🔐 登入';}
+}
+function mergeCloud(c){
+  if(!c)return;
+  if(c.answers)S.answers=Object.assign({},S.answers,c.answers);
+  if(c.bookmarks)S.bookmarks=Object.assign({},S.bookmarks,c.bookmarks);
+  if(typeof c.bestStreak==='number')S.bestStreak=Math.max(S.bestStreak||0,c.bestStreak);
+  if(Array.isArray(c.mockHistory)){const seen={};(S.mockHistory||[]).forEach(x=>seen[x.t]=1);
+    S.mockHistory=(S.mockHistory||[]).concat(c.mockHistory.filter(x=>!seen[x.t])).sort((a,b)=>b.t-a.t).slice(0,30);}
+}
+async function pullCloud(){if(!supaUser)return null;const sb=await loadSupa();
+  const r=await sb.from('user_progress').select('data').eq('user_id',supaUser.id).maybeSingle();
+  if(r.error){console.warn('pull',r.error);return null;}return r.data?r.data.data:null;}
+async function pushCloud(){if(!supaUser)return;const sb=await loadSupa();
+  const payload={answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory};
+  const r=await sb.from('user_progress').upsert({user_id:supaUser.id,data:payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(r.error)console.warn('push',r.error);}
+async function syncOnLogin(){try{const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();await pushCloud();}catch(e){console.warn(e);}}
+async function doLoginFlow(){
+  const u=el('authUser').value.trim(),p=el('authPass').value;
+  if(!u||!p){el('authErr').textContent='請輸入帳號與密碼';return;}
+  el('authErr').textContent='登入中…';el('authSubmit').disabled=true;
+  try{const sb=await loadSupa();
+    const r=await sb.auth.signInWithPassword({email:u.toLowerCase()+EMAIL_DOMAIN,password:p});
+    if(r.error)throw r.error;
+    supaUser=r.data.user;el('authErr').textContent='';el('authPass').value='';
+    updateAuthUI();await syncOnLogin();toast('✅ 已登入，雲端同步開啟','ok');
+  }catch(err){el('authErr').textContent='登入失敗：'+((err&&err.message)||'帳號或密碼錯誤');}
+  el('authSubmit').disabled=false;
+}
+el('authBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('authModal').classList.add('show');setTimeout(()=>{if(!supaUser)el('authUser').focus();},80);});
+el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('show'));
+el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
+el('authModal').addEventListener('click',e=>{if(e.target===el('authModal'))el('authModal').classList.remove('show');});
+el('authSubmit').addEventListener('click',doLoginFlow);
+el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLoginFlow();});
+el('authLogout').addEventListener('click',async()=>{try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;updateAuthUI();el('authModal').classList.remove('show');toast('已登出（本機紀錄仍保留）','');});
+function hasStoredSession(){try{return Object.keys(localStorage).some(k=>k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0);}catch(e){return false;}}
+async function initAuth(){if(!hasStoredSession())return;try{const sb=await loadSupa();const r=await sb.auth.getSession();
+  if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();}}catch(e){console.warn(e);}}
+
 /* ---------- init ---------- */
-applyTheme();applySound();render();renderDash();
+applyTheme();applySound();render();renderDash();updateAuthUI();initAuth();
 window.addEventListener('resize',()=>{const c=el('confetti');c.width=innerWidth;c.height=innerHeight;});
 /* PWA service worker (https only; silently skipped on file://) */
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
