@@ -285,6 +285,25 @@ svg.ckt{display:block;width:100%;height:auto}
 .rg-ans{fill:color-mix(in srgb,var(--brand) 15%,transparent);stroke:color-mix(in srgb,var(--brand) 48%,transparent);stroke-width:1.5;stroke-linejoin:round}
 .rg-cor{fill:color-mix(in srgb,var(--brand2) 24%,transparent);stroke:var(--brand2);stroke-width:2;stroke-linejoin:round;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--brand2) 50%,transparent))}
 .rg-dot{fill:var(--brand2)}
+/* 各章進度條 */
+.chrow{display:flex;flex-direction:column;gap:13px;margin-top:4px}
+.chh{display:flex;justify-content:space-between;align-items:baseline;font-weight:800;font-size:14px;margin-bottom:6px}
+.chh small{color:var(--muted);font-weight:700;font-size:12px}
+.chbar{position:relative;height:15px;border-radius:999px;background:var(--surface2);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.3)}
+.chbar i{position:absolute;top:0;bottom:0;left:0;border-radius:999px;transition:width .85s cubic-bezier(.22,.9,.3,1)}
+.chbar .ans{background:color-mix(in srgb,var(--brand) 28%,transparent)}
+.chbar .cor{background:linear-gradient(90deg,var(--brand),var(--brand2));box-shadow:0 0 12px -2px var(--brand)}
+/* 今日刷題目標 */
+.daily{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.daily .ring2{position:relative;width:100px;height:100px;flex:0 0 auto}
+.daily .ring2 b{position:absolute;inset:0;display:grid;place-items:center;font-size:19px;font-weight:900;line-height:1.1;text-align:center}
+.daily .dinfo{flex:1;min-width:170px}
+.daily .dmsg{font-weight:800;font-size:15px}
+.daily .dsub{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.6}
+.daily .dgoal{display:flex;align-items:center;gap:8px;margin-top:11px;font-weight:800;font-size:13px;color:var(--muted)}
+.daily .dgoal button{width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:900;cursor:pointer;font-size:17px;transition:var(--tr)}
+.daily .dgoal button:hover{border-color:var(--brand);transform:translateY(-1px)}
+.daily.done .ring2 b{color:var(--ok)}
 
 /* notes */
 #nprog{position:fixed;top:0;left:0;height:3px;width:0;z-index:50;
@@ -551,6 +570,14 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
             <div class="kpi"><b id="kBm" style="color:var(--violet)">0</b><span>⭐收藏</span></div>
           </div>
         </div>
+      </div>
+      <div class="dcard">
+        <div class="dh">📅 今日刷題目標 <span class="sub">（每天答題達標即過關）</span></div>
+        <div id="dailyWrap"></div>
+      </div>
+      <div class="dcard">
+        <div class="dh">各章進度 <span class="sub">（亮色＝答對率、淡色＝已作答率）</span></div>
+        <div id="chprog"></div>
       </div>
       <div class="dcard">
         <div class="dh">各主題雷達圖 <span class="sub">（亮色＝答對率、淡色＝作答率）</span></div>
@@ -1326,7 +1353,7 @@ function chipFilter(arr){
   if(chip==='bookmark')return arr.filter(q=>S.bookmarks[q.id]);
   return arr;
 }
-function filtered(){if(randomSet)return randomSet.map(Q);return chipFilter(baseFilter());}
+function filtered(){if(randomSet)return chipFilter(randomSet.map(Q));return chipFilter(baseFilter());}   // 隨機/模擬題組也可套用 chip(如交卷後只看答錯)
 
 /* ---------- card ---------- */
 function optRow(q,L){
@@ -1387,8 +1414,7 @@ function render(){
     '<div class="empty"><span class="em">🗂️</span>沒有符合條件的題目，換個篩選試試。</div>';
   observe();clearTimeout(_diaFb);_diaFb=setTimeout(injectAllDias,1500);updateChips();updateHud(arr);   // 可視區由 IO 即時注入，離螢幕電路圖延後補上
   el('submit').style.display=(mode==='exam'&&!submitted&&arr.length)?'inline-block':'none';
-  const _unleft=arr.filter(q=>!S.answers[q.id]).length;
-  el('nextUn').style.display=(_unleft&&arr.length&&(mode==='practice'||(mode==='exam'&&!submitted)))?'inline-flex':'none';   // 跳下一未答鈕
+  updateNextUnFab(arr);   // 跳下一未答鈕（僅測驗頁、有未答時顯示）
   if(!finalCheck){el('submit').classList.remove('finalbtn');el('submit').innerHTML='📨 交卷看成績';if(typeof hideFinalBar==='function')hideFinalBar();}   // 還原交卷鈕＋收起未作答清單
   document.body.classList.toggle('examlock', mode==='exam'&&!submitted);   // 防作弊：考試中鎖定複製/選取/右鍵
   var _p=document.querySelector('.panel');if(_p)_p.classList.toggle('mocklocked', mockActive&&!submitted);   // 模擬考中鎖定全部控制項（不得切練習/換題）
@@ -1425,7 +1451,7 @@ function answer(id,L){
   const q=Q(id);
   if(mode==='practice'){
     if(S.answers[id])return;
-    S.answers[id]=L;save();
+    S.answers[id]=L;save();bumpDaily();
     const correct=L===q.answer;
     if(correct){streak++;S.bestStreak=Math.max(S.bestStreak||0,streak);save();beep('ok');
       if(streak>0&&streak%5===0){confetti(110);toast('🔥 連對 '+streak+' 題！','go');beep('go');}
@@ -1437,7 +1463,7 @@ function answer(id,L){
     updateHud();updateChips();
   }else{
     if(submitted)return;
-    S.answers[id]=L;save();
+    const _fresh=!S.answers[id];S.answers[id]=L;save();if(_fresh)bumpDaily();
     [...document.querySelectorAll('#q'+id+' .opt')].forEach(o=>o.classList.toggle('sel',o.dataset.l===L));
     updateHud();updateChips();if(mockActive)paintMock();if(finalCheck)showFinalBar();
   }
@@ -1544,9 +1570,10 @@ function doSubmit(arr){
   r.innerHTML=`${head?`<div style="font-weight:800;color:var(--brand2);margin-bottom:2px">${head}</div>`:''}<div class="big">${ok} / ${arr.length}　${pct}分</div><div class="gr">${grade}</div>
     <div style="color:var(--muted)">答對 ${ok}・答錯 ${ans.length-ok}・未作答 ${arr.length-ans.length}・用時 ${usedStr}</div>
     ${isMock&&mockLeaves>0?`<div style="color:var(--no);font-weight:800;margin-top:5px">⚠ 作答過程離開測驗畫面 ${mockLeaves} 次（誠信提醒）</div>`:''}
-    <div style="margin-top:10px"><button class="btn pri" id="rvBtn">查看檢討 ↓</button></div>`;
+    <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn pri" id="rvBtn">查看檢討 ↓</button>${(ans.length-ok)>0?`<button class="btn" id="rvWrong" style="border-color:var(--no);color:var(--no)">🔍 只看答錯 ${ans.length-ok} 題</button>`:''}</div>`;
   render();renderDash();
-  el('rvBtn').onclick=()=>el('list').scrollIntoView({behavior:'smooth'});
+  el('rvBtn').onclick=()=>{chip='all';[...el('chips').children].forEach(c=>c.classList.toggle('on',c.dataset.chip==='all'));render();el('list').scrollIntoView({behavior:'smooth'});};
+  const _rw=el('rvWrong');if(_rw)_rw.onclick=()=>{chip='wrong';[...el('chips').children].forEach(c=>c.classList.toggle('on',c.dataset.chip==='wrong'));render();el('list').scrollIntoView({behavior:'smooth'});toast('🔍 已篩出本次答錯題','no');};
   window.scrollTo({top:0,behavior:'smooth'});
   if(pct>=80){confetti(180);beep('go');}
   toast(grade+'　'+ok+'/'+arr.length,pct>=60?'ok':'no');
@@ -1737,6 +1764,8 @@ function renderDash(){
     ['kDone','kOk','kNo','kBest','kBm'].forEach(id=>{el(id).textContent='–';el(id).dataset.v=0;});
     el('tprow').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">🔒 測驗進行中，交卷後才會顯示成績統計（避免作弊）。</div>';
     if(el('radarWrap'))el('radarWrap').innerHTML='<div style="padding:40px;text-align:center;color:var(--muted)">🔒 測驗進行中</div>';
+    if(el('chprog'))el('chprog').innerHTML='<div style="padding:14px;text-align:center;color:var(--muted)">🔒 測驗進行中</div>';
+    renderDaily();                       // 今日目標不洩漏答案，可照常顯示
     return;
   }
   const all=QUESTIONS.length;let done=0,ok=0;
@@ -1753,7 +1782,44 @@ function renderDash(){
     <div class="nm">第${r.t.ch}章 · ${esc(r.t.label)}<br><em>${r.a}/${r.total} 已作答</em></div>
     <div class="tbar"><i class="ans" style="width:${r.total?r.a/r.total*100:0}%"></i><i class="cor" style="width:${r.total?r.c/r.total*100:0}%"></i></div>
     <div class="sc">${r.c}/${r.a||0} 對　(${r.a?Math.round(r.c/r.a*100):0}%)</div></div>`).join('');
-  renderRadar();
+  renderRadar();renderChProg();renderDaily();
+}
+/* ---- 各章進度 ---- */
+function renderChProg(){
+  const w=el('chprog');if(!w)return;
+  const chs=[{ch:'10',label:'第10章 ・ 運算放大器'},{ch:'11',label:'第11章 ・ 振盪電路與濾波器'}];
+  const data=chs.map(function(c){const qs=QUESTIONS.filter(q=>q.ch===c.ch),tot=qs.length;
+    const a=qs.filter(q=>S.answers[q.id]).length,ok=qs.filter(q=>S.answers[q.id]===q.answer).length;
+    return {label:c.label,tot:tot,a:a,ok:ok,ap:tot?(a/tot*100):0,cp:tot?(ok/tot*100):0};});
+  w.innerHTML='<div class="chrow">'+data.map(function(d){
+    return '<div class="chitem"><div class="chh"><span>'+d.label+'</span><small>答對 '+d.ok+'/'+d.a+' ・ 共 '+d.tot+' 題'+(d.a?'（'+Math.round(d.ok/d.a*100)+'%）':'')+'</small></div>'
+      +'<div class="chbar"><i class="ans" style="width:0"></i><i class="cor" style="width:0"></i></div></div>';
+  }).join('')+'</div>';
+  requestAnimationFrame(function(){const bars=w.querySelectorAll('.chbar');   // 由 0 動畫展開
+    data.forEach(function(d,i){const b=bars[i];if(b){b.querySelector('.ans').style.width=d.ap+'%';b.querySelector('.cor').style.width=d.cp+'%';}});});
+}
+/* ---- 今日刷題目標 ---- */
+let daily={goal:20,d:'',c:0};
+try{const _d=JSON.parse(localStorage.getItem('opa_daily')||'null');if(_d&&typeof _d.goal==='number')daily=_d;}catch(e){}
+function todayStr(){const x=new Date();return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate();}
+function saveDaily(){try{localStorage.setItem('opa_daily',JSON.stringify(daily));}catch(e){}}
+function dailyCheckDay(){const t=todayStr();if(daily.d!==t){daily.d=t;daily.c=0;}}
+function bumpDaily(){dailyCheckDay();const before=daily.c;daily.c++;saveDaily();
+  if(before<daily.goal&&daily.c>=daily.goal){confetti(150);try{beep('go');}catch(e){}toast('🎯 達成今日目標 '+daily.goal+' 題！太強了','go');}
+  if(el('dash')&&el('dash').classList.contains('active'))renderDaily();}
+function renderDaily(){
+  const w=el('dailyWrap');if(!w)return;dailyCheckDay();
+  const goal=Math.max(1,daily.goal||20),c=daily.c||0,pct=Math.min(100,Math.round(c/goal*100)),done=c>=goal;
+  const R=42,CIRC=2*Math.PI*R,off=(CIRC*(1-Math.min(1,c/goal))).toFixed(1);
+  w.innerHTML='<div class="daily'+(done?' done':'')+'">'
+    +'<div class="ring2"><svg width="100" height="100" viewBox="0 0 100 100">'
+    +'<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="var(--border2)" stroke-width="9"/>'
+    +'<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+(done?'var(--ok)':'url(#rg)')+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+CIRC.toFixed(1)+'" stroke-dashoffset="'+off+'" transform="rotate(-90 50 50)" style="transition:stroke-dashoffset .8s"/></svg>'
+    +'<b>'+c+'<br><span style="font-size:11px;color:var(--muted)">/ '+goal+'</span></b></div>'
+    +'<div class="dinfo"><div class="dmsg">'+(done?'🎉 今日目標達成！':('今天已刷 '+c+' / '+goal+' 題'))+'</div>'
+    +'<div class="dsub">'+(done?'保持手感，明天再戰！':('再 '+(goal-c)+' 題就達標（'+pct+'%）'))+'</div>'
+    +'<div class="dgoal">每日目標：<button data-dg="-5" aria-label="減少目標">−</button><b style="color:var(--text);min-width:34px;text-align:center">'+goal+'</b><button data-dg="5" aria-label="增加目標">＋</button> 題</div>'
+    +'</div></div>';
 }
 const RADAR_SHORT={ch10_ideal:'理想OPA',ch10_inv:'反相',ch10_noninv:'非反相',ch10_adder:'加法',ch10_sub:'減法',ch10_diffint:'微積分',ch10_comp:'比較器',ch11_rcphase:'RC相移',ch11_wien:'韋恩',ch11_lc:'LC',ch11_xtal:'晶體',ch11_schmitt:'施密特',ch11_square:'方波',ch11_triangle:'三角波',ch11_filter:'濾波器'};
 function renderRadar(){
@@ -1788,6 +1854,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');el(t.dataset.tab).classList.add('active');
   if(t.dataset.tab==='dash')renderDash();
+  updateNextUnFab();
   window.scrollTo({top:0,behavior:'smooth'});
 }));
 
@@ -1844,7 +1911,12 @@ function jumpNextUnanswered(){
   const c=el('q'+target.id);
   if(c){c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),1200);}
 }
+function updateNextUnFab(arr){try{arr=arr||filtered();
+  const show=el('quiz').classList.contains('active')&&arr.length&&arr.some(q=>!S.answers[q.id])&&(mode==='practice'||(mode==='exam'&&!submitted));
+  el('nextUn').style.display=show?'inline-flex':'none';}catch(e){}}
 el('nextUn').addEventListener('click',jumpNextUnanswered);
+el('dailyWrap').addEventListener('click',function(e){const b=e.target.closest('[data-dg]');if(!b)return;
+  daily.goal=Math.max(5,Math.min(200,(daily.goal||20)+(+b.getAttribute('data-dg'))));saveDaily();renderDaily();});
 
 /* ---------- notes TOC ---------- */
 (function(){
