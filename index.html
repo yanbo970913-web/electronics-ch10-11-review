@@ -1300,7 +1300,7 @@ el('toTop').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth
 const BGM=el('bgm');
 const DEFAULT_SRCS=['bgm.mp3','bgm.m4a','bgm.ogg','bgm.wav'];
 S.music=Object.assign({enabled:true,vol:35,loop:true},S.music||{});
-const NICE_NAME='1014 — PASXKAL';
+const NICE_NAME='Calm Study Loop ・ 原創 (CC0)';
 let bgmIdx=0,bgmObjURL=null,bgmLoaded=false;
 function bgmName(){try{return decodeURIComponent((BGM.currentSrc||BGM.src||'').split('/').pop());}catch(e){return '';}}
 function bgmLabel(){const n=bgmName();return /^bgm\./i.test(n)?NICE_NAME:n;}
