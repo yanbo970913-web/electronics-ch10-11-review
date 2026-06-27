@@ -328,6 +328,24 @@ svg.ckt{display:block;width:100%;height:auto}
 .eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.4s}.eq i:nth-child(4){animation-delay:.15s}
 @keyframes eq{0%,100%{height:3px}50%{height:13px}}
 .foot{max-width:1060px;margin:14px auto 0;padding:0 16px;color:var(--muted);font-size:11.5px;line-height:1.6}
+/* login gate */
+#gate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(circle at 28% 18%,#16224a,#070b16 62%)}
+#gate.hidden{display:none}
+.gate-card{width:100%;max-width:380px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border2);border-radius:20px;padding:32px 26px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.55);animation:pop .5s cubic-bezier(.2,1.1,.4,1)}
+.gate-logo{width:66px;height:66px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;font-size:34px;
+  background:linear-gradient(135deg,var(--brand),var(--violet));box-shadow:0 0 32px -4px var(--brand);animation:pulseLogo 3.5s ease-in-out infinite}
+.gate-title{font-size:19px;font-weight:900;color:var(--text)}
+.gate-sub{font-size:12.5px;color:var(--muted);margin:4px 0 20px}
+.gate-in{width:100%;margin:7px 0;padding:12px 14px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);
+  color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:var(--tr)}
+.gate-in:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 28%,transparent)}
+.gate-err{color:var(--no);font-size:13px;min-height:18px;margin:6px 0}
+.gate-btn{width:100%;margin-top:4px;padding:12px;border-radius:12px;border:0;cursor:pointer;font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff;box-shadow:0 8px 22px -8px var(--brand);transition:var(--tr)}
+.gate-btn:hover{filter:brightness(1.08)}.gate-btn:disabled{opacity:.6;cursor:default}
+.gate-foot{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.7}
 @media(max-width:640px){
   .panel{top:60px}.htitle{font-size:15px}.tab{padding:7px 11px;font-size:13px}
   .tp{grid-template-columns:1fr;gap:4px}.tp .sc{justify-self:end}
@@ -813,6 +831,22 @@ svg.ckt{display:block;width:100%;height:auto}
       <button class="btn" id="authClose">關閉</button><button class="btn danger" id="authLogout">登出</button></div>
   </div>
 </div></div>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">⚡</div>
+    <div class="gate-title">電子學 第10–11章 互動複習</div>
+    <div class="gate-sub">運算放大器・振盪電路・濾波器</div>
+    <div id="gateForm">
+      <input class="gate-in" id="gUser" placeholder="帳號" autocomplete="username">
+      <input class="gate-in" id="gPass" type="password" placeholder="密碼" autocomplete="current-password">
+      <div id="gErr" class="gate-err"></div>
+      <button class="gate-btn" id="gSubmit">登入</button>
+      <div class="gate-foot">需要帳號權限才能使用本系統。<br>沒有帳號請向管理員索取。</div>
+    </div>
+    <div id="gateLoading" class="gate-foot" style="display:none">自動登入中…</div>
+  </div>
+</div>
 
 <div class="foot">※ 標示「統測 民國○○年」者為統測歷屆風格／改編題，年份代表該題型常出現的年度區間（OPA・振盪器・濾波器為統測電子學幾乎年年必考），非逐字照抄某份考卷；正式查證請以技專測驗中心公布之歷屆試題為準。　全部 200 題答案均經獨立重算驗證。作答紀錄、收藏、主題與設定自動儲存在本機瀏覽器。</div>
 
@@ -1563,28 +1597,38 @@ async function pushCloud(){if(!supaUser)return;const sb=await loadSupa();
   const r=await sb.from('user_progress').upsert({user_id:supaUser.id,data:payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
   if(r.error)console.warn('push',r.error);}
 async function syncOnLogin(){try{const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();await pushCloud();}catch(e){console.warn(e);}}
-async function doLoginFlow(){
-  const u=el('authUser').value.trim(),p=el('authPass').value;
-  if(!u||!p){el('authErr').textContent='請輸入帳號與密碼';return;}
-  el('authErr').textContent='登入中…';el('authSubmit').disabled=true;
+function showGate(){el('gate').classList.remove('hidden');}
+function hideGate(){el('gate').classList.add('hidden');}
+async function loginWith(u,p,errEl,btn,onOk){
+  u=(u||'').trim();
+  if(!u||!p){errEl.textContent='請輸入帳號與密碼';return;}
+  errEl.textContent='登入中…';if(btn)btn.disabled=true;
   try{const sb=await loadSupa();
     const r=await sb.auth.signInWithPassword({email:u.toLowerCase()+EMAIL_DOMAIN,password:p});
     if(r.error)throw r.error;
-    supaUser=r.data.user;el('authErr').textContent='';el('authPass').value='';
-    updateAuthUI();await syncOnLogin();toast('✅ 已登入，雲端同步開啟','ok');
-  }catch(err){el('authErr').textContent='登入失敗：'+((err&&err.message)||'帳號或密碼錯誤');}
-  el('authSubmit').disabled=false;
+    supaUser=r.data.user;errEl.textContent='';updateAuthUI();hideGate();await syncOnLogin();
+    if(onOk)onOk();toast('✅ 已登入，雲端同步開啟','ok');
+  }catch(err){errEl.textContent='登入失敗：'+((err&&err.message)||'帳號或密碼錯誤');}
+  if(btn)btn.disabled=false;
 }
 el('authBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('authModal').classList.add('show');setTimeout(()=>{if(!supaUser)el('authUser').focus();},80);});
 el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authModal').addEventListener('click',e=>{if(e.target===el('authModal'))el('authModal').classList.remove('show');});
-el('authSubmit').addEventListener('click',doLoginFlow);
-el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLoginFlow();});
-el('authLogout').addEventListener('click',async()=>{try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;updateAuthUI();el('authModal').classList.remove('show');toast('已登出（本機紀錄仍保留）','');});
+el('authSubmit').addEventListener('click',()=>loginWith(el('authUser').value,el('authPass').value,el('authErr'),el('authSubmit'),()=>{el('authModal').classList.remove('show');el('authPass').value='';}));
+el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('authSubmit').click();});
+el('gSubmit').addEventListener('click',()=>loginWith(el('gUser').value,el('gPass').value,el('gErr'),el('gSubmit'),()=>{el('gPass').value='';}));
+el('gPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('gSubmit').click();});
+el('authLogout').addEventListener('click',async()=>{try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
 function hasStoredSession(){try{return Object.keys(localStorage).some(k=>k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0);}catch(e){return false;}}
-async function initAuth(){if(!hasStoredSession())return;try{const sb=await loadSupa();const r=await sb.auth.getSession();
-  if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();}}catch(e){console.warn(e);}}
+async function initAuth(){
+  if(!hasStoredSession())return;                       // no session → gate shows the login form
+  el('gateForm').style.display='none';el('gateLoading').style.display='block';
+  try{const sb=await loadSupa();const r=await sb.auth.getSession();
+    if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();hideGate();const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();}
+    else{el('gateForm').style.display='block';el('gateLoading').style.display='none';}
+  }catch(e){console.warn(e);el('gateForm').style.display='block';el('gateLoading').style.display='none';}
+}
 
 /* ---------- init ---------- */
 applyTheme();applySound();render();renderDash();updateAuthUI();initAuth();
