@@ -479,6 +479,7 @@ header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px
 body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-touch-callout:none}
 .panel.mocklocked{position:relative}
 .panel.mocklocked .row{opacity:.5;filter:saturate(.55)}
+.panel.mocklocked .row,.panel.mocklocked .row *{pointer-events:none}   /* 深度防禦：不只靠 JS 攔截 */
 .panel.mocklocked::after{content:"🔒 模擬考鎖定中";position:absolute;top:8px;right:12px;font-size:11px;font-weight:800;color:#fff;background:var(--no);padding:2px 9px;border-radius:999px;z-index:2;pointer-events:none}
 #examWM{position:fixed;inset:0;z-index:55;pointer-events:none;background-repeat:repeat;display:none}
 /* ===================== 響應式 RWD（電腦 / 平板 / 手機） ===================== */
@@ -501,13 +502,13 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
   .mockbar{position:static;top:auto}.toc{position:static;max-height:none}   /* 行動版不黏頂，避免卡在加高的頁首中間 */
   #toast{top:calc(env(safe-area-inset-top,0px) + 110px)}        /* toast 移到頁首下方，不再遮住標題/分頁 */
   .mpop{top:auto;bottom:calc(76px + env(safe-area-inset-bottom));right:10px;left:10px;width:auto}  /* 音樂彈窗貼底 */
-  .notes .nh1,.notes .nh2{scroll-margin-top:120px}
+  .notes .nh1,.notes .nh2{scroll-margin-top:165px}
   #bg::before,#bg::after{animation:none!important;filter:blur(42px);mix-blend-mode:normal}  /* 手機降載：靜態柔光 */
   #bg i{display:none}
 }
 /* 手機 ≤480 */
 @media(max-width:480px){
-  .iconbtn{width:38px;height:38px}
+  .iconbtn{width:34px;height:34px;font-size:16px}.htools{gap:4px}
   .row{gap:8px}
   .chips{width:100%}.chip{flex:1 1 auto;min-height:38px;display:inline-flex;align-items:center;justify-content:center}
   .seg{flex:1 1 100%}.seg button{flex:1}
@@ -545,14 +546,14 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
         <button class="tab" data-tab="dash">📊 統計</button>
         <button class="tab" data-tab="notes">📖 筆記</button>
       </div>
-      <button class="iconbtn" id="instBtn" title="安裝 App" style="display:none">📲</button>
-      <button class="iconbtn" id="authBtn" title="登入 / 雲端同步">👤</button>
-      <button class="iconbtn" id="fxBtn" title="公式速查">📐</button>
-      <button class="iconbtn" id="musicBtn" title="背景音樂">🎵</button>
-      <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵">⌨</button>
-      <button class="iconbtn" id="sndBtn" title="音效開關">🔇</button>
-      <button class="iconbtn" id="fsBtn" title="全螢幕 開/關">⛶</button>
-      <button class="iconbtn" id="themeBtn" title="深色 / 淺色">🌙</button>
+      <button class="iconbtn" id="instBtn" title="安裝 App" aria-label="安裝 App" style="display:none">📲</button>
+      <button class="iconbtn" id="authBtn" title="登入 / 雲端同步" aria-label="登入／雲端同步">👤</button>
+      <button class="iconbtn" id="fxBtn" title="公式速查" aria-label="公式速查表">📐</button>
+      <button class="iconbtn" id="musicBtn" title="背景音樂" aria-label="背景音樂開關" aria-pressed="false">🎵</button>
+      <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵說明">⌨</button>
+      <button class="iconbtn" id="sndBtn" title="音效開關" aria-label="音效開關" aria-pressed="false">🔇</button>
+      <button class="iconbtn" id="fsBtn" title="全螢幕 開/關" aria-label="全螢幕切換" aria-pressed="false">⛶</button>
+      <button class="iconbtn" id="themeBtn" title="深色 / 淺色" aria-label="切換配色">🌙</button>
     </div>
   </div>
 </header>
@@ -1310,7 +1311,7 @@ const QMAP=new Map(QUESTIONS.map(q=>[q.id,q]));const Q=id=>QMAP.get(id);   // O(
 
 /* ---------- persistence（進度依帳號分離，不同人不會互相看到） ---------- */
 let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false,mockHistory:[],review:{},_mt:0};
-try{const p=JSON.parse(localStorage.getItem(PREFS)||'{}');if(p.theme)S.theme=p.theme;if(typeof p.sound==='boolean')S.sound=p.sound;}catch(e){}   // 只還原裝置層級偏好(主題/音效)，進度等登入後依帳號載入
+try{const p=JSON.parse(localStorage.getItem(PREFS)||'{}');if(p.theme)S.theme=p.theme;if(typeof p.sound==='boolean')S.sound=p.sound;if(p.music&&typeof p.music==='object')S.music=p.music;}catch(e){}   // 只還原裝置層級偏好(主題/音效/音樂)，進度等登入後依帳號載入
 var supaUser=null, pushTimer=null;     // cloud-sync state
 function userKey(uid){return LS_BASE+':'+uid;}
 function resetProgress(){S.answers={};S.bookmarks={};S.bestStreak=0;S.mockHistory=[];S.review={};S._mt=0;}     // 換帳號/登出時清空進度
@@ -1319,10 +1320,11 @@ function loadProgressFor(uid){if(typeof hardExitExam==='function')hardExitExam()
     if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;
     if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;if(Array.isArray(d.mockHistory))S.mockHistory=d.mockHistory;
     if(d.review&&typeof d.review==='object')S.review=d.review;
-    S._mt=d._mt||0;}catch(e){}}
+    S._mt=d._mt||0;}catch(e){}
+  if(typeof loadDaily==='function')loadDaily();}   // 載入此帳號的每日目標/連續天數
 function save(){try{
     S._mt=Date.now();                                                                       // 進度最後修改時間(用於雲端 last-write-wins)
-    localStorage.setItem(PREFS,JSON.stringify({theme:S.theme,sound:S.sound}));              // 偏好：裝置層級
+    localStorage.setItem(PREFS,JSON.stringify({theme:S.theme,sound:S.sound,music:S.music}));   // 偏好：裝置層級
     if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,_mt:S._mt})); // 進度：依帳號分開存
   }catch(e){}
   if(supaUser){clearTimeout(pushTimer);pushTimer=setTimeout(function(){if(typeof pushCloud==='function')pushCloud().catch(function(){});},1500);}}
@@ -1497,8 +1499,9 @@ function injectDia(cardEl){
   dia.innerHTML=circuitSVG(dia.getAttribute('data-circ'),qq.clabels||{});
   dia.setAttribute('data-done','1');
 }
-function injectAllDias(){              // reliable, non-blocking: render diagrams in idle chunks
-  const dias=[...document.querySelectorAll('#list .dia[data-circ]:not([data-done])')];
+function injectAllDias(){              // 後援：只補近視窗的圖（離螢幕仍交給 IntersectionObserver，避免 168 張全注入）
+  const vh=window.innerHeight||800;
+  const dias=[...document.querySelectorAll('#list .dia[data-circ]:not([data-done])')].filter(d=>{const r=d.getBoundingClientRect();return r.top<2*vh&&r.bottom>-vh;});
   let i=0;const ric=window.requestIdleCallback||function(f){return setTimeout(f,16);};
   (function chunk(){const end=Math.min(i+10,dias.length);
     for(;i<end;i++)injectDia(dias[i].closest('.q'));
@@ -1605,7 +1608,7 @@ el('fpast').addEventListener('change',()=>{clearAdapt();randomSet=null;submitted
 el('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;
   cancelMock();randomSet=null;chip=b.dataset.chip;[...el('chips').children].forEach(c=>c.classList.toggle('on',c===b));render();});
 el('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  cancelMock();mode=b.dataset.m;submitted=false;finalCheck=false;hideResult();
+  cancelMock();randomSet=null;mode=b.dataset.m;submitted=false;finalCheck=false;hideResult();
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x===b));
   if(mode==='exam'){startTimer();}else{stopTimer();}render();});
 
@@ -1619,9 +1622,9 @@ el('shuffle').addEventListener('click',()=>{clearAdapt();randomSet=null;for(let 
 el('redoWrong').addEventListener('click',()=>{clearAdapt();
   const wrong=baseFilter().filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer);
   if(!wrong.length){toast('目前沒有錯題 🎉','ok');return;}
-  chip='wrong';[...el('chips').children].forEach(c=>c.classList.toggle('on',c.dataset.chip==='wrong'));
-  wrong.forEach(q=>delete S.answers[q.id]);save();streak=0;render();
-  toast('🔁 已載入 '+wrong.length+' 題錯題重練','go');
+  const ids=wrong.map(q=>q.id);ids.forEach(id=>delete S.answers[id]);save();
+  randomSet=ids;chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));streak=0;render();   // 釘住題組，清答案後仍可見
+  toast('🔁 已載入 '+ids.length+' 題錯題重練','go');
 });
 el('printWrong').addEventListener('click',()=>{
   if(mode==='exam'&&!submitted){toast('考試交卷後才能匯出錯題','no');return;}
@@ -1647,8 +1650,8 @@ el('printWrong').addEventListener('click',()=>{
 const DIFFS=['基礎','中等','進階'];
 let adaptive=false,adaptLevel=0,adaptStreak=0,adaptStats={n:0,ok:0},adaptShown=[];
 function clearAdapt(){if(adaptive){adaptive=false;const b=el('adaptbar');if(b){b.classList.remove('show');b.innerHTML='';}}}
-function pickByDiff(diff){const cand=QUESTIONS.filter(q=>q.difficulty===diff&&adaptShown.indexOf(q.id)<0);
-  const un=cand.filter(q=>!S.answers[q.id]),arr=un.length?un:cand;return arr.length?arr[Math.floor(Math.random()*arr.length)]:null;}
+function pickByDiff(diff){const cand=QUESTIONS.filter(q=>q.difficulty===diff&&adaptShown.indexOf(q.id)<0&&!S.answers[q.id]);
+  return cand.length?cand[Math.floor(Math.random()*cand.length)]:null;}   // 只出未作答題，否則回 null 讓上層換難度/結束
 function nextAdaptive(){
   let q=pickByDiff(DIFFS[adaptLevel]);
   if(!q)for(let i=0;i<3&&!q;i++)q=pickByDiff(DIFFS[i]);
@@ -1665,6 +1668,7 @@ function paintAdapt(answered){
 function startAdaptive(){
   clearAdapt();cancelMock();adaptive=true;adaptLevel=0;adaptStreak=0;adaptStats={n:0,ok:0};adaptShown=[];
   mode='practice';submitted=false;chip='all';finalCheck=false;
+  [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='practice'));
   if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
   nextAdaptive();toast('🧠 自適應開始：答對→升難度、答錯→降難度','go');
@@ -1723,7 +1727,7 @@ el('finalbar').addEventListener('click',function(e){const b=e.target.closest('[d
 });
 function doSubmit(arr){
   submitted=true;finalCheck=false;hideFinalBar();stopTimer();
-  const isMock=mockActive, used=isMock?(mockDur-Math.max(0,mockRemain)):0;
+  const isMock=mockActive, used=isMock?Math.max(0,Math.round((Date.now()-mockStartTs)/1000)):0;   // 以開考時間戳算真實用時(重整續考也正確、防NaN)
   const ans=arr.filter(q=>S.answers[q.id]),ok=ans.filter(q=>S.answers[q.id]===q.answer).length;
   ans.forEach(q=>srUpdate(q.id,S.answers[q.id]===q.answer));   // 交卷後把答錯題排入間隔複習
   const pct=arr.length?Math.round(ok/arr.length*100):0;
@@ -1756,7 +1760,8 @@ function hideResult(){el('result').className='result';el('result').innerHTML='';
 
 /* ---------- in-app confirm modal (取代瀏覽器原生 confirm) ---------- */
 let confCb=null;
-function askConfirm(title,msg,cb){el('confTitle').textContent=title;el('confMsg').textContent=msg;confCb=cb;el('confModal').classList.add('show');}
+try{document.querySelectorAll('.modal > .mbox').forEach(m=>{m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');});}catch(e){}
+function askConfirm(title,msg,cb){el('confTitle').textContent=title;el('confMsg').textContent=msg;confCb=cb;el('confModal').classList.add('show');setTimeout(()=>{try{el('confYes').focus();}catch(e){}},60);}
 el('confYes').addEventListener('click',()=>{el('confModal').classList.remove('show');const cb=confCb;confCb=null;if(cb)cb();});
 el('confNo').addEventListener('click',()=>{el('confModal').classList.remove('show');confCb=null;});
 el('confModal').addEventListener('click',e=>{if(e.target===el('confModal'))el('confModal').classList.remove('show');});
@@ -1975,9 +1980,11 @@ const SR_INTERVALS=[1,2,4,7,15];   // 天
 function srUpdate(id,correct){
   S.review=S.review||{};const now=Date.now(),DAY=86400000;
   if(!correct){S.review[id]={due:now+SR_INTERVALS[0]*DAY,stage:0,last:now};}
-  else if(S.review[id]){const cur=S.review[id].stage||0;
-    if(cur>=SR_INTERVALS.length-1){delete S.review[id];}      // 連續答對畢業
-    else{const st=cur+1;S.review[id]={due:now+SR_INTERVALS[st]*DAY,stage:st,last:now};}}
+  else if(S.review[id]){
+    if(now<S.review[id].due){S.review[id].last=now;}          // 尚未到期答對：不提前升級/畢業
+    else{const cur=S.review[id].stage||0;
+      if(cur>=SR_INTERVALS.length-1){delete S.review[id];}    // 到期答對才畢業
+      else{const st=cur+1;S.review[id]={due:now+SR_INTERVALS[st]*DAY,stage:st,last:now};}}}
 }
 function dueReviews(){S.review=S.review||{};const now=Date.now();
   return Object.keys(S.review).map(Number).filter(id=>Q(id)&&S.review[id].due<=now);}
@@ -2033,10 +2040,12 @@ function renderChProg(){
 }
 /* ---- 今日刷題目標 ---- */
 let daily={goal:20,d:'',c:0,streak:0,last:''};
+function dailyKey(){return supaUser?userKey(supaUser.id)+':daily':'opa_daily';}   // 每帳號獨立，避免跨帳號洩漏
+function loadDaily(){const def={goal:20,d:'',c:0,streak:0,last:''};try{const _d=JSON.parse(localStorage.getItem(dailyKey())||'null');daily=(_d&&typeof _d.goal==='number')?Object.assign({},def,_d):Object.assign({},def);}catch(e){daily=Object.assign({},def);}if(el('dailyWrap'))try{renderDaily();}catch(e){}}
 try{const _d=JSON.parse(localStorage.getItem('opa_daily')||'null');if(_d&&typeof _d.goal==='number')daily=Object.assign({streak:0,last:''},_d);}catch(e){}
 function todayStr(){const x=new Date();return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate();}
 function yesterdayStr(){const x=new Date(Date.now()-86400000);return x.getFullYear()+'-'+(x.getMonth()+1)+'-'+x.getDate();}
-function saveDaily(){try{localStorage.setItem('opa_daily',JSON.stringify(daily));}catch(e){}}
+function saveDaily(){try{localStorage.setItem(dailyKey(),JSON.stringify(daily));}catch(e){}}
 function dailyCheckDay(){const t=todayStr();if(daily.d!==t){daily.d=t;daily.c=0;}}   // 只重置「今日題數」，不動連續天數
 function bumpDaily(){const t=todayStr();
   if(daily.last!==t){daily.streak=(daily.last===yesterdayStr())?((daily.streak||0)+1):1;daily.last=t;   // 今日第一次作答→更新連續天數
@@ -2098,7 +2107,8 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 
 /* ---------- theme / sound / kb ---------- */
 const THEMES=[{k:'dark',n:'🌙 深色',i:'🌙'},{k:'light',n:'☀️ 淺色',i:'☀️'},{k:'sepia',n:'📜 護眼黃',i:'📜'},{k:'green',n:'🌿 護眼綠',i:'🌿'}];
-function applyTheme(){const t=THEMES.find(x=>x.k===S.theme)||THEMES[0];document.documentElement.dataset.theme=t.k;el('themeBtn').textContent=t.i;el('themeBtn').title='配色：'+t.n+'（點擊切換）';}
+function applyTheme(){const t=THEMES.find(x=>x.k===S.theme)||THEMES[0];document.documentElement.dataset.theme=t.k;el('themeBtn').textContent=t.i;el('themeBtn').title='配色：'+t.n+'（點擊切換）';el('themeBtn').setAttribute('aria-label','配色：'+t.n+'，點擊切換');
+  try{const mc=document.querySelector('meta[name="theme-color"]');if(mc){const col=getComputedStyle(document.documentElement).getPropertyValue('--bg2').trim();if(col)mc.setAttribute('content',col);}}catch(e){}}
 el('themeBtn').addEventListener('click',()=>{const i=THEMES.findIndex(t=>t.k===S.theme),nx=THEMES[(i+1)%THEMES.length];S.theme=nx.k;save();applyTheme();toast(nx.n,'');});
 el('fsBtn').addEventListener('click',()=>{if(document.fullscreenElement||document.webkitFullscreenElement)exitFS();else enterFS();});
 function syncFsBtn(){try{const on=!!(document.fullscreenElement||document.webkitFullscreenElement);el('fsBtn').textContent=on?'🗗':'⛶';el('fsBtn').title=on?'退出全螢幕':'全螢幕 開/關';}catch(e){}}
@@ -2120,6 +2130,9 @@ window.addEventListener('appinstalled',function(){const b=el('instBtn');if(b)b.s
 /* ---------- keyboard ---------- */
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA'){if(e.key==='Escape')e.target.blur();return;}
+  if(document.querySelector('.modal.show')){   // 有彈窗開啟時，除 Esc 外不讓快捷鍵穿透到背後題目
+    if(e.key==='Escape'&&!mockOn())['kbModal','confModal','rqModal','mockModal','authModal','fxModal'].forEach(m=>el(m).classList.remove('show'));
+    return;}
   if(e.key==='Escape'){if(!mockOn())['kbModal','confModal','rqModal','mockModal','authModal','fxModal'].forEach(m=>el(m).classList.remove('show'));closePops();return;}
   if(e.key==='t'||e.key==='T'){el('themeBtn').click();return;}
   if(e.key==='m'||e.key==='M'){toggleMusic();return;}
@@ -2181,7 +2194,12 @@ let notesHeads=[];
     const main=h.classList.contains('nh1');const a=document.createElement('a');a.href='#n'+i;
     a.className=main?'toc-main':'toc-sub';let t=h.textContent.trim();
     if(main)t=t.replace(/^電子學.*筆記$/,'本講義說明').replace(/（.*?）/,'');
-    a.textContent=t.slice(0,22);a.onclick=ev=>{ev.preventDefault();h.scrollIntoView({behavior:'smooth'});};
+    a.textContent=t.slice(0,22);a.onclick=ev=>{ev.preventDefault();
+      if(getComputedStyle(toc).position==='sticky'){   // 桌面：捲到剛好在黏頂目錄下方，標題不被遮
+        const top=h.getBoundingClientRect().top+window.pageYOffset-(toc.getBoundingClientRect().bottom+12);
+        window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+      }else h.scrollIntoView({behavior:'smooth'});   // 手機：靜態目錄，靠 scroll-margin
+    };
     toc.appendChild(a);notesHeads.push({h:h,a:a});});
 })();
 function updateTocSpy(){
@@ -2309,7 +2327,7 @@ el('authSubmit').addEventListener('click',()=>{if(el('authUser').value.trim()&&e
 el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('authSubmit').click();});
 el('gSubmit').addEventListener('click',()=>{if(el('gUser').value.trim()&&el('gPass').value)enterFS();loginWith(el('gUser').value,el('gPass').value,el('gErr'),el('gSubmit'),()=>{el('gPass').value='';});});
 el('gPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('gSubmit').click();});
-el('authLogout').addEventListener('click',async()=>{hardExitExam();try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;resetProgress();try{render();renderDash();}catch(e){}updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
+el('authLogout').addEventListener('click',async()=>{hardExitExam();try{clearMockPersist();}catch(e){}try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;loadDaily();resetProgress();try{render();renderDash();}catch(e){}updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
 /* ---------- 管理員後台：帳號權限管理（呼叫 Edge Function） ---------- */
 async function callAdmin(payload){
   const sb=await loadSupa();
