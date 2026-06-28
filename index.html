@@ -228,6 +228,8 @@ select:focus,.search:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-
 .star{margin-left:auto;background:transparent;border:0;font-size:19px;cursor:pointer;color:var(--muted);transition:var(--tr);line-height:1}
 .star:hover{transform:scale(1.25) rotate(8deg)} .star.on{color:var(--gold);text-shadow:0 0 12px var(--gold)}
 .star.notebtn{font-size:16px;filter:grayscale(.55);opacity:.6;padding-right:4px}
+.star.ttsbtn{font-size:16px;filter:grayscale(.55);opacity:.55;padding-right:4px}
+.star.ttsbtn:hover{filter:none;opacity:1} .star.ttsbtn.on{filter:none;opacity:1;color:var(--brand);text-shadow:0 0 12px var(--brand)}
 .star.notebtn:hover{filter:none;opacity:1;transform:scale(1.15)} .star.notebtn.on{filter:none;opacity:1}
 .qnote{margin:8px 0 2px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--gold) 12%,transparent);border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);font-size:13.5px;line-height:1.6;cursor:pointer;white-space:pre-wrap;word-break:break-word}
 .qnote:hover{border-color:var(--gold)}
@@ -1528,6 +1530,7 @@ function card(q){
   }
   return `<div class="q${activeId===q.id?' active':''}${ansCls}" id="q${q.id}" data-id="${q.id}" data-diff="${esc(q.difficulty)}">
     <div class="qhead"><span class="qnum">${q.id}.</span>${tags.join('')}
+      <button class="star ttsbtn" data-tts="${q.id}" aria-label="朗讀第${q.id}題" title="語音朗讀題目">🔊</button>
       <button class="star notebtn${S.notes[q.id]?' on':''}" data-note="${q.id}" aria-label="個人備註第${q.id}題" title="個人備註">📝</button>
       <button class="star ${bm}" data-star="${q.id}" aria-pressed="${bm?'true':'false'}" aria-label="收藏第${q.id}題${bm?'（已收藏）':''}" title="收藏">${bm?'★':'☆'}</button></div>
     <div class="stem">${fmt(q.stem)}</div>
@@ -1641,6 +1644,8 @@ el('list').addEventListener('click',e=>{
   if(st){toggleStar(+st.dataset.star);return;}
   const nt=e.target.closest('[data-note]');
   if(nt){openNote(+nt.dataset.note);return;}
+  const tt=e.target.closest('[data-tts]');
+  if(tt){speakQuestion(+tt.dataset.tts);return;}
   const rv=e.target.closest('[data-rev]');
   if(rv){el('exp'+rv.dataset.rev).classList.add('show');rv.parentElement.innerHTML='';return;}
   const c=e.target.closest('.q');if(c)setActive(+c.dataset.id,false);
@@ -1650,6 +1655,23 @@ function toggleStar(id){
   const b=document.querySelector('[data-star="'+id+'"]');
   if(b){b.classList.toggle('on',!!S.bookmarks[id]);b.textContent=S.bookmarks[id]?'★':'☆';}
   updateChips();if(chip==='bookmark')render();
+}
+/* 語音朗讀題目（Web Speech API）*/
+function ttsSupported(){return 'speechSynthesis' in window;}
+function speakClean(s){return String(s||'')
+  .replace(/_\{?([A-Za-z0-9]+)\}?/g,'$1').replace(/\^/g,' 的 ')
+  .replace(/\*/g,' 乘 ').replace(/\//g,' 分之 ').replace(/sqrt/gi,'根號 ').replace(/\bpi\b/gi,'pi')
+  .replace(/>=|≥/g,' 大於等於 ').replace(/<=|≤/g,' 小於等於 ').replace(/[（(]/g,'，').replace(/[）)]/g,'，');}
+let ttsCurId=null;
+function updateTtsBtns(){document.querySelectorAll('[data-tts]').forEach(b=>b.classList.toggle('on',+b.dataset.tts===ttsCurId));}
+function stopTTS(){if(ttsSupported())try{speechSynthesis.cancel();}catch(e){}ttsCurId=null;updateTtsBtns();}
+function speakQuestion(id){
+  if(!ttsSupported()){toast('此瀏覽器不支援語音朗讀','no');return;}
+  if(ttsCurId===id){stopTTS();return;}
+  stopTTS();const q=Q(id);if(!q)return;
+  let text=speakClean(q.stem)+'。';['A','B','C','D'].forEach(L=>{text+='　選項'+L+'，'+speakClean(q.opts[L])+'。';});
+  try{const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=1;u.onend=()=>{ttsCurId=null;updateTtsBtns();};
+    ttsCurId=id;updateTtsBtns();speechSynthesis.speak(u);}catch(e){ttsCurId=null;}
 }
 /* 每題個人備註 */
 let noteTargetId=null;
@@ -2090,16 +2112,17 @@ function renderWeak(){
   const cand=TOPICS.map(t=>{const qs=QUESTIONS.filter(q=>q.topicKey===t.key);
     const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;
     return {t,total:qs.length,a,c,acc:a?c/a:1};}).filter(x=>x.a>=3);
-  if(!cand.length){w.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">每個主題答滿 3 題後，這裡會自動推薦你最該加強的主題並可一鍵練習。</div>';return;}
+  if(!cand.length){w.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">每個主題答滿 3 題後，這裡會列出最該加強的 3 個主題並可一鍵練習。</div>';return;}
   cand.sort((a,b)=>a.acc-b.acc||b.a-a.a);
-  const k=cand[0],accPct=Math.round(k.acc*100);
-  const pool=QUESTIONS.filter(q=>q.topicKey===k.t.key&&(!S.answers[q.id]||S.answers[q.id]!==q.answer)).length;
-  w.innerHTML='<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
-    +'<div style="font-size:30px;font-weight:900;line-height:1;color:'+(accPct<60?'var(--no)':accPct<80?'var(--gold)':'var(--ok)')+'">'+accPct+'%</div>'
-    +'<div style="flex:1;min-width:160px"><div style="font-weight:800;font-size:15px">最弱主題：第'+k.t.ch+'章 ・ '+esc(k.t.label)+'</div>'
-    +'<div style="color:var(--muted);font-size:12.5px;margin-top:3px">已作答 '+k.a+'/'+k.total+' ・ 答對率 '+accPct+'% ・ 可補強 '+pool+' 題</div></div>'
-    +(pool?'<button class="btn pri" id="weakGo">🎯 練 '+Math.min(20,pool)+' 題</button>':'<span style="color:var(--ok);font-weight:800">✓ 此主題已全對</span>')+'</div>';
-  const b=el('weakGo');if(b)b.onclick=()=>practiceWeak(k.t.key);
+  const top=cand.slice(0,3);
+  w.innerHTML='<div style="display:flex;flex-direction:column;gap:11px">'+top.map(function(k){
+    const accPct=Math.round(k.acc*100),col=accPct<60?'var(--no)':accPct<80?'var(--gold)':'var(--ok)';
+    const pool=QUESTIONS.filter(q=>q.topicKey===k.t.key&&(!S.answers[q.id]||S.answers[q.id]!==q.answer)).length;
+    return '<div style="display:flex;align-items:center;gap:12px">'
+      +'<div style="font-size:23px;font-weight:900;min-width:54px;text-align:center;line-height:1;color:'+col+'">'+accPct+'%</div>'
+      +'<div style="flex:1;min-width:120px"><div style="font-weight:800;font-size:14px">第'+k.t.ch+'章 ・ '+esc(k.t.label)+'</div><div style="color:var(--muted);font-size:12px;margin-top:2px">答對 '+k.c+'/'+k.a+' 題</div></div>'
+      +(pool?'<button class="btn" data-weak="'+k.t.key+'" style="padding:6px 13px;font-size:13px">🎯 練 '+Math.min(20,pool)+'</button>':'<span style="color:var(--ok);font-weight:800;font-size:13px">全對 ✓</span>')+'</div>';
+  }).join('')+'</div>';
 }
 function practiceWeak(key){
   clearAdapt();cancelMock();
@@ -2115,6 +2138,7 @@ function practiceWeak(key){
   render();const lab=(TOPICS.find(t=>t.key===key)||{}).label||'';
   toast('🎯 開始補強「'+lab+'」'+pool.length+' 題','go');window.scrollTo({top:0,behavior:'smooth'});
 }
+el('weakWrap').addEventListener('click',e=>{const b=e.target.closest('[data-weak]');if(b)practiceWeak(b.dataset.weak);});
 /* ---- 錯題間隔複習（spaced repetition）---- */
 const SR_INTERVALS=[1,2,4,7,15];   // 天
 function srUpdate(id,correct){
@@ -2261,7 +2285,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');el(t.dataset.tab).classList.add('active');
   if(t.dataset.tab==='dash')renderDash();
-  updateNextUnFab();
+  updateNextUnFab();if(typeof stopTTS==='function')stopTTS();
   window.scrollTo({top:0,behavior:'smooth'});
 }));
 
