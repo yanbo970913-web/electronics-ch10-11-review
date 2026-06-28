@@ -634,6 +634,10 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
         </div>
       </div>
       <div class="dcard">
+        <div class="dh">🎯 弱點補強 <span class="sub">（自動找出最需要加強的主題）</span></div>
+        <div id="weakWrap"></div>
+      </div>
+      <div class="dcard">
         <div class="dh">📅 今日刷題目標 <span class="sub">（每天答題達標即過關）</span></div>
         <div id="dailyWrap"></div>
       </div>
@@ -1110,6 +1114,15 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
           <button class="btn pri" id="adResetGo">確定</button><button class="btn" id="adResetCancel">取消</button></div>
       </div>
       <div id="adminList" style="max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-weight:800;font-size:13px;margin-bottom:7px">💾 進度備份</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="exportBtn">⬇ 匯出備份</button>
+        <button class="btn" id="importBtn">⬆ 匯入備份</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      </div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:5px">把作答/收藏/錯題複習/備註/紀錄存成檔案，可換裝置或重灌時還原。</div>
     </div>
     <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
       <button class="btn" id="authClose">關閉</button><button class="btn danger" id="authLogout">登出</button></div>
@@ -1662,6 +1675,8 @@ const CMDS=[
   {ic:'🧠',label:'自適應難度練習',run:()=>el('adaptBtn').click()},
   {ic:'🎲',label:'隨機測驗',run:()=>el('rqBtn').click()},
   {ic:'🔁',label:'錯題重練',run:()=>el('redoWrong').click()},
+  {ic:'🎯',label:'練習我的弱點主題',run:()=>{const cand=TOPICS.map(t=>{const qs=QUESTIONS.filter(q=>q.topicKey===t.key);const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;return{key:t.key,a,acc:a?c/a:1};}).filter(x=>x.a>=3).sort((a,b)=>a.acc-b.acc);if(cand.length)practiceWeak(cand[0].key);else toast('多答幾題後才有弱點推薦','');}},
+  {ic:'💾',label:'匯出進度備份',run:()=>exportProgress()},
   {ic:'🔁',label:'開始間隔複習（到期錯題）',run:()=>{if(typeof startReview==='function')startReview();}},
   {ic:'🖨',label:'匯出 / 列印錯題',run:()=>el('printWrong').click()},
   {ic:'🔀',label:'洗牌',run:()=>el('shuffle').click()},
@@ -2067,7 +2082,38 @@ function renderDash(){
     <div class="nm">第${r.t.ch}章 · ${esc(r.t.label)}<br><em>${r.a}/${r.total} 已作答</em></div>
     <div class="tbar"><i class="ans" style="width:${r.total?r.a/r.total*100:0}%"></i><i class="cor" style="width:${r.total?r.c/r.total*100:0}%"></i></div>
     <div class="sc">${r.c}/${r.a||0} 對　(${r.a?Math.round(r.c/r.a*100):0}%)</div></div>`).join('');
-  renderRadar();renderChProg();renderDaily();renderStudyCal();renderSR();renderMockTrend();
+  renderRadar();renderChProg();renderDaily();renderStudyCal();renderWeak();renderSR();renderMockTrend();
+}
+/* ---- 弱點補強 ---- */
+function renderWeak(){
+  const w=el('weakWrap');if(!w)return;
+  const cand=TOPICS.map(t=>{const qs=QUESTIONS.filter(q=>q.topicKey===t.key);
+    const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;
+    return {t,total:qs.length,a,c,acc:a?c/a:1};}).filter(x=>x.a>=3);
+  if(!cand.length){w.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">每個主題答滿 3 題後，這裡會自動推薦你最該加強的主題並可一鍵練習。</div>';return;}
+  cand.sort((a,b)=>a.acc-b.acc||b.a-a.a);
+  const k=cand[0],accPct=Math.round(k.acc*100);
+  const pool=QUESTIONS.filter(q=>q.topicKey===k.t.key&&(!S.answers[q.id]||S.answers[q.id]!==q.answer)).length;
+  w.innerHTML='<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
+    +'<div style="font-size:30px;font-weight:900;line-height:1;color:'+(accPct<60?'var(--no)':accPct<80?'var(--gold)':'var(--ok)')+'">'+accPct+'%</div>'
+    +'<div style="flex:1;min-width:160px"><div style="font-weight:800;font-size:15px">最弱主題：第'+k.t.ch+'章 ・ '+esc(k.t.label)+'</div>'
+    +'<div style="color:var(--muted);font-size:12.5px;margin-top:3px">已作答 '+k.a+'/'+k.total+' ・ 答對率 '+accPct+'% ・ 可補強 '+pool+' 題</div></div>'
+    +(pool?'<button class="btn pri" id="weakGo">🎯 練 '+Math.min(20,pool)+' 題</button>':'<span style="color:var(--ok);font-weight:800">✓ 此主題已全對</span>')+'</div>';
+  const b=el('weakGo');if(b)b.onclick=()=>practiceWeak(k.t.key);
+}
+function practiceWeak(key){
+  clearAdapt();cancelMock();
+  let pool=QUESTIONS.filter(q=>q.topicKey===key&&(!S.answers[q.id]||S.answers[q.id]!==q.answer));
+  if(!pool.length)pool=QUESTIONS.filter(q=>q.topicKey===key).slice();
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  pool=pool.slice(0,20);
+  pool.forEach(q=>{if(S.answers[q.id]&&S.answers[q.id]!==q.answer)delete S.answers[q.id];});save();
+  randomSet=pool.map(q=>q.id);mode='practice';submitted=false;chip='all';finalCheck=false;
+  [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
+  [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='practice'));
+  if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
+  render();const lab=(TOPICS.find(t=>t.key===key)||{}).label||'';
+  toast('🎯 開始補強「'+lab+'」'+pool.length+' 題','go');window.scrollTo({top:0,behavior:'smooth'});
 }
 /* ---- 錯題間隔複習（spaced repetition）---- */
 const SR_INTERVALS=[1,2,4,7,15];   // 天
@@ -2437,6 +2483,29 @@ async function loginWith(u,p,errEl,btn,onOk){
 el('authBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('authModal').classList.add('show');setTimeout(()=>{if(!supaUser)el('authUser').focus();},80);if(supaUser&&isAdmin())adminLoadUsers();});
 el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('show'));
 el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
+/* 進度匯出 / 匯入備份 */
+function exportProgress(){
+  const data={_app:'opa-review',_v:1,_t:Date.now(),answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,daily:daily};
+  try{const blob=new Blob([JSON.stringify(data)],{type:'application/json'});const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='電子學複習進度_'+todayStr()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    toast('⬇ 已匯出進度備份','ok');}catch(e){toast('匯出失敗','no');}
+}
+function importProgress(file){
+  const r=new FileReader();
+  r.onload=()=>{let d;try{d=JSON.parse(r.result);}catch(e){toast('檔案格式錯誤','no');return;}
+    if(!d||typeof d!=='object'||d._app!=='opa-review'){toast('不是有效的備份檔','no');return;}
+    askConfirm('匯入進度備份','匯入會以備份「覆蓋」目前的作答、收藏、錯題複習、備註與紀錄。確定要還原嗎？',()=>{
+      if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;
+      if(Array.isArray(d.mockHistory))S.mockHistory=d.mockHistory;if(d.review&&typeof d.review==='object')S.review=d.review;
+      if(d.studyDays&&typeof d.studyDays==='object')S.studyDays=d.studyDays;if(d.notes&&typeof d.notes==='object')S.notes=d.notes;
+      if(d.daily&&typeof d.daily.goal==='number'){daily=Object.assign({d:'',c:0,streak:0,last:''},d.daily);saveDaily();}
+      save();randomSet=null;chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));render();renderDash();
+      el('authModal').classList.remove('show');toast('⬆ 已還原進度備份','ok');});
+  };r.readAsText(file);
+}
+el('exportBtn').addEventListener('click',exportProgress);
+el('importBtn').addEventListener('click',()=>el('importFile').click());
+el('importFile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(f)importProgress(f);e.target.value='';});
 el('authModal').addEventListener('click',e=>{if(e.target===el('authModal'))el('authModal').classList.remove('show');});
 el('authSubmit').addEventListener('click',()=>{if(el('authUser').value.trim()&&el('authPass').value)enterFS();loginWith(el('authUser').value,el('authPass').value,el('authErr'),el('authSubmit'),()=>{el('authModal').classList.remove('show');el('authPass').value='';});});
 el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('authSubmit').click();});
