@@ -562,6 +562,7 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
       <button class="iconbtn" id="instBtn" title="安裝 App" aria-label="安裝 App" style="display:none">📲</button>
       <button class="iconbtn" id="authBtn" title="登入 / 雲端同步" aria-label="登入／雲端同步">👤</button>
       <button class="iconbtn" id="fxBtn" title="公式速查" aria-label="公式速查表">📐</button>
+      <button class="iconbtn" id="voiceBtn" title="語音朗讀設定" aria-label="語音朗讀設定">🔊</button>
       <button class="iconbtn" id="musicBtn" title="背景音樂" aria-label="背景音樂開關" aria-pressed="false">🎵</button>
       <button class="iconbtn" id="kbBtn" title="鍵盤快捷鍵" aria-label="鍵盤快捷鍵說明">⌨</button>
       <button class="iconbtn" id="sndBtn" title="音效開關" aria-label="音效開關" aria-pressed="false">🔇</button>
@@ -646,6 +647,10 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
       <div class="dcard">
         <div class="dh">📅 學習日曆 <span class="sub">（近 8 週每天的作答量，越綠越多）</span></div>
         <div id="studyCal"></div>
+      </div>
+      <div class="dcard">
+        <div class="dh">⏰ 答題時段分析 <span class="sub">（你都在幾點念書）</span></div>
+        <div id="hoursWrap"></div>
       </div>
       <div class="dcard">
         <div class="dh">各章進度 <span class="sub">（亮色＝答對率、淡色＝已作答率）</span></div>
@@ -1037,6 +1042,23 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
     <button class="btn" id="confNo">取消</button><button class="btn pri" id="confYes">確定</button></div>
 </div></div>
 
+<div class="modal" id="voiceModal"><div class="mbox">
+  <h3>🔊 語音朗讀設定</h3>
+  <p style="color:var(--muted);font-size:12.5px;margin:-4px 0 12px">挑一個你最喜歡的聲音，調到最好聽。設定會記住，套用到每題的 🔊 朗讀。</p>
+  <label class="lb">聲音</label>
+  <select id="voiceSel" class="search" style="width:100%;cursor:pointer;margin-top:4px"></select>
+  <div id="voiceHint" style="color:var(--muted);font-size:11.5px;margin-top:5px"></div>
+  <label class="lb" style="display:block;margin-top:14px">語速　<b id="rateVal" style="color:var(--brand2)"></b></label>
+  <input type="range" id="rateRng" min="0.6" max="1.4" step="0.05" style="width:100%;margin-top:4px">
+  <label class="lb" style="display:block;margin-top:12px">音調　<b id="pitchVal" style="color:var(--brand2)"></b></label>
+  <input type="range" id="pitchRng" min="0.7" max="1.3" step="0.05" style="width:100%;margin-top:4px">
+  <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:18px">
+    <button class="btn pri" id="voicePreview">▶ 試聽這個聲音</button>
+    <button class="btn" id="voiceReset" style="margin-left:auto">回預設</button>
+    <button class="btn" id="voiceClose">完成</button>
+  </div>
+</div></div>
+
 <div class="modal" id="cmdModal"><div class="mbox cmdbox">
   <input id="cmdInput" placeholder="🔍 輸入指令或題號…（例：模擬考、配色、第 88 題、搜尋韋恩）" autocomplete="off" aria-label="命令面板">
   <div class="cmdlist" id="cmdList"></div>
@@ -1357,11 +1379,11 @@ const LS_BASE='opa_quiz_v2', PREFS='opa_prefs';
 const QMAP=new Map(QUESTIONS.map(q=>[q.id,q]));const Q=id=>QMAP.get(id);   // O(1) 查表，取代每次 find
 
 /* ---------- persistence（進度依帳號分離，不同人不會互相看到） ---------- */
-let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false,mockHistory:[],review:{},studyDays:{},notes:{},_mt:0};
+let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false,mockHistory:[],review:{},studyDays:{},notes:{},hours:{},_mt:0};
 try{const p=JSON.parse(localStorage.getItem(PREFS)||'{}');if(p.theme)S.theme=p.theme;if(typeof p.sound==='boolean')S.sound=p.sound;if(p.music&&typeof p.music==='object')S.music=p.music;}catch(e){}   // 只還原裝置層級偏好(主題/音效/音樂)，進度等登入後依帳號載入
 var supaUser=null, pushTimer=null;     // cloud-sync state
 function userKey(uid){return LS_BASE+':'+uid;}
-function resetProgress(){S.answers={};S.bookmarks={};S.bestStreak=0;S.mockHistory=[];S.review={};S.studyDays={};S.notes={};S._mt=0;}     // 換帳號/登出時清空進度
+function resetProgress(){S.answers={};S.bookmarks={};S.bestStreak=0;S.mockHistory=[];S.review={};S.studyDays={};S.notes={};S.hours={};S._mt=0;}     // 換帳號/登出時清空進度
 function loadProgressFor(uid){if(typeof hardExitExam==='function')hardExitExam();resetProgress();   // 換帳號先收掉上一人的考試，再載入此帳號進度
   try{const d=JSON.parse(localStorage.getItem(userKey(uid))||'{}');
     if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;
@@ -1369,17 +1391,18 @@ function loadProgressFor(uid){if(typeof hardExitExam==='function')hardExitExam()
     if(d.review&&typeof d.review==='object')S.review=d.review;
     if(d.studyDays&&typeof d.studyDays==='object')S.studyDays=d.studyDays;
     if(d.notes&&typeof d.notes==='object')S.notes=d.notes;
+    S.hours=(d.hours&&typeof d.hours==='object')?d.hours:{};
     S._mt=d._mt||0;}catch(e){}
   if(typeof loadDaily==='function')loadDaily();}   // 載入此帳號的每日目標/連續天數
 function save(){try{
     S._mt=Date.now();                                                                       // 進度最後修改時間(用於雲端 last-write-wins)
     localStorage.setItem(PREFS,JSON.stringify({theme:S.theme,sound:S.sound,music:S.music}));   // 偏好：裝置層級
-    if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,_mt:S._mt})); // 進度：依帳號分開存
+    if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,_mt:S._mt})); // 進度：依帳號分開存
   }catch(e){}
-  if(supaUser){clearTimeout(pushTimer);pushTimer=setTimeout(function(){if(typeof pushCloud==='function')pushCloud().catch(function(){});},1500);}}
+  if(supaUser){clearTimeout(pushTimer);pushTimer=setTimeout(function(){if(typeof pushCloud==='function')pushCloud().catch(function(){});},700);}}
 
 /* ---------- runtime state ---------- */
-let mode='practice', submitted=false, chip='all', streak=0, activeId=null, finalCheck=false;
+let mode='practice', submitted=false, chip='all', streak=0, activeId=null, finalCheck=false, _submitArr=null;
 let order=QUESTIONS.map(q=>q.id);
 let examTimer=null, examStartTs=0, _diaFb=0;
 let randomSet=null;  // 隨機測驗模式：固定的一組題目id（簡單→難）
@@ -1509,7 +1532,7 @@ function optRow(q,L){
 function card(q){
   const ch=S.answers[q.id], showExp=(mode==='practice'&&ch)||(mode==='exam'&&submitted), ok=ch===q.answer;
   const tags=[`<span class="tag ch">第${q.ch}章</span>`];
-  if(q.is_past)tags.push(`<span class="tag past">統測 民國${q.year||'歷屆'}年</span>`);
+  if(q.is_past)tags.push(`<span class="tag past">統測 民國${esc(q.year||'歷屆')}年</span>`);
   tags.push(`<span class="tag tp ${q.type==='計算'?'calc':'concept'}">${esc(q.type)}</span>`,`<span class="tag df ${q.difficulty==='進階'?'adv':q.difficulty==='中等'?'mid':'base'}">${esc(q.difficulty)}</span>`);
   const bm=S.bookmarks[q.id]?'on':'';
   const badge=ch?`<span class="badge ${ok?'':'no'}">${ok?'✔ 答對':'✘ 答錯'}</span>`:'';
@@ -1534,7 +1557,7 @@ function card(q){
       <button class="star notebtn${S.notes[q.id]?' on':''}" data-note="${q.id}" aria-label="個人備註第${q.id}題" title="個人備註">📝</button>
       <button class="star ${bm}" data-star="${q.id}" aria-pressed="${bm?'true':'false'}" aria-label="收藏第${q.id}題${bm?'（已收藏）':''}" title="收藏">${bm?'★':'☆'}</button></div>
     <div class="stem">${fmt(q.stem)}</div>
-    ${S.notes[q.id]?`<div class="qnote" data-note="${q.id}" title="點擊編輯備註">📝 ${esc(S.notes[q.id])}</div>`:''}
+    ${(S.notes[q.id]&&!examLock())?`<div class="qnote" data-note="${q.id}" title="點擊編輯備註">📝 ${esc(S.notes[q.id])}</div>`:''}
     ${q.circuit?`<div class="dia" role="img" aria-label="${esc(q.type)}電路圖" data-circ="${q.circuit}"></div>`:''}
     <div class="opts" role="radiogroup">${['A','B','C','D'].map(L=>optRow(q,L)).join('')}</div>
     <div class="reveal">${(mode==='practice'&&!ch)?`<button data-rev="${q.id}">👁 顯示答案/詳解</button>`:''}</div>
@@ -1656,26 +1679,41 @@ function toggleStar(id){
   if(b){b.classList.toggle('on',!!S.bookmarks[id]);b.textContent=S.bookmarks[id]?'★':'☆';}
   updateChips();if(chip==='bookmark')render();
 }
-/* 語音朗讀題目（Web Speech API）*/
+/* 語音朗讀題目（Web Speech API）+ 自動挑最好聽的中文語音 */
 function ttsSupported(){return 'speechSynthesis' in window;}
 function speakClean(s){return String(s||'')
   .replace(/_\{?([A-Za-z0-9]+)\}?/g,'$1').replace(/\^/g,' 的 ')
   .replace(/\*/g,' 乘 ').replace(/\//g,' 分之 ').replace(/sqrt/gi,'根號 ').replace(/\bpi\b/gi,'pi')
   .replace(/>=|≥/g,' 大於等於 ').replace(/<=|≤/g,' 小於等於 ').replace(/[（(]/g,'，').replace(/[）)]/g,'，');}
+let _ttsVoices=[];
+const ttsCfg={voice:localStorage.getItem('tts_voice')||'',rate:+(localStorage.getItem('tts_rate')||0.95)||0.95,pitch:+(localStorage.getItem('tts_pitch')||1.05)||1.05};
+function loadVoices(){if(!ttsSupported())return;try{_ttsVoices=speechSynthesis.getVoices()||[];}catch(e){_ttsVoices=[];}}
+function zhVoices(){return _ttsVoices.filter(v=>/zh|cmn|chinese|mandarin|國語|普通話|華語|台/i.test((v.lang||'')+' '+(v.name||'')));}
+function scoreVoice(v){let s=0;const n=v.name||'',l=v.lang||'';
+  if(/natural|neural/i.test(n))s+=140;if(/online/i.test(n))s+=90;if(/google/i.test(n))s+=85;if(/premium|enhanced|plus|高品質/i.test(n))s+=40;
+  if(/hsiaochen|yating|hanhan|mei-?jia|meijia|sin-?ji|曉|雅婷|美佳/i.test(n))s+=55;
+  if(/zh[-_]?tw|台|臺|繁/i.test(l+' '+n))s+=60;else if(/zh[-_]?hk|粵|香港/i.test(l))s+=25;else if(/zh[-_]?cn|cmn|簡/i.test(l))s+=22;else if(/zh/i.test(l))s+=12;
+  if(/female|女|hsiaochen|yating|mei-?jia|ting-?ting|sin-?ji/i.test(n))s+=6;return s;}
+function sortedZhVoices(){return zhVoices().slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a)||((a.name||'')>(b.name||'')?1:-1));}
+function curVoice(){if(!_ttsVoices.length)loadVoices();let v=ttsCfg.voice&&_ttsVoices.find(x=>x.voiceURI===ttsCfg.voice);if(!v)v=sortedZhVoices()[0]||null;return v;}
+function makeUtter(text){const u=new SpeechSynthesisUtterance(text);const v=curVoice();try{if(v){u.voice=v;u.lang=v.lang||'zh-TW';}else u.lang='zh-TW';}catch(e){u.lang='zh-TW';}u.rate=ttsCfg.rate;u.pitch=ttsCfg.pitch;return u;}
 let ttsCurId=null;
 function updateTtsBtns(){document.querySelectorAll('[data-tts]').forEach(b=>b.classList.toggle('on',+b.dataset.tts===ttsCurId));}
 function stopTTS(){if(ttsSupported())try{speechSynthesis.cancel();}catch(e){}ttsCurId=null;updateTtsBtns();}
 function speakQuestion(id){
+  if(examLock()){toast('🔒 考試進行中，已停用語音朗讀','no');return;}
   if(!ttsSupported()){toast('此瀏覽器不支援語音朗讀','no');return;}
   if(ttsCurId===id){stopTTS();return;}
   stopTTS();const q=Q(id);if(!q)return;
-  let text=speakClean(q.stem)+'。';['A','B','C','D'].forEach(L=>{text+='　選項'+L+'，'+speakClean(q.opts[L])+'。';});
-  try{const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=1;u.onend=()=>{ttsCurId=null;updateTtsBtns();};
-    ttsCurId=id;updateTtsBtns();speechSynthesis.speak(u);}catch(e){ttsCurId=null;}
+  const parts=[speakClean(q.stem)+'。'];['A','B','C','D'].forEach(L=>{parts.push('選項'+L+'，'+speakClean(q.opts[L])+'。');});   // 分句朗讀：自然停頓、避免長句被引擎截斷
+  try{ttsCurId=id;updateTtsBtns();
+    parts.forEach((t,i)=>{const u=makeUtter(t);u.onerror=()=>{ttsCurId=null;updateTtsBtns();};if(i===parts.length-1)u.onend=()=>{ttsCurId=null;updateTtsBtns();};speechSynthesis.speak(u);});
+  }catch(e){ttsCurId=null;updateTtsBtns();}
 }
+if(ttsSupported()){loadVoices();try{speechSynthesis.onvoiceschanged=loadVoices;}catch(e){}}
 /* 每題個人備註 */
 let noteTargetId=null;
-function openNote(id){noteTargetId=id;el('noteQid').textContent='（第 '+id+' 題）';el('noteText').value=S.notes[id]||'';el('noteDel').style.display=S.notes[id]?'inline-block':'none';el('noteModal').classList.add('show');setTimeout(()=>{try{el('noteText').focus();}catch(e){}},60);}
+function openNote(id){if(examLock()){toast('🔒 考試進行中，無法查看／編輯備註','no');return;}noteTargetId=id;el('noteQid').textContent='（第 '+id+' 題）';el('noteText').value=S.notes[id]||'';el('noteDel').style.display=S.notes[id]?'inline-block':'none';el('noteModal').classList.add('show');setTimeout(()=>{try{el('noteText').focus();}catch(e){}},60);}
 function closeNote(){el('noteModal').classList.remove('show');noteTargetId=null;}
 function saveNote(){if(noteTargetId==null)return;const id=noteTargetId,v=el('noteText').value.trim();
   if(v)S.notes[id]=v;else delete S.notes[id];save();try{rerenderCard(id);}catch(e){}closeNote();toast(v?'📝 已儲存備註':'已刪除備註','ok');}
@@ -1685,7 +1723,7 @@ el('noteCancel').addEventListener('click',closeNote);
 el('noteModal').addEventListener('click',e=>{if(e.target===el('noteModal'))closeNote();});
 /* ⌘K / Ctrl+K 命令面板 */
 function csSet(id,v){const r=el(id);if(!r)return;r.dataset.value=v;const o=[...r.querySelectorAll('.cs-opt')].find(x=>x.dataset.v===v);if(o){const lab=r.querySelector('.cs-lab');if(lab)lab.textContent=o.textContent;[...r.querySelectorAll('.cs-opt')].forEach(x=>x.classList.toggle('on',x===o));}}
-function jumpToQ(n){const q=Q(n);if(!q){toast('沒有第 '+n+' 題','no');return;}if(mockOn()){toast('模擬考進行中無法跳題','no');return;}
+function jumpToQ(n){const q=Q(n);if(!q){toast('沒有第 '+n+' 題','no');return;}if(mockOn()){toast('模擬考進行中無法跳題','no');return;}if(typeof stopTTS==='function')stopTTS();
   if(!filtered().some(x=>x.id===n)){   // 不在目前範圍 → 還原成全部再跳
     clearAdapt();randomSet=null;chip='all';['fch','ftopic','fdiff','ftype'].forEach(id=>csSet(id,'all'));if(el('fpast'))el('fpast').checked=false;
     [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
@@ -1706,6 +1744,7 @@ const CMDS=[
   {ic:'📖',label:'前往筆記',run:()=>document.querySelector('.tab[data-tab="notes"]').click()},
   {ic:'📝',label:'前往測驗',run:()=>document.querySelector('.tab[data-tab="quiz"]').click()},
   {ic:'📐',label:'公式速查表',run:()=>el('fxBtn').click()},
+  {ic:'🔊',label:'語音朗讀設定（選最好聽的聲音）',run:()=>openVoiceSettings()},
   {ic:'🎨',label:'切換配色',run:()=>el('themeBtn').click()},
   {ic:'⛶',label:'全螢幕切換',run:()=>el('fsBtn').click()},
   {ic:'⌨',label:'鍵盤快捷鍵說明',run:()=>el('kbBtn').click()},
@@ -1717,7 +1756,7 @@ function renderCmd(qv){qv=(qv||'').trim();const ql=qv.toLowerCase(),num=qv.match
   if(qv.length>=2)items.push({ic:'🔎',label:'在筆記搜尋「'+qv+'」',run:()=>{document.querySelector('.tab[data-tab="notes"]').click();setTimeout(()=>{el('noteSearch').value=qv;doNoteSearch();},120);}});
   cmdShown=items;cmdSel=0;
   el('cmdList').innerHTML=items.length?items.map((c,i)=>'<div class="cmditem'+(i===0?' sel':'')+'" data-i="'+i+'"><span class="ci">'+c.ic+'</span><span>'+esc(c.label)+'</span></div>').join(''):'<div style="padding:16px;color:var(--muted);text-align:center">找不到指令</div>';}
-function openCmd(){if(mockOn()){toast('考試進行中無法使用命令面板','no');return;}if(typeof closePops==='function')closePops();el('cmdInput').value='';el('cmdModal').classList.add('show');renderCmd('');setTimeout(()=>{try{el('cmdInput').focus();}catch(e){}},50);}
+function openCmd(){if(examLock()){toast('🔒 考試進行中無法使用命令面板','no');return;}if(typeof closePops==='function')closePops();el('cmdInput').value='';el('cmdModal').classList.add('show');renderCmd('');setTimeout(()=>{try{el('cmdInput').focus();}catch(e){}},50);}
 function runCmd(i){const c=cmdShown[i];if(!c)return;el('cmdModal').classList.remove('show');try{c.run();}catch(e){}}
 function updCmdSel(){[...el('cmdList').children].forEach((c,i)=>c.classList.toggle('sel',i===cmdSel));const s=el('cmdList').children[cmdSel];if(s&&s.scrollIntoView)s.scrollIntoView({block:'nearest'});}
 el('cmdInput').addEventListener('input',()=>renderCmd(el('cmdInput').value));
@@ -1729,6 +1768,28 @@ el('cmdInput').addEventListener('keydown',e=>{
 el('cmdList').addEventListener('click',e=>{const it=e.target.closest('[data-i]');if(it)runCmd(+it.dataset.i);});
 el('cmdModal').addEventListener('click',e=>{if(e.target===el('cmdModal'))el('cmdModal').classList.remove('show');});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();e.stopPropagation();openCmd();}},true);
+/* 🔊 語音朗讀設定 */
+function openVoiceSettings(){
+  if(examLock()){toast('🔒 考試進行中，已停用','no');return;}
+  if(!ttsSupported()){toast('此瀏覽器不支援語音朗讀','no');return;}
+  loadVoices();const z=sortedZhVoices(),sel=el('voiceSel'),cur=curVoice();
+  if(!z.length){sel.innerHTML='<option value="">（此裝置找不到中文語音，將用系統預設）</option>';
+    el('voiceHint').textContent='提示：Chrome/Edge 內建「Google 國語」或微軟線上自然語音最好聽；手機請到系統設定下載中文語音包再回來選。';}
+  else{sel.innerHTML=z.map((v,i)=>'<option value="'+esc(v.voiceURI)+'"'+((cur&&v.voiceURI===cur.voiceURI)?' selected':'')+'>'+(i===0?'★推薦　':'')+esc(v.name)+'（'+esc(v.lang)+'）</option>').join('');
+    el('voiceHint').textContent='★ 推薦＝自動挑出此裝置最自然的中文語音；可換成你最愛的，按「試聽」比較看看。';}
+  el('rateRng').value=ttsCfg.rate;el('rateVal').textContent=ttsCfg.rate.toFixed(2)+'×';
+  el('pitchRng').value=ttsCfg.pitch;el('pitchVal').textContent=ttsCfg.pitch.toFixed(2);
+  el('voiceModal').classList.add('show');
+}
+function closeVoice(){stopTTS();el('voiceModal').classList.remove('show');}
+el('voiceBtn').addEventListener('click',openVoiceSettings);
+el('voiceSel').addEventListener('change',()=>{ttsCfg.voice=el('voiceSel').value;localStorage.setItem('tts_voice',ttsCfg.voice);try{speechSynthesis.cancel();const u=makeUtter('你好，這是試聽。');speechSynthesis.speak(u);}catch(e){}});
+el('rateRng').addEventListener('input',()=>{ttsCfg.rate=+el('rateRng').value;el('rateVal').textContent=ttsCfg.rate.toFixed(2)+'×';localStorage.setItem('tts_rate',String(ttsCfg.rate));});
+el('pitchRng').addEventListener('input',()=>{ttsCfg.pitch=+el('pitchRng').value;el('pitchVal').textContent=ttsCfg.pitch.toFixed(2);localStorage.setItem('tts_pitch',String(ttsCfg.pitch));});
+el('voicePreview').addEventListener('click',()=>{if(!ttsSupported())return;try{speechSynthesis.cancel();const u=makeUtter('這是電子學複習。運算放大器的反相閉迴路增益，等於負 Rf 分之 R1。選項A，反相放大器。');speechSynthesis.speak(u);}catch(e){}});
+el('voiceReset').addEventListener('click',()=>{ttsCfg.voice='';ttsCfg.rate=0.95;ttsCfg.pitch=1.05;localStorage.removeItem('tts_voice');localStorage.setItem('tts_rate','0.95');localStorage.setItem('tts_pitch','1.05');openVoiceSettings();toast('已回到推薦設定','ok');});
+el('voiceClose').addEventListener('click',closeVoice);
+el('voiceModal').addEventListener('click',e=>{if(e.target===el('voiceModal'))closeVoice();});
 function setActive(id,scroll){
   activeId=id;document.querySelectorAll('.q.active').forEach(x=>x.classList.remove('active'));
   const c=el('q'+id);if(c){c.classList.add('active');if(scroll)c.scrollIntoView({block:'center',behavior:'smooth'});}
@@ -1750,11 +1811,13 @@ function stopTimer(){if(examTimer)clearInterval(examTimer);examTimer=null;el('ti
 
 /* ---------- buttons ---------- */
 el('shuffle').addEventListener('click',()=>{clearAdapt();randomSet=null;for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}toast('🔀 已重新洗牌','');render();});
-el('redoWrong').addEventListener('click',()=>{clearAdapt();
+el('redoWrong').addEventListener('click',()=>{if(mockOn()){toast('🔒 模擬考進行中','no');return;}clearAdapt();cancelMock();
   const wrong=baseFilter().filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer);
   if(!wrong.length){toast('目前沒有錯題 🎉','ok');return;}
   const ids=wrong.map(q=>q.id);ids.forEach(id=>delete S.answers[id]);save();
-  randomSet=ids;chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));streak=0;render();   // 釘住題組，清答案後仍可見
+  randomSet=ids;mode='practice';submitted=false;finalCheck=false;chip='all';streak=0;stopTimer();   // 回到練習模式，避免沿用考試已交卷狀態而直接顯示答案
+  [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
+  [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='practice'));render();
   toast('🔁 已載入 '+ids.length+' 題錯題重練','go');
 });
 el('printWrong').addEventListener('click',()=>{
@@ -1827,10 +1890,11 @@ el('reset').addEventListener('click',()=>{
 });
 el('submit').addEventListener('click',()=>{
   const arr=filtered();
-  if(finalCheck){finalCheck=false;doSubmit(arr);return;}        // 第二階段：最終交卷送出
+  if(finalCheck){finalCheck=false;const fa=_submitArr||arr;_submitArr=null;doSubmit(fa);return;}        // 第二階段：用「凍結的題組」最終交卷送出
   const un=arr.filter(q=>!S.answers[q.id]).length;
   const info='已作答 '+(arr.length-un)+' / '+arr.length+' 題'+(un?('，尚有 '+un+' 題未作答'):'')+'。\n交卷後無法修改——確認後會再給你一次最後檢查機會。';
   askConfirm('交卷確認',info,()=>{                              // 第一階段：確認 → 進入最後檢查
+    _submitArr=arr;                                            // 凍結交卷當下的題組，避免最後檢查時切換 chip 改變計分分母
     finalCheck=true;
     el('submit').classList.add('finalbtn');el('submit').innerHTML='✅ 最終交卷（已確認）';
     showFinalBar(arr);
@@ -1948,6 +2012,7 @@ function restoreMockIfAny(uid){
 /* ===== 防作弊機制（強化版・擬真監考） ===== */
 function examOn(){return document.body.classList.contains('examlock');}   // 考試/模擬進行中(未交卷)
 function mockOn(){return mockActive&&!submitted;}
+function examLock(){return mockOn()||(mode==='exam'&&!submitted);}   // 模擬考或一般考試進行中：鎖定可洩答/破壞考試的功能
 function fsSupported(){return !!(document.fullscreenEnabled||document.webkitFullscreenEnabled);}
 function enterFS(){if(!fsSupported())return;try{var d=document.documentElement,rf=d.requestFullscreen||d.webkitRequestFullscreen;if(rf)Promise.resolve(rf.call(d)).catch(function(){});}catch(e){}}
 function exitFS(){try{if(document.fullscreenElement){var xf=document.exitFullscreen||document.webkitExitFullscreen;if(xf)Promise.resolve(xf.call(document)).catch(function(){});}}catch(e){}}
@@ -2104,7 +2169,22 @@ function renderDash(){
     <div class="nm">第${r.t.ch}章 · ${esc(r.t.label)}<br><em>${r.a}/${r.total} 已作答</em></div>
     <div class="tbar"><i class="ans" style="width:${r.total?r.a/r.total*100:0}%"></i><i class="cor" style="width:${r.total?r.c/r.total*100:0}%"></i></div>
     <div class="sc">${r.c}/${r.a||0} 對　(${r.a?Math.round(r.c/r.a*100):0}%)</div></div>`).join('');
-  renderRadar();renderChProg();renderDaily();renderStudyCal();renderWeak();renderSR();renderMockTrend();
+  renderRadar();renderChProg();renderDaily();renderStudyCal();renderHours();renderWeak();renderSR();renderMockTrend();
+}
+/* ---- 答題時段分析（24 小時長條圖）---- */
+function renderHours(){
+  const w=el('hoursWrap');if(!w)return;S.hours=S.hours||{};
+  const arr=[];let tot=0,mx=0,peak=-1;
+  for(let h=0;h<24;h++){const c=+S.hours[h]||0;arr.push(c);tot+=c;if(c>mx){mx=c;peak=h;}}
+  if(!tot){w.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted)">開始作答後，這裡會統計你每天各時段的刷題量，找出你的高效時段。</div>';return;}
+  const W=24*13,H=92,base=H-16;
+  let bars='';for(let h=0;h<24;h++){const bh=mx?Math.round((arr[h]/mx)*(base-6)):0;const x=h*13+3;
+    const col=h===peak?'var(--brand)':'var(--brand2)';
+    bars+='<rect x="'+x+'" y="'+(base-bh)+'" width="9" height="'+bh+'" rx="2" fill="'+col+'" opacity="'+(arr[h]?(h===peak?1:.55):.12)+'"><title>'+h+':00　'+arr[h]+' 題</title></rect>';
+    if(h%6===0)bars+='<text x="'+(x+4)+'" y="'+(H-3)+'" text-anchor="middle" font-size="9" fill="var(--muted)">'+h+'</text>';}
+  const lbl=peak<5?'凌晨':peak<12?'早上':peak<14?'中午':peak<18?'下午':peak<22?'晚上':'深夜';
+  w.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;max-width:360px;display:block;margin:2px auto 0">'+bars+'</svg>'
+    +'<div style="text-align:center;color:var(--muted);font-size:12.5px;margin-top:6px">最常念書時段：<b style="color:var(--brand2)">'+lbl+' '+peak+':00</b>（共 '+tot+' 次作答）</div>';
 }
 /* ---- 弱點補強 ---- */
 function renderWeak(){
@@ -2131,7 +2211,7 @@ function practiceWeak(key){
   for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   pool=pool.slice(0,20);
   pool.forEach(q=>{if(S.answers[q.id]&&S.answers[q.id]!==q.answer)delete S.answers[q.id];});save();
-  randomSet=pool.map(q=>q.id);mode='practice';submitted=false;chip='all';finalCheck=false;
+  randomSet=pool.map(q=>q.id);mode='practice';submitted=false;chip='all';finalCheck=false;stopTimer();
   [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='practice'));
   if(!el('quiz').classList.contains('active'))document.querySelector('.tab[data-tab="quiz"]').click();
@@ -2163,7 +2243,8 @@ function renderSR(){
   const b=el('srStart');if(b)b.onclick=startReview;
 }
 function startReview(){const due=dueReviews();if(!due.length)return;
-  cancelMock();due.forEach(id=>delete S.answers[id]);save();
+  if(mockOn()){toast('🔒 模擬考進行中','no');return;}
+  cancelMock();due.forEach(id=>{if(!S.answers[id]||S.answers[id]!==Q(id).answer)delete S.answers[id];});save();   // 只清掉答錯/未答的，保留答對歷史不讓統計倒退
   randomSet=due.slice();mode='practice';submitted=false;chip='all';finalCheck=false;
   [...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
   [...el('mode').children].forEach(x=>x.classList.toggle('on',x.dataset.m==='practice'));
@@ -2173,9 +2254,9 @@ function startReview(){const due=dueReviews();if(!due.length)return;
 /* ---- 模擬考成績趨勢 ---- */
 function renderMockTrend(){
   const w=el('mockTrend');if(!w)return;
-  const hist=(S.mockHistory||[]).slice(0,12).slice().reverse();   // 時序、最近12
+  const hist=(S.mockHistory||[]).slice(0,12).slice().reverse().map(h=>({...h,pct:Number.isFinite(+h.pct)?+h.pct:0}));   // 時序、最近12；pct 正規化避免舊版/匯入資料缺欄位畫成 NaN
   if(!hist.length){w.innerHTML='<div style="padding:22px;text-align:center;color:var(--muted)">尚無模擬考紀錄，做一次模擬考就會出現趨勢圖。</div>';return;}
-  const W=360,H=180,pL=28,pR=12,pT=14,pB=24,n=hist.length;
+  const W=360,H=180,pL=28,pR=12,pT=22,pB=24,n=hist.length;   // pT 加大，滿分 100 的分數標籤不會被頂端裁切
   const x=i=>pL+(n<=1?(W-pL-pR)/2:(W-pL-pR)*i/(n-1));
   const y=p=>pT+(H-pT-pB)*(1-p/100);
   let grid='';[0,60,100].forEach(g=>{const yy=y(g).toFixed(1);grid+='<line x1="'+pL+'" y1="'+yy+'" x2="'+(W-pR)+'" y2="'+yy+'" stroke="var(--border)" stroke-width="1"'+(g===60?' stroke-dasharray="4 4"':'')+'/><text x="'+(pL-4)+'" y="'+(+yy+3)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+g+'</text>';});
@@ -2232,7 +2313,8 @@ function renderDaily(){
     +'<div class="dgoal">每日目標：<button data-dg="-5" aria-label="減少目標">−</button><b style="color:var(--text);min-width:34px;text-align:center">'+goal+'</b><button data-dg="5" aria-label="增加目標">＋</button> 題</div>'
     +'</div></div>';
 }
-function recordStudyDay(){S.studyDays=S.studyDays||{};const t=todayStr();S.studyDays[t]=(S.studyDays[t]||0)+1;}
+function recordStudyDay(){S.studyDays=S.studyDays||{};const t=todayStr();S.studyDays[t]=(S.studyDays[t]||0)+1;
+  S.hours=S.hours||{};const h=new Date().getHours();S.hours[h]=(S.hours[h]||0)+1;}
 function renderStudyCal(){
   const w=el('studyCal');if(!w)return;S.studyDays=S.studyDays||{};
   const today=new Date();today.setHours(0,0,0,0);
@@ -2300,9 +2382,9 @@ function syncFsBtn(){try{const on=!!(document.fullscreenElement||document.webkit
 if(!fsSupported()){var _fb=el('fsBtn');if(_fb)_fb.style.display='none';}   // 不支援(如 iOS Safari)就隱藏此鍵
 function applySound(){el('sndBtn').textContent=S.sound?'🔊':'🔇';el('sndBtn').classList.toggle('on',S.sound);}
 el('sndBtn').addEventListener('click',()=>{S.sound=!S.sound;save();applySound();if(S.sound)beep('ok');});
-el('kbBtn').addEventListener('click',()=>el('kbModal').classList.add('show'));
+el('kbBtn').addEventListener('click',()=>{if(examLock()){toast('🔒 考試進行中，已停用','no');return;}el('kbModal').classList.add('show');});
 el('kbModal').addEventListener('click',e=>{if(e.target===el('kbModal'))el('kbModal').classList.remove('show');});
-el('fxBtn').addEventListener('click',e=>{e.stopPropagation();if(typeof closePops==='function')closePops();el('fxModal').classList.add('show');});
+el('fxBtn').addEventListener('click',e=>{e.stopPropagation();if(examLock()){toast('🔒 考試進行中，已停用公式速查','no');return;}if(typeof closePops==='function')closePops();el('fxModal').classList.add('show');});
 el('fxClose').addEventListener('click',()=>el('fxModal').classList.remove('show'));
 el('fxModal').addEventListener('click',e=>{if(e.target===el('fxModal'))el('fxModal').classList.remove('show');});
 /* PWA 安裝 */
@@ -2315,9 +2397,9 @@ window.addEventListener('appinstalled',function(){const b=el('instBtn');if(b)b.s
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA'){if(e.key==='Escape')e.target.blur();return;}
   if(document.querySelector('.modal.show')){   // 有彈窗開啟時，除 Esc 外不讓快捷鍵穿透到背後題目
-    if(e.key==='Escape'&&!mockOn())['kbModal','confModal','rqModal','mockModal','authModal','fxModal','noteModal'].forEach(m=>el(m).classList.remove('show'));
+    if(e.key==='Escape'){if(!mockOn()){['kbModal','confModal','rqModal','mockModal','authModal','fxModal','noteModal','voiceModal','cmdModal'].forEach(m=>el(m).classList.remove('show'));closePops();}if(typeof stopTTS==='function')stopTTS();}
     return;}
-  if(e.key==='Escape'){if(!mockOn())['kbModal','confModal','rqModal','mockModal','authModal','fxModal','noteModal'].forEach(m=>el(m).classList.remove('show'));closePops();return;}
+  if(e.key==='Escape'){if(!mockOn())['kbModal','confModal','rqModal','mockModal','authModal','fxModal','noteModal','voiceModal','cmdModal'].forEach(m=>el(m).classList.remove('show'));if(typeof stopTTS==='function')stopTTS();closePops();return;}
   if(e.key==='t'||e.key==='T'){el('themeBtn').click();return;}
   if(e.key==='m'||e.key==='M'){toggleMusic();return;}
   if(el('quiz').classList.contains('active')===false)return;
@@ -2478,6 +2560,7 @@ function mergeCloud(c){
     S.answers=c.answers||{};S.bookmarks=c.bookmarks||{};S.review=c.review||{};S.notes=c.notes||{};S._mt=cloudMt;
   }                                            // 否則保留本機(較新)，稍後 pushCloud 會覆蓋雲端
   if(c.studyDays&&typeof c.studyDays==='object'){S.studyDays=S.studyDays||{};for(const dd in c.studyDays)S.studyDays[dd]=Math.max(S.studyDays[dd]||0,c.studyDays[dd]);}   // 學習日曆：累積取大，不丟任一裝置
+  if(c.hours&&typeof c.hours==='object'){S.hours=S.hours||{};for(const hh in c.hours)S.hours[hh]=Math.max(S.hours[hh]||0,c.hours[hh]);}   // 時段分析：同樣累積取大
   if(typeof c.bestStreak==='number')S.bestStreak=Math.max(S.bestStreak||0,c.bestStreak);   // 連對只增
   if(Array.isArray(c.mockHistory)){const seen={};(S.mockHistory||[]).forEach(x=>seen[x.t]=1);   // 模擬考紀錄只增不刪
     S.mockHistory=(S.mockHistory||[]).concat(c.mockHistory.filter(x=>!seen[x.t])).sort((a,b)=>b.t-a.t).slice(0,30);}
@@ -2486,10 +2569,33 @@ async function pullCloud(){if(!supaUser)return null;const sb=await loadSupa();
   const r=await sb.from('user_progress').select('data').eq('user_id',supaUser.id).maybeSingle();
   if(r.error){console.warn('pull',r.error);return null;}return r.data?r.data.data:null;}
 async function pushCloud(){if(!supaUser)return;const sb=await loadSupa();
-  const payload={answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,_mt:S._mt||Date.now()};
+  const payload={answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,_mt:S._mt||Date.now()};
   const r=await sb.from('user_progress').upsert({user_id:supaUser.id,data:payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
   if(r.error)console.warn('push',r.error);}
 async function syncOnLogin(){try{const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();await pushCloud();}catch(e){console.warn(e);}}
+/* ---- 跨裝置即時同步（Realtime 訂閱 + 輪詢後援）---- */
+function saveLocalOnly(){try{if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,_mt:S._mt}));}catch(e){}}
+function applyRemote(c){
+  if(!c||!supaUser)return;
+  if(typeof mockOn==='function'&&mockOn())return;                      // 考試中不打擾，交卷後會再同步
+  const newer=(c._mt||0)>(S._mt||0);
+  const snap=JSON.stringify([S.studyDays,S.hours,S.bestStreak,(S.mockHistory||[]).length]);
+  mergeCloud(c);
+  const changed=newer||snap!==JSON.stringify([S.studyDays,S.hours,S.bestStreak,(S.mockHistory||[]).length]);
+  if(changed){saveLocalOnly();try{render();if(el('dash').classList.contains('active'))renderDash();}catch(e){}
+    if(newer)toast('☁️ 已即時同步其他裝置的進度','ok');}
+}
+let realtimeCh=null, pollTimer=null;
+async function startCloudLive(){
+  if(!supaUser)return;let sb;try{sb=await loadSupa();}catch(e){return;}stopCloudLive();
+  try{realtimeCh=sb.channel('up:'+supaUser.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'user_progress',filter:'user_id=eq.'+supaUser.id},
+      function(p){const row=p&&p.new;if(row&&row.data)applyRemote(row.data);})
+    .subscribe();}catch(e){console.warn('realtime',e);}
+  pollTimer=setInterval(function(){if(supaUser&&!document.hidden)pullCloud().then(function(c){if(c)applyRemote(c);}).catch(function(){});},8000);
+}
+function stopCloudLive(){if(realtimeCh){try{realtimeCh.unsubscribe();}catch(e){}realtimeCh=null;}if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&supaUser&&!(typeof mockOn==='function'&&mockOn()))pullCloud().then(function(c){if(c)applyRemote(c);}).catch(function(){});});
 function showGate(){el('gate').classList.remove('hidden');}
 function hideGate(){el('gate').classList.add('hidden');}
 async function loginWith(u,p,errEl,btn,onOk){
@@ -2499,7 +2605,7 @@ async function loginWith(u,p,errEl,btn,onOk){
   try{const sb=await loadSupa();
     const r=await sb.auth.signInWithPassword({email:u.toLowerCase()+EMAIL_DOMAIN,password:p});
     if(r.error)throw r.error;
-    supaUser=r.data.user;errEl.textContent='';updateAuthUI();hideGate();armAutoFS();loadProgressFor(supaUser.id);await syncOnLogin();restoreMockIfAny(supaUser.id);
+    supaUser=r.data.user;errEl.textContent='';updateAuthUI();hideGate();armAutoFS();loadProgressFor(supaUser.id);await syncOnLogin();restoreMockIfAny(supaUser.id);startCloudLive();
     if(onOk)onOk();toast('✅ 已登入，雲端同步開啟','ok');
   }catch(err){errEl.textContent='登入失敗：'+((err&&err.message)||'帳號或密碼錯誤');}
   if(btn)btn.disabled=false;
@@ -2509,19 +2615,21 @@ el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('
 el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
 /* 進度匯出 / 匯入備份 */
 function exportProgress(){
-  const data={_app:'opa-review',_v:1,_t:Date.now(),answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,daily:daily};
+  const data={_app:'opa-review',_v:1,_t:Date.now(),answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,daily:daily};
   try{const blob=new Blob([JSON.stringify(data)],{type:'application/json'});const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='電子學複習進度_'+todayStr()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
     toast('⬇ 已匯出進度備份','ok');}catch(e){toast('匯出失敗','no');}
 }
 function importProgress(file){
+  if(examLock()){toast('🔒 考試進行中無法匯入備份','no');return;}
   const r=new FileReader();
-  r.onload=()=>{let d;try{d=JSON.parse(r.result);}catch(e){toast('檔案格式錯誤','no');return;}
+  r.onload=()=>{if(examLock()){toast('🔒 考試進行中無法匯入備份','no');return;}let d;try{d=JSON.parse(r.result);}catch(e){toast('檔案格式錯誤','no');return;}
     if(!d||typeof d!=='object'||d._app!=='opa-review'){toast('不是有效的備份檔','no');return;}
     askConfirm('匯入進度備份','匯入會以備份「覆蓋」目前的作答、收藏、錯題複習、備註與紀錄。確定要還原嗎？',()=>{
       if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;
       if(Array.isArray(d.mockHistory))S.mockHistory=d.mockHistory;if(d.review&&typeof d.review==='object')S.review=d.review;
       if(d.studyDays&&typeof d.studyDays==='object')S.studyDays=d.studyDays;if(d.notes&&typeof d.notes==='object')S.notes=d.notes;
+      if(d.hours&&typeof d.hours==='object')S.hours=d.hours;
       if(d.daily&&typeof d.daily.goal==='number'){daily=Object.assign({d:'',c:0,streak:0,last:''},d.daily);saveDaily();}
       save();randomSet=null;chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));render();renderDash();
       el('authModal').classList.remove('show');toast('⬆ 已還原進度備份','ok');});
@@ -2535,7 +2643,7 @@ el('authSubmit').addEventListener('click',()=>{if(el('authUser').value.trim()&&e
 el('authPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('authSubmit').click();});
 el('gSubmit').addEventListener('click',()=>{if(el('gUser').value.trim()&&el('gPass').value)enterFS();loginWith(el('gUser').value,el('gPass').value,el('gErr'),el('gSubmit'),()=>{el('gPass').value='';});});
 el('gPass').addEventListener('keydown',e=>{if(e.key==='Enter')el('gSubmit').click();});
-el('authLogout').addEventListener('click',async()=>{hardExitExam();try{clearMockPersist();}catch(e){}try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;loadDaily();resetProgress();try{render();renderDash();}catch(e){}updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
+el('authLogout').addEventListener('click',async()=>{hardExitExam();stopCloudLive();try{clearMockPersist();}catch(e){}try{const sb=await loadSupa();await sb.auth.signOut();}catch(e){}supaUser=null;loadDaily();resetProgress();try{render();renderDash();}catch(e){}updateAuthUI();el('authModal').classList.remove('show');el('gateForm').style.display='block';el('gateLoading').style.display='none';showGate();el('gUser').value='';el('gPass').value='';toast('已登出','');});
 /* ---------- 管理員後台：帳號權限管理（呼叫 Edge Function） ---------- */
 async function callAdmin(payload){
   const sb=await loadSupa();
@@ -2587,7 +2695,7 @@ async function initAuth(){
   if(!hasStoredSession())return;                       // no session → gate shows the login form
   el('gateForm').style.display='none';el('gateLoading').style.display='block';
   try{const sb=await loadSupa();const r=await sb.auth.getSession();
-    if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();hideGate();armAutoFS();loadProgressFor(supaUser.id);const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();restoreMockIfAny(supaUser.id);}
+    if(r.data&&r.data.session){supaUser=r.data.session.user;updateAuthUI();hideGate();armAutoFS();loadProgressFor(supaUser.id);const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();restoreMockIfAny(supaUser.id);startCloudLive();}
     else{el('gateForm').style.display='block';el('gateLoading').style.display='none';}
   }catch(e){console.warn(e);el('gateForm').style.display='block';el('gateLoading').style.display='none';}
 }
