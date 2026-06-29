@@ -233,6 +233,10 @@ select:focus,.search:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-
 .star.notebtn:hover{filter:none;opacity:1;transform:scale(1.15)} .star.notebtn.on{filter:none;opacity:1}
 .qnote{margin:8px 0 2px;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--gold) 12%,transparent);border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);font-size:13.5px;line-height:1.6;cursor:pointer;white-space:pre-wrap;word-break:break-word}
 .qnote:hover{border-color:var(--gold)}
+.rerow{margin-top:11px}
+.readexp{font-size:12.5px;font-weight:800;color:var(--brand2);background:color-mix(in srgb,var(--brand) 12%,transparent);border:1px solid color-mix(in srgb,var(--brand) 32%,transparent);border-radius:9px;padding:5px 11px;cursor:pointer;transition:background .15s}
+.readexp:hover{background:color-mix(in srgb,var(--brand) 22%,transparent)}
+.readexp.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .tag{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid transparent}
 .tag.ch{background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--brand)}
 .tag.tp{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
@@ -396,6 +400,14 @@ svg.ckt{display:block;width:100%;height:auto}
 .cmditem .ci{font-size:18px;width:24px;text-align:center;flex:0 0 auto}
 .cmditem.sel,.cmditem:hover{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff}
 .cmdfoot{padding:9px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);text-align:center}
+.syncdot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--muted);padding:0 4px;user-select:none}
+.syncdot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+.syncdot.live{color:var(--ok)} .syncdot.live::before{background:var(--ok);animation:syncPulse 2.2s infinite}
+.syncdot.poll{color:var(--gold)} .syncdot.poll::before{background:var(--gold)}
+.syncdot.flash::before{animation:syncFlash .8s}
+@keyframes syncPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes syncFlash{0%{transform:scale(1)}45%{transform:scale(1.7)}100%{transform:scale(1)}}
+@media(max-width:560px){.syncdot{font-size:0;gap:0;padding:0 3px}}
 .fxbody{max-height:64vh;overflow:auto;margin-top:4px;padding-right:4px}
 .fxsec{font-weight:900;color:var(--brand2);margin:15px 0 6px;font-size:14.5px;border-bottom:1px solid var(--border);padding-bottom:5px;position:sticky;top:0;background:var(--solid)}
 .fxsec:first-child{margin-top:2px}
@@ -560,6 +572,7 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
         <button class="tab" data-tab="notes">📖 筆記</button>
       </div>
       <button class="iconbtn" id="instBtn" title="安裝 App" aria-label="安裝 App" style="display:none">📲</button>
+      <span id="syncDot" class="syncdot" title="雲端同步狀態" style="display:none" aria-hidden="true"></span>
       <button class="iconbtn" id="authBtn" title="登入 / 雲端同步" aria-label="登入／雲端同步">👤</button>
       <button class="iconbtn" id="fxBtn" title="公式速查" aria-label="公式速查表">📐</button>
       <button class="iconbtn" id="voiceBtn" title="語音朗讀設定" aria-label="語音朗讀設定">🔊</button>
@@ -1561,7 +1574,7 @@ function card(q){
     ${q.circuit?`<div class="dia" role="img" aria-label="${esc(q.type)}電路圖" data-circ="${q.circuit}"></div>`:''}
     <div class="opts" role="radiogroup">${['A','B','C','D'].map(L=>optRow(q,L)).join('')}</div>
     <div class="reveal">${(mode==='practice'&&!ch)?`<button data-rev="${q.id}">👁 顯示答案/詳解</button>`:''}</div>
-    <div class="exp${showExp?' show':''}" id="exp${q.id}">${showExp?`${badge}<span class="et">正解：(${q.answer})</span>${(ch&&ch!==q.answer)?` <span style="color:var(--no);font-weight:800">・你選了 (${ch})</span>`:''}${whyHtml}<div style="margin-top:9px"><span class="et">【詳解】</span>${fmt(q.explanation)}</div>`:''}</div>
+    <div class="exp${showExp?' show':''}" id="exp${q.id}">${showExp?`${badge}<span class="et">正解：(${q.answer})</span>${(ch&&ch!==q.answer)?` <span style="color:var(--no);font-weight:800">・你選了 (${ch})</span>`:''}${whyHtml}<div style="margin-top:9px"><span class="et">【詳解】</span>${fmt(q.explanation)}</div>${ttsSupported()?`<div class="rerow"><button class="readexp" data-readexp="${q.id}">🔊 朗讀詳解</button></div>`:''}`:''}</div>
   </div>`;
 }
 
@@ -1669,6 +1682,8 @@ el('list').addEventListener('click',e=>{
   if(nt){openNote(+nt.dataset.note);return;}
   const tt=e.target.closest('[data-tts]');
   if(tt){speakQuestion(+tt.dataset.tts);return;}
+  const re=e.target.closest('[data-readexp]');
+  if(re){speakExplanation(+re.dataset.readexp);return;}
   const rv=e.target.closest('[data-rev]');
   if(rv){el('exp'+rv.dataset.rev).classList.add('show');rv.parentElement.innerHTML='';return;}
   const c=e.target.closest('.q');if(c)setActive(+c.dataset.id,false);
@@ -1698,7 +1713,20 @@ function sortedZhVoices(){return zhVoices().slice().sort((a,b)=>scoreVoice(b)-sc
 function curVoice(){if(!_ttsVoices.length)loadVoices();let v=ttsCfg.voice&&_ttsVoices.find(x=>x.voiceURI===ttsCfg.voice);if(!v)v=sortedZhVoices()[0]||null;return v;}
 function makeUtter(text){const u=new SpeechSynthesisUtterance(text);const v=curVoice();try{if(v){u.voice=v;u.lang=v.lang||'zh-TW';}else u.lang='zh-TW';}catch(e){u.lang='zh-TW';}u.rate=ttsCfg.rate;u.pitch=ttsCfg.pitch;return u;}
 let ttsCurId=null;
-function updateTtsBtns(){document.querySelectorAll('[data-tts]').forEach(b=>b.classList.toggle('on',+b.dataset.tts===ttsCurId));}
+function updateTtsBtns(){document.querySelectorAll('[data-tts]').forEach(b=>b.classList.toggle('on',+b.dataset.tts===ttsCurId));
+  document.querySelectorAll('[data-readexp]').forEach(b=>b.classList.toggle('on',ttsCurId==='e'+b.dataset.readexp));}
+function speakExplanation(id){
+  if(examLock()){toast('🔒 考試進行中，已停用','no');return;}
+  if(!ttsSupported()){toast('此瀏覽器不支援語音朗讀','no');return;}
+  if(ttsCurId==='e'+id){stopTTS();return;}
+  stopTTS();const q=Q(id);if(!q)return;
+  const parts=['正解，'+q.answer+'。'];
+  if(q.why&&q.why[q.answer])parts.push('為什麼選'+q.answer+'：'+speakClean(q.why[q.answer]));
+  parts.push('詳解。'+speakClean(q.explanation));
+  try{ttsCurId='e'+id;updateTtsBtns();
+    parts.forEach((t,i)=>{const u=makeUtter(t);u.onerror=()=>{ttsCurId=null;updateTtsBtns();};if(i===parts.length-1)u.onend=()=>{ttsCurId=null;updateTtsBtns();};speechSynthesis.speak(u);});
+  }catch(e){ttsCurId=null;updateTtsBtns();}
+}
 function stopTTS(){if(ttsSupported())try{speechSynthesis.cancel();}catch(e){}ttsCurId=null;updateTtsBtns();}
 function speakQuestion(id){
   if(examLock()){toast('🔒 考試進行中，已停用語音朗讀','no');return;}
@@ -2552,6 +2580,7 @@ function updateAuthUI(){
     el('authedName').textContent=authName();el('adminPanel').style.display=isAdmin()?'block':'none';}
   else{b.textContent='👤';b.title='登入 / 雲端同步';
     el('authForm').style.display='block';el('authedBox').style.display='none';el('authTitle').textContent='🔐 登入';}
+  if(typeof setSync==='function')setSync(supaUser?(syncLive?'live':'poll'):null);
 }
 function mergeCloud(c){
   if(!c)return;
@@ -2583,18 +2612,24 @@ function applyRemote(c){
   mergeCloud(c);
   const changed=newer||snap!==JSON.stringify([S.studyDays,S.hours,S.bestStreak,(S.mockHistory||[]).length]);
   if(changed){saveLocalOnly();try{render();if(el('dash').classList.contains('active'))renderDash();}catch(e){}
-    if(newer)toast('☁️ 已即時同步其他裝置的進度','ok');}
+    if(newer){flashSync();toast('☁️ 已即時同步其他裝置的進度','ok');}}
 }
-let realtimeCh=null, pollTimer=null;
+let realtimeCh=null, pollTimer=null, syncLive=false;
+function setSync(state){const d=el('syncDot');if(!d)return;
+  if(!supaUser||!state){d.style.display='none';d.classList.remove('live','poll');return;}
+  d.style.display='inline-flex';d.classList.remove('live','poll');
+  if(state==='live'){syncLive=true;d.classList.add('live');d.textContent='即時';d.title='☁️ 即時同步中：其他裝置會立即收到你的進度';}
+  else{syncLive=false;d.classList.add('poll');d.textContent='同步';d.title='☁️ 已連線雲端，定時與其他裝置同步';}}
+function flashSync(){const d=el('syncDot');if(!d||d.style.display==='none')return;d.classList.add('flash');setTimeout(()=>{if(d)d.classList.remove('flash');},800);}
 async function startCloudLive(){
-  if(!supaUser)return;let sb;try{sb=await loadSupa();}catch(e){return;}stopCloudLive();
+  if(!supaUser)return;let sb;try{sb=await loadSupa();}catch(e){return;}stopCloudLive();setSync('poll');
   try{realtimeCh=sb.channel('up:'+supaUser.id)
     .on('postgres_changes',{event:'*',schema:'public',table:'user_progress',filter:'user_id=eq.'+supaUser.id},
       function(p){const row=p&&p.new;if(row&&row.data)applyRemote(row.data);})
-    .subscribe();}catch(e){console.warn('realtime',e);}
+    .subscribe(function(status){setSync(status==='SUBSCRIBED'?'live':'poll');});}catch(e){console.warn('realtime',e);}
   pollTimer=setInterval(function(){if(supaUser&&!document.hidden)pullCloud().then(function(c){if(c)applyRemote(c);}).catch(function(){});},8000);
 }
-function stopCloudLive(){if(realtimeCh){try{realtimeCh.unsubscribe();}catch(e){}realtimeCh=null;}if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+function stopCloudLive(){if(realtimeCh){try{realtimeCh.unsubscribe();}catch(e){}realtimeCh=null;}if(pollTimer){clearInterval(pollTimer);pollTimer=null;}syncLive=false;setSync(null);}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&supaUser&&!(typeof mockOn==='function'&&mockOn()))pullCloud().then(function(c){if(c)applyRemote(c);}).catch(function(){});});
 function showGate(){el('gate').classList.remove('hidden');}
 function hideGate(){el('gate').classList.add('hidden');}
