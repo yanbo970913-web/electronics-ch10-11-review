@@ -400,6 +400,26 @@ svg.ckt{display:block;width:100%;height:auto}
 .cmditem .ci{font-size:18px;width:24px;text-align:center;flex:0 0 auto}
 .cmditem.sel,.cmditem:hover{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff}
 .cmdfoot{padding:9px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);text-align:center}
+.flashbox{max-width:620px;width:94vw}
+.flashtop{display:flex;align-items:center;gap:10px}
+.flashprog{margin-left:auto;font-weight:800;color:var(--muted);font-size:13px}
+.flashsrcrow{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+.flashcard{perspective:1700px;height:58vh;min-height:320px}
+.flashinner{position:relative;width:100%;height:100%;transition:transform .55s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d}
+.flashinner.flipped{transform:rotateY(180deg)}
+.flashface{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--border2);border-radius:16px;background:linear-gradient(160deg,var(--surface),var(--surface2));padding:20px 22px;overflow:auto;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.flashback{transform:rotateY(180deg)}
+.fqnum{font-size:12px;font-weight:800;color:var(--brand2);letter-spacing:.5px}
+.fstem{font-size:17px;font-weight:700;line-height:1.7;margin:8px 0 14px}
+.fopt{font-size:14.5px;line-height:1.6;padding:7px 12px;border-radius:9px;margin:5px 0;background:var(--surface2);border:1px solid var(--border)}
+.fopt.fc{background:color-mix(in srgb,var(--ok) 18%,transparent);border-color:var(--ok);font-weight:800}
+.fans{font-size:20px;font-weight:900;color:var(--ok);margin-bottom:10px}
+.fexp{font-size:14px;line-height:1.8;color:var(--text)}
+.fwhy{font-size:13px;line-height:1.7;color:var(--muted);margin:8px 0;padding:8px 11px;background:var(--surface2);border-radius:9px}
+.fmark{margin-top:auto;padding-top:12px;color:var(--muted);font-size:12.5px;text-align:center}
+.flashctrl{display:flex;gap:10px;margin-top:14px;align-items:center}
+.flashctrl .pri{flex:1}
+.flashhint{text-align:center;color:var(--muted);font-size:11.5px;margin-top:9px}
 .syncdot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--muted);padding:0 4px;user-select:none}
 .syncdot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto}
 .syncdot.live{color:var(--ok)} .syncdot.live::before{background:var(--ok);animation:syncPulse 2.2s infinite}
@@ -611,6 +631,8 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
         <button class="btn pri" id="rqBtn">🎲 隨機測驗</button>
         <button class="btn" id="shuffle">🔀 洗牌</button>
         <button class="btn" id="redoWrong">🔁 錯題重練</button>
+        <button class="btn" id="flashBtn">🃏 翻卡速記</button>
+        <button class="btn" id="sheetBtn">🖨 複習講義</button>
         <button class="btn" id="printWrong">🖨 印錯題</button>
         <button class="btn danger" id="reset">↺ 清除</button>
       </div>
@@ -664,6 +686,15 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
       <div class="dcard">
         <div class="dh">⏰ 答題時段分析 <span class="sub">（你都在幾點念書）</span></div>
         <div id="hoursWrap"></div>
+      </div>
+      <div class="dcard">
+        <div class="dh">🔔 每日刷題提醒 <span class="sub">（時間到提醒你來複習）</span></div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px">
+          <label class="chk" style="margin:0"><input type="checkbox" id="remOn"> 開啟提醒</label>
+          <span style="display:flex;align-items:center;gap:7px">時間 <input type="time" id="remTime" value="20:00" class="search" style="width:120px;cursor:pointer"></span>
+          <button class="btn" id="remTest" style="padding:5px 11px;font-size:13px">🔔 試一下</button>
+        </div>
+        <div id="remStatus" style="color:var(--muted);font-size:12px;margin-top:8px"></div>
       </div>
       <div class="dcard">
         <div class="dh">各章進度 <span class="sub">（亮色＝答對率、淡色＝已作答率）</span></div>
@@ -1070,6 +1101,31 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
     <button class="btn" id="voiceReset" style="margin-left:auto">回預設</button>
     <button class="btn" id="voiceClose">完成</button>
   </div>
+</div></div>
+
+<div class="modal" id="flashModal"><div class="mbox flashbox">
+  <div class="flashtop">
+    <b style="font-size:15px">🃏 翻卡速記</b>
+    <span id="flashProg" class="flashprog"></span>
+    <button class="iconbtn" id="flashClose" title="關閉" aria-label="關閉翻卡">✕</button>
+  </div>
+  <div class="flashsrcrow" id="flashSrcRow">
+    <button class="chip on" data-fsrc="all">目前篩選</button>
+    <button class="chip" data-fsrc="wrong">❌ 錯題</button>
+    <button class="chip" data-fsrc="bookmark">⭐ 收藏</button>
+    <button class="chip" data-fsrc="noted">📝 備註</button>
+    <button class="chip" data-fsrc="shuffle">🔀 洗牌</button>
+  </div>
+  <div class="flashcard" id="flashCard"><div class="flashinner" id="flashInner">
+    <div class="flashface flashfront" id="flashFront"></div>
+    <div class="flashface flashback" id="flashBack"></div>
+  </div></div>
+  <div class="flashctrl">
+    <button class="btn" id="flashPrev" aria-label="上一張">←</button>
+    <button class="btn pri" id="flashFlip">翻卡看答案</button>
+    <button class="btn" id="flashNext" aria-label="下一張">→</button>
+  </div>
+  <div class="flashhint">空白鍵翻卡　←/→ 換卡　Esc 關閉</div>
 </div></div>
 
 <div class="modal" id="cmdModal"><div class="mbox cmdbox">
@@ -1763,6 +1819,8 @@ const CMDS=[
   {ic:'🧠',label:'自適應難度練習',run:()=>el('adaptBtn').click()},
   {ic:'🎲',label:'隨機測驗',run:()=>el('rqBtn').click()},
   {ic:'🔁',label:'錯題重練',run:()=>el('redoWrong').click()},
+  {ic:'🃏',label:'翻卡速記模式',run:()=>openFlash()},
+  {ic:'🖨',label:'匯出複習講義（錯題/收藏/備註）',run:()=>el('sheetBtn').click()},
   {ic:'🎯',label:'練習我的弱點主題',run:()=>{const cand=TOPICS.map(t=>{const qs=QUESTIONS.filter(q=>q.topicKey===t.key);const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;return{key:t.key,a,acc:a?c/a:1};}).filter(x=>x.a>=3).sort((a,b)=>a.acc-b.acc);if(cand.length)practiceWeak(cand[0].key);else toast('多答幾題後才有弱點推薦','');}},
   {ic:'💾',label:'匯出進度備份',run:()=>exportProgress()},
   {ic:'🔁',label:'開始間隔複習（到期錯題）',run:()=>{if(typeof startReview==='function')startReview();}},
@@ -1818,6 +1876,47 @@ el('voicePreview').addEventListener('click',()=>{if(!ttsSupported())return;try{s
 el('voiceReset').addEventListener('click',()=>{ttsCfg.voice='';ttsCfg.rate=0.95;ttsCfg.pitch=1.05;localStorage.removeItem('tts_voice');localStorage.setItem('tts_rate','0.95');localStorage.setItem('tts_pitch','1.05');openVoiceSettings();toast('已回到推薦設定','ok');});
 el('voiceClose').addEventListener('click',closeVoice);
 el('voiceModal').addEventListener('click',e=>{if(e.target===el('voiceModal'))closeVoice();});
+/* 🃏 翻卡速記 */
+let flashDeck=[],flashIdx=0,flashFlipped=false;
+function buildFlashDeck(src){let arr;
+  if(src==='wrong')arr=QUESTIONS.filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer);
+  else if(src==='bookmark')arr=QUESTIONS.filter(q=>S.bookmarks[q.id]);
+  else if(src==='noted')arr=QUESTIONS.filter(q=>S.notes[q.id]);
+  else arr=filtered().slice();
+  return arr.map(q=>q.id);}
+function openFlash(){if(examLock()){toast('🔒 考試進行中，已停用','no');return;}
+  flashDeck=buildFlashDeck('all');if(!flashDeck.length){toast('目前沒有可翻的卡片','no');return;}
+  flashIdx=0;flashFlipped=false;[...el('flashSrcRow').children].forEach(c=>c.classList.toggle('on',c.dataset.fsrc==='all'));
+  el('flashModal').classList.add('show');renderFlash();}
+function closeFlash(){el('flashModal').classList.remove('show');}
+function renderFlash(){
+  if(!flashDeck.length){el('flashFront').innerHTML='<div class="fmark">這個來源沒有卡片</div>';el('flashBack').innerHTML='';el('flashProg').textContent='0 / 0';return;}
+  if(flashIdx<0)flashIdx=flashDeck.length-1;if(flashIdx>=flashDeck.length)flashIdx=0;
+  const q=Q(flashDeck[flashIdx]);if(!q)return;el('flashProg').textContent=(flashIdx+1)+' / '+flashDeck.length;
+  flashFlipped=false;el('flashInner').classList.remove('flipped');el('flashFlip').textContent='翻卡看答案';
+  const opts=['A','B','C','D'].map(L=>'<div class="fopt">('+L+') '+esc(q.opts[L])+'</div>').join('');
+  el('flashFront').innerHTML='<div class="fqnum">第 '+q.id+' 題 ・ 第'+q.ch+'章 ・ '+esc(q.type)+(q.is_past?' ・統測':'')+'</div><div class="fstem">'+esc(q.stem)+'</div>'+opts+'<div class="fmark">🤔 先想答案，再按「翻卡」</div>';
+  const ansOpts=['A','B','C','D'].map(L=>'<div class="fopt'+(L===q.answer?' fc':'')+'">('+L+') '+esc(q.opts[L])+'</div>').join('');
+  const why=(q.why&&q.why[q.answer])?'<div class="fwhy">'+esc(q.why[q.answer])+'</div>':'';
+  el('flashBack').innerHTML='<div class="fans">正解：('+q.answer+')</div>'+ansOpts+why+'<div class="fexp"><b>詳解：</b>'+esc(q.explanation)+'</div>';}
+function flipFlash(){flashFlipped=!flashFlipped;el('flashInner').classList.toggle('flipped',flashFlipped);el('flashFlip').textContent=flashFlipped?'看題目':'翻卡看答案';}
+function flashNav(d){if(!flashDeck.length)return;flashIdx=(flashIdx+d+flashDeck.length)%flashDeck.length;renderFlash();}
+el('flashBtn').addEventListener('click',openFlash);
+el('flashClose').addEventListener('click',closeFlash);
+el('flashFlip').addEventListener('click',flipFlash);
+el('flashCard').addEventListener('click',e=>{if(!e.target.closest('button'))flipFlash();});
+el('flashPrev').addEventListener('click',()=>flashNav(-1));
+el('flashNext').addEventListener('click',()=>flashNav(1));
+el('flashModal').addEventListener('click',e=>{if(e.target===el('flashModal'))closeFlash();});
+el('flashSrcRow').addEventListener('click',e=>{const b=e.target.closest('[data-fsrc]');if(!b)return;const s=b.dataset.fsrc;
+  if(s==='shuffle'){for(let i=flashDeck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[flashDeck[i],flashDeck[j]]=[flashDeck[j],flashDeck[i]];}flashIdx=0;renderFlash();toast('🔀 已洗牌','ok');return;}
+  flashDeck=buildFlashDeck(s);[...el('flashSrcRow').children].forEach(c=>c.classList.toggle('on',c.dataset.fsrc===s));
+  flashIdx=0;renderFlash();if(!flashDeck.length)toast('這個來源沒有卡片','no');});
+document.addEventListener('keydown',e=>{if(!el('flashModal').classList.contains('show'))return;
+  if(e.key===' '||e.key==='Enter'){e.preventDefault();flipFlash();}
+  else if(e.key==='ArrowRight'){e.preventDefault();flashNav(1);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();flashNav(-1);}
+  else if(e.key==='Escape'){closeFlash();}});
 function setActive(id,scroll){
   activeId=id;document.querySelectorAll('.q.active').forEach(x=>x.classList.remove('active'));
   const c=el('q'+id);if(c){c.classList.add('active');if(scroll)c.scrollIntoView({block:'center',behavior:'smooth'});}
@@ -1867,6 +1966,35 @@ el('printWrong').addEventListener('click',()=>{
   if(!w){toast('請允許彈出視窗以匯出錯題','no');return;}
   w.document.write(html);w.document.close();
   toast('🖨 已開啟 '+wrong.length+' 題錯題（可列印或存 PDF）','ok');
+});
+/* 🖨 複習講義：錯題 + 收藏 + 備註 合併，含個人備註 */
+el('sheetBtn').addEventListener('click',()=>{
+  if(examLock()){toast('🔒 考試進行中，已停用','no');return;}
+  const isWrong=q=>S.answers[q.id]&&S.answers[q.id]!==q.answer;
+  const list=QUESTIONS.filter(q=>isWrong(q)||S.bookmarks[q.id]||S.notes[q.id]);
+  if(!list.length){toast('還沒有錯題／收藏／備註可做成講義','no');return;}
+  const nW=list.filter(isWrong).length,nB=list.filter(q=>S.bookmarks[q.id]).length,nN=list.filter(q=>S.notes[q.id]).length;
+  const css='body{font-family:"Microsoft JhengHei","PingFang TC",sans-serif;max-width:820px;margin:18px auto;line-height:1.75;color:#161616;padding:0 14px}h1{font-size:21px;margin-bottom:4px}.sub{color:#666;margin:0 0 12px}.q{border:1px solid #d8d8d8;border-radius:10px;padding:13px 16px;margin:13px 0;page-break-inside:avoid}.tg{font-size:12px;color:#555;background:#eee;border-radius:5px;padding:1px 7px;margin-right:5px}.badge{font-size:12px;font-weight:800;border-radius:5px;padding:1px 7px;margin-right:5px}.bw{background:#fde8e8;color:#c0392b}.bb{background:#fff4d6;color:#a87900}.bn{background:#e6f0ff;color:#1e5fbf}.stem{font-weight:700;margin:6px 0 8px}.opt{margin:2px 0}.ans{color:#0a7d3f;font-weight:800}.you{color:#c0392b;font-weight:800}.ex{background:#f4f6f8;border-radius:7px;padding:9px 11px;margin-top:9px;font-size:14px}.note{background:#fff7e0;border:1px solid #ecd986;border-radius:7px;padding:8px 11px;margin-top:8px;font-size:14px}.why{color:#444;font-size:13.5px;margin-top:7px}sub,sup{font-size:.72em}@media print{.noprint{display:none}}';
+  let html='<!doctype html><html><head><meta charset="utf-8"><title>我的複習講義 '+list.length+'題</title><style>'+css+'</style></head><body>';
+  html+='<h1>📘 我的複習講義</h1><p class="sub">共 '+list.length+' 題　❌錯題 '+nW+' ・ ⭐收藏 '+nB+' ・ 📝備註 '+nN+'</p>';
+  html+='<p class="noprint"><button onclick="window.print()" style="font-size:15px;padding:7px 14px">🖨 列印 / 存成 PDF</button></p>';
+  list.forEach((q,i)=>{let bd='';
+    if(isWrong(q))bd+='<span class="badge bw">❌錯題</span>';
+    if(S.bookmarks[q.id])bd+='<span class="badge bb">⭐收藏</span>';
+    if(S.notes[q.id])bd+='<span class="badge bn">📝備註</span>';
+    html+='<div class="q">'+bd+'<span class="tg">第'+q.ch+'章</span><span class="tg">'+esc(q.type)+'</span>'+(q.is_past?'<span class="tg">統測 民國'+esc(q.year||'歷屆')+'年</span>':'')
+      +'<div class="stem">'+(i+1)+'. '+fmt(q.stem)+'</div>';
+    ['A','B','C','D'].forEach(L=>{html+='<div class="opt">('+L+') '+fmt(q.opts[L])+'</div>';});
+    html+='<div style="margin-top:7px">正解：<span class="ans">('+q.answer+')</span>'+(isWrong(q)?'　你曾選：<span class="you">('+S.answers[q.id]+')</span>':'')+'</div>';
+    if(S.notes[q.id])html+='<div class="note">📝 我的備註：'+esc(S.notes[q.id])+'</div>';
+    if(q.why&&q.why[q.answer])html+='<div class="why">💡 '+fmt(q.why[q.answer])+'</div>';
+    html+='<div class="ex">【詳解】'+fmt(q.explanation)+'</div></div>';
+  });
+  html+='</body></html>';
+  const w=window.open('','_blank');
+  if(!w){toast('請允許彈出視窗以匯出講義','no');return;}
+  w.document.write(html);w.document.close();
+  toast('🖨 已產生複習講義 '+list.length+' 題（可列印或存 PDF）','ok');
 });
 /* ---- 自適應難度練習 ---- */
 const DIFFS=['基礎','中等','進階'];
@@ -2341,6 +2469,44 @@ function renderDaily(){
     +'<div class="dgoal">每日目標：<button data-dg="-5" aria-label="減少目標">−</button><b style="color:var(--text);min-width:34px;text-align:center">'+goal+'</b><button data-dg="5" aria-label="增加目標">＋</button> 題</div>'
     +'</div></div>';
 }
+/* 🔔 每日刷題提醒（本機排程；分頁開著或在背景分頁時觸發，瀏覽器無法在完全關閉時推播）*/
+let remCfg={on:localStorage.getItem('rem_on')==='1',time:localStorage.getItem('rem_time')||'20:00'},remTimer=null,remNotifiedDay='';
+function dailyDoneToday(){dailyCheckDay();return (daily.c||0)>=Math.max(1,daily.goal||20);}
+function notifyReady(){return ('Notification'in window)&&Notification.permission==='granted';}
+function remStatusText(){
+  if(!('Notification'in window))return '此瀏覽器不支援通知。';
+  if(!remCfg.on)return '提醒未開啟。開啟後每天 '+remCfg.time+' 若未達標會提醒你（需本頁開著或在背景分頁）。';
+  if(Notification.permission==='denied')return '⚠ 通知權限被封鎖，請到瀏覽器的網站設定允許通知。';
+  if(Notification.permission!=='granted')return '請允許通知權限以啟用提醒。';
+  return '✅ 已開啟：每天 '+remCfg.time+' 未達標會提醒你（需本頁開著或在背景分頁）。';}
+function renderRemUI(){const on=el('remOn'),tm=el('remTime'),st=el('remStatus');
+  if(on)on.checked=remCfg.on;if(tm&&document.activeElement!==tm)tm.value=remCfg.time;if(st)st.textContent=remStatusText();}
+function msUntil(hhmm){const a=String(hhmm||'20:00').split(':'),h=+a[0]||0,m=+a[1]||0,now=new Date();
+  const t=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m,0,0);if(t.getTime()<=now.getTime())t.setDate(t.getDate()+1);return t.getTime()-now.getTime();}
+function fireReminder(){const t=todayStr();
+  if(notifyReady()&&remCfg.on&&!dailyDoneToday()&&remNotifiedDay!==t){
+    try{new Notification('📘 電子學複習提醒',{body:'今天還沒達成刷題目標，來複習幾題吧！💪',icon:'icon.svg',tag:'opa-daily'});remNotifiedDay=t;}catch(e){}}
+  scheduleReminder();}
+function scheduleReminder(){if(remTimer){clearTimeout(remTimer);remTimer=null;}
+  if(!remCfg.on||!notifyReady())return;
+  remTimer=setTimeout(fireReminder,Math.min(msUntil(remCfg.time),6*3600*1000));}   // 最長 6 小時重排，避免長 setTimeout 失準
+async function toggleReminder(on){
+  if(on){if(!('Notification'in window)){toast('此瀏覽器不支援通知','no');if(el('remOn'))el('remOn').checked=false;return;}
+    let perm=Notification.permission;if(perm==='default'){try{perm=await Notification.requestPermission();}catch(e){}}
+    if(perm!=='granted'){toast('未取得通知權限，無法開啟提醒','no');remCfg.on=false;localStorage.setItem('rem_on','0');renderRemUI();return;}
+    remCfg.on=true;localStorage.setItem('rem_on','1');toast('🔔 已開啟每日提醒','ok');}
+  else{remCfg.on=false;localStorage.setItem('rem_on','0');toast('已關閉每日提醒','');}
+  scheduleReminder();renderRemUI();}
+function initReminder(){
+  if(el('remOn')){
+    el('remOn').addEventListener('change',e=>toggleReminder(e.target.checked));
+    el('remTime').addEventListener('change',e=>{remCfg.time=e.target.value||'20:00';localStorage.setItem('rem_time',remCfg.time);scheduleReminder();renderRemUI();});
+    el('remTest').addEventListener('click',async()=>{if(!('Notification'in window)){toast('此瀏覽器不支援通知','no');return;}
+      let perm=Notification.permission;if(perm==='default'){try{perm=await Notification.requestPermission();}catch(e){}}
+      if(perm!=='granted'){toast('未取得通知權限','no');renderRemUI();return;}
+      try{new Notification('📘 電子學複習提醒',{body:'這是提醒測試 ✅ 時間到就會像這樣通知你',icon:'icon.svg'});}catch(e){}});}
+  renderRemUI();scheduleReminder();
+  if(remCfg.on&&notifyReady()&&!dailyDoneToday()){const a=remCfg.time.split(':'),mins=(+a[0]||0)*60+(+a[1]||0),now=new Date();if(now.getHours()*60+now.getMinutes()>=mins)fireReminder();}}
 function recordStudyDay(){S.studyDays=S.studyDays||{};const t=todayStr();S.studyDays[t]=(S.studyDays[t]||0)+1;
   S.hours=S.hours||{};const h=new Date().getHours();S.hours[h]=(S.hours[h]||0)+1;}
 function renderStudyCal(){
@@ -2736,7 +2902,7 @@ async function initAuth(){
 }
 
 /* ---------- init ---------- */
-applyTheme();applySound();render();renderDash();updateAuthUI();initAuth();
+applyTheme();applySound();render();renderDash();updateAuthUI();initReminder();initAuth();
 window.addEventListener('resize',()=>{const c=el('confetti');c.width=innerWidth;c.height=innerHeight;});
 /* PWA service worker (https only; silently skipped on file://) */
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
