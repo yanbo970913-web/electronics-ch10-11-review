@@ -1145,7 +1145,7 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
   </div>
   <div class="goverlay" id="gStart">
     <div class="gtitle">⚡ 電子衝刺</div>
-    <div class="gsub">跳躍收集⚡（每 60 個補血）、跳上 ⬛ 高台拿高處好料、踩扁 👾 怪物、吃 ❤️🛡️🧲、連擊加倍。<br><b style="color:var(--ok)">❓ 檢查哨答對的題會自動計入學習統計、修正錯題本！</b></div>
+    <div class="gsub">跳躍收集⚡（每 60 個補血）、跳上 ⬛ 高台、踩 🌀 彈簧彈高、開 🎁 寶箱、踩扁 👾 怪物、吃 ❤️🛡️🧲、連擊加倍。<br><b style="color:var(--ok)">❓ 檢查哨答對的題會自動計入學習統計、修正錯題本！</b></div>
     <div class="gdiffrow" id="gDiffRow"><button class="chip on" data-gd="normal">😀 普通</button><button class="chip" data-gd="hell">🔥 地獄 (×1.5分)</button></div>
     <div class="gbest">🏆 最高分 <b id="gBest1">0</b></div>
     <button class="btn pri gbig" id="gPlay">▶ 開始衝刺</button>
@@ -2011,7 +2011,7 @@ function gStart(){const c=el('gameCanvas');if(!c)return;gResize();
   const hell=(gDiff==='hell'),base=hell?320:240;
   G={W:w,H:h,groundY:Math.round(h*0.80),x:Math.max(70,w*0.16),y:Math.round(h*0.80),vy:0,onGround:true,dj:false,
      speed:base,base:base,dist:0,score:0,coins:0,hearts:3,inv:0,flash:0,t:0,
-     ents:[],parts:[],pops:[],spawnX:w*0.55,lastGate:0,lastPow:0,lastHeart:0,lastPlat:0,coinHeal:0,correct:0,total:0,learned:0,fixed:0,
+     ents:[],parts:[],pops:[],spawnX:w*0.55,lastGate:0,lastPow:0,lastHeart:0,lastPlat:0,lastSpring:0,lastChest:0,coinHeal:0,correct:0,total:0,learned:0,fixed:0,
      combo:0,comboMax:0,shield:0,magnet:0,shake:0,level:1,lastMile:0,hell:hell,smul:hell?1.5:1,
      state:'count',count:3.0,banner:'',bannerT:0,q:null,bgx:0};
   el('gStart').style.display='none';el('gOver').style.display='none';el('gPause').style.display='none';el('gQ').classList.remove('show');
@@ -2030,10 +2030,13 @@ function gSpawn(){const W=G.W,gy=G.groundY;
     const n=3+(Math.random()*2|0);for(let i=0;i<n;i++)G.ents.push({type:'coin',x:W+50+pw*0.18+i*28,y:ph-30,r:11});
     if(Math.random()<0.45){if(G.hearts<5&&Math.random()<0.5)G.ents.push({type:'heart',x:W+50+pw*0.78,y:ph-32,r:15});else G.ents.push({type:'power',sub:Math.random()<0.5?'shield':'magnet',x:W+50+pw*0.78,y:ph-32,r:15});}
     return;}
+  if(G.dist-G.lastSpring>78&&Math.random()<0.4){G.lastSpring=G.dist;G.ents.push({type:'spring',x:W+40,y:gy,w:32,h:22,used:false});   // 🌀 彈簧：彈超高拿高處好料
+    for(let i=0;i<4;i++)G.ents.push({type:'coin',x:W+40,y:gy-150-i*34,r:11});return;}
+  if(G.dist-G.lastChest>120&&Math.random()<0.4){G.lastChest=G.dist;G.ents.push({type:'chest',x:W+40,y:gy,w:30,h:26});return;}   // 🎁 寶箱
   const r=Math.random(),cT=G.hell?0.28:0.38,mT=G.hell?0.52:0.56,sT=G.hell?0.74:0.78,dT=G.hell?0.9:0.88;
   if(r<cT){const n=3+(Math.random()*3|0),by=gy-72-Math.random()*80;
     for(let i=0;i<n;i++)G.ents.push({type:'coin',x:W+40+i*32,y:by-Math.sin(i/Math.max(1,n-1)*Math.PI)*40,r:11});}
-  else if(r<mT){G.ents.push({type:'mob',x:W+40,y:gy,w:34,h:34});}
+  else if(r<mT){G.ents.push({type:'mob',x:W+40,y:gy,w:34,h:34,hop:Math.random()<0.45,vy:0,gy0:gy});}
   else if(r<sT){const big=Math.random()<(G.hell?0.5:0.35);G.ents.push({type:'spike',x:W+40,y:gy,w:30,h:big?54:32+Math.random()*12});}
   else if(r<dT){G.ents.push({type:'spike',x:W+40,y:gy,w:26,h:34});G.ents.push({type:'spike',x:W+72,y:gy,w:26,h:34});if(G.hell)G.ents.push({type:'spike',x:W+104,y:gy,w:26,h:34});}
   else{for(let i=0;i<5;i++)G.ents.push({type:'coin',x:W+40+i*30,y:gy-26,r:11});}}
@@ -2049,6 +2052,7 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
   if(G.y>=floorY){G.y=floorY;G.vy=0;G.onGround=true;G.dj=false;}else G.onGround=false;
   if(G.inv>0)G.inv-=dt;if(G.flash>0)G.flash-=dt;if(G.shield>0)G.shield-=dt;if(G.magnet>0)G.magnet-=dt;if(G.shake>0)G.shake-=dt;if(G.bannerT>0)G.bannerT-=dt;
   for(const e of G.ents){e.x-=G.speed*dt;
+    if(e.type==='mob'&&e.hop){e.vy=(e.vy||0)+1700*dt;e.y+=e.vy*dt;if(e.y>=e.gy0){e.y=e.gy0;e.vy=-640;}}
     if((e.type==='coin'||e.type==='heart')&&G.magnet>0){const dx=G.x-e.x,dy=G.y-e.y,d=Math.hypot(dx,dy)||1;if(d<220){e.x+=dx/d*300*dt;e.y+=dy/d*300*dt;}}}
   G.spawnX-=G.speed*dt;if(G.spawnX<=0){gSpawn();G.spawnX=G.W*(0.42+Math.random()*0.4);}
   const px=G.x,py=G.y,pr=20;
@@ -2059,6 +2063,8 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
         if(G.vy>0&&py<e.y-e.h*0.45){e.dead=true;G.vy=-440;G.onGround=false;G.dj=false;G.shake=0.25;gCoin(4);gSfx('coin');gPop(e.x,e.y-e.h-8,'踩扁! +4⚡','#f3c969');gPart(e.x,e.y-e.h,16,'rgba(255,138,61,.95)',{spd:180,life:0.5,size:3});}
         else if(G.inv<=0){gHurt();e.dead=true;}}}
     else if(e.type==='spike'){if(Math.abs(e.x-px)<e.w/2+pr-8&&py>e.y-e.h-2){gHurt();e.dead=true;}}
+    else if(e.type==='spring'){if(!e.used&&Math.abs(e.x-px)<e.w/2+pr-2&&py>e.y-e.h-4&&G.vy>=0){e.used=true;G.vy=-1280;G.onGround=false;G.dj=false;G.shake=0.22;gSfx('go');gPop(e.x,e.y-e.h-12,'BOING! 🚀','#a98bff');gPart(e.x,e.y-e.h,14,'rgba(169,139,255,.9)',{up:30,spd:160,life:0.5,size:3});}}
+    else if(e.type==='chest'){if(Math.abs(e.x-px)<e.w/2+pr&&Math.abs(e.y-py)<e.h+pr){e.dead=true;const bonus=10+(Math.random()*9|0);gCoin(bonus);G.shake=0.22;gSfx('power');gPop(e.x,e.y-30,'🎁 +'+bonus+'⚡','#f3c969');gPart(e.x,e.y-12,22,'rgba(243,201,105,.95)',{up:45,spd:210,life:0.6,size:3});}}
     else if(e.type==='power'){if(Math.abs(e.x-px)<e.r+pr&&Math.abs(e.y-py)<e.r+pr){e.dead=true;if(e.sub==='shield'){G.shield=7;gPop(px,py-32,'🛡️ 護盾!','#8ab4ff');}else{G.magnet=7;gPop(px,py-32,'🧲 磁鐵!','#a98bff');}gSfx('power');gPart(e.x,e.y,14,'rgba(169,139,255,.9)',{spd:160,life:0.5,size:3});}}
     else if(e.type==='gate'){if(!e.used&&e.x<=px){e.used=true;gAsk();}}}
   G.ents=G.ents.filter(e=>!e.dead&&e.x>-90);
@@ -2114,6 +2120,10 @@ function gDraw(){if(!gCtx||!G)return;const c=gCol(),W=G.W,H=G.H,gy=G.groundY,x=g
     else if(e.type==='plat'){const w=e.w;x.save();x.shadowColor=c.b;x.shadowBlur=12;x.fillStyle='rgba(91,140,255,.28)';
       x.beginPath();x.moveTo(e.x-w/2,e.y);x.lineTo(e.x+w/2,e.y);x.lineTo(e.x+w/2-7,e.y+13);x.lineTo(e.x-w/2+7,e.y+13);x.closePath();x.fill();
       x.shadowBlur=0;x.strokeStyle=c.b2;x.lineWidth=3;x.lineCap='round';x.beginPath();x.moveTo(e.x-w/2+3,e.y);x.lineTo(e.x+w/2-3,e.y);x.stroke();x.restore();}
+    else if(e.type==='spring'){const w=e.w,h=e.h,sq=e.used?0.4:1;x.save();x.translate(e.x,e.y);x.shadowColor=c.vio;x.shadowBlur=10;
+      x.strokeStyle=c.vio;x.lineWidth=3;x.lineJoin='round';x.beginPath();x.moveTo(-w/2+4,0);x.lineTo(-w/5,-h*0.55*sq);x.lineTo(0,0);x.lineTo(w/5,-h*0.55*sq);x.lineTo(w/2-4,0);x.stroke();
+      x.shadowBlur=8;x.fillStyle=c.b2;x.fillRect(-w/2,-h*sq-6,w,6);x.restore();}
+    else if(e.type==='chest'){const bob=Math.sin(G.t*4+e.x*0.05)*2;x.save();x.translate(e.x,e.y-e.h/2+bob);x.shadowColor=c.gold;x.shadowBlur=16;x.font='900 30px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('🎁',0,0);x.restore();}
     else if(e.type==='gate'){x.save();x.globalAlpha=e.used?0.25:0.9;x.fillStyle=c.vio;x.shadowColor=c.vio;x.shadowBlur=18;
       x.fillRect(e.x-4,gy-150,8,150);x.font='900 26px sans-serif';x.textAlign='center';x.fillStyle=c.gold;x.shadowBlur=8;x.fillText('❓',e.x,gy-160);x.restore();}}
   for(const p of G.parts){x.globalAlpha=Math.max(0,p.life/p.max);x.fillStyle=p.color;x.fillRect(p.x-p.size,p.y-p.size,p.size*2,p.size*2);}x.globalAlpha=1;
