@@ -414,6 +414,7 @@ svg.ckt{display:block;width:100%;height:auto}
 .gbest{font-size:15px;color:var(--gold);font-weight:800}
 .gbig{font-size:19px;padding:13px 34px;border-radius:14px}
 .gctrlhint{color:#8e97ac;font-size:12.5px;margin-top:4px}
+.gdiffrow{display:flex;gap:9px}
 .gstats{color:#fff;font-size:16px;line-height:1.9}
 .growbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .gqover{position:absolute;inset:0;z-index:5;display:none;align-items:flex-end;justify-content:center;padding:0 0 max(20px,5vh);background:linear-gradient(to top,rgba(8,10,16,.82),rgba(8,10,16,.15));animation:gqin .25s}
@@ -1142,7 +1143,8 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
   </div>
   <div class="goverlay" id="gStart">
     <div class="gtitle">⚡ 電子衝刺</div>
-    <div class="gsub">一邊跑酷一邊學電子學！<br>跳躍收集⚡電量、跨過障礙，遇到 ❓ 檢查哨答對就加速衝刺。</div>
+    <div class="gsub">一邊跑酷一邊學電子學！跳躍收集⚡、吃 🛡️護盾 / 🧲磁鐵、連擊加倍。<br><b style="color:var(--ok)">❓ 檢查哨答對的題會自動計入你的學習統計、修正錯題本！</b></div>
+    <div class="gdiffrow" id="gDiffRow"><button class="chip on" data-gd="normal">😀 普通</button><button class="chip" data-gd="hell">🔥 地獄 (×1.5分)</button></div>
     <div class="gbest">🏆 最高分 <b id="gBest1">0</b></div>
     <button class="btn pri gbig" id="gPlay">▶ 開始衝刺</button>
     <div class="gctrlhint">點畫面 / 空白鍵 = 跳（可二段跳）</div>
@@ -1993,12 +1995,14 @@ function gSnd(f,dur,type,vol){if(!S.sound)return;try{if(!gAC)gAC=new (window.Aud
 function gSfx(n){if(n==='jump')gSnd(420,0.12,'square',0.045);else if(n==='coin')gSnd(900,0.07,'triangle',0.05);else if(n==='correct'){gSnd(660,0.1,'square',0.06);setTimeout(()=>gSnd(990,0.13,'square',0.06),90);}else if(n==='wrong')gSnd(150,0.26,'sawtooth',0.06);else if(n==='hurt')gSnd(110,0.32,'sawtooth',0.07);else if(n==='power'){gSnd(720,0.1,'triangle',0.06);setTimeout(()=>gSnd(1080,0.13,'triangle',0.06),80);}else if(n==='go')gSnd(560,0.16,'square',0.06);}
 function gPart(x0,y0,n,color,opt){if(!G)return;opt=opt||{};for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(opt.spd||120)*(0.3+Math.random()*0.9);G.parts.push({x:x0,y:y0,vx:Math.cos(a)*s,vy:Math.sin(a)*s-(opt.up||0),life:opt.life||0.5,max:opt.life||0.5,color:color,size:opt.size||3});}}
 function gPop(x0,y0,text,color){if(!G)return;G.pops.push({x:x0,y:y0,text:text,color:color||'#fff',life:0.95});}
+let gDiff='normal';
 function gStart(){const c=el('gameCanvas');if(!c)return;gResize();
   const w=c.parentElement.clientWidth||window.innerWidth,h=c.parentElement.clientHeight||window.innerHeight;
+  const hell=(gDiff==='hell'),base=hell?320:240;
   G={W:w,H:h,groundY:Math.round(h*0.80),x:Math.max(70,w*0.16),y:Math.round(h*0.80),vy:0,onGround:true,dj:false,
-     speed:240,base:240,dist:0,score:0,coins:0,hearts:3,inv:0,flash:0,t:0,
-     ents:[],parts:[],pops:[],spawnX:w*0.55,lastGate:0,lastPow:0,correct:0,total:0,
-     combo:0,comboMax:0,shield:0,magnet:0,shake:0,level:1,lastMile:0,
+     speed:base,base:base,dist:0,score:0,coins:0,hearts:3,inv:0,flash:0,t:0,
+     ents:[],parts:[],pops:[],spawnX:w*0.55,lastGate:0,lastPow:0,correct:0,total:0,learned:0,fixed:0,
+     combo:0,comboMax:0,shield:0,magnet:0,shake:0,level:1,lastMile:0,hell:hell,smul:hell?1.5:1,
      state:'count',count:3.0,banner:'',bannerT:0,q:null,bgx:0};
   el('gStart').style.display='none';el('gOver').style.display='none';el('gQ').classList.remove('show');
   gHud();gLast=0;cancelAnimationFrame(gRAF);gRAF=requestAnimationFrame(gLoop);}
@@ -2010,11 +2014,11 @@ function gJump(){if(!G||G.state!=='run')return;
 function gSpawn(){const W=G.W,gy=G.groundY;
   if(G.dist-G.lastGate>52){G.lastGate=G.dist;G.ents.push({type:'gate',x:W+40,y:gy,used:false});return;}
   if(G.dist-G.lastPow>85&&Math.random()<0.5){G.lastPow=G.dist;G.ents.push({type:'power',sub:Math.random()<0.5?'shield':'magnet',x:W+40,y:gy-95,r:15});return;}
-  const r=Math.random();
-  if(r<0.4){const n=3+(Math.random()*3|0),by=gy-72-Math.random()*80;
+  const r=Math.random(),cT=G.hell?0.3:0.4,sT=G.hell?0.72:0.68,dT=G.hell?0.9:0.84;
+  if(r<cT){const n=3+(Math.random()*3|0),by=gy-72-Math.random()*80;
     for(let i=0;i<n;i++)G.ents.push({type:'coin',x:W+40+i*32,y:by-Math.sin(i/Math.max(1,n-1)*Math.PI)*40,r:11});}
-  else if(r<0.68){const big=Math.random()<0.35;G.ents.push({type:'spike',x:W+40,y:gy,w:30,h:big?54:32+Math.random()*12});}
-  else if(r<0.84){G.ents.push({type:'spike',x:W+40,y:gy,w:26,h:34});G.ents.push({type:'spike',x:W+72,y:gy,w:26,h:34});}
+  else if(r<sT){const big=Math.random()<(G.hell?0.5:0.35);G.ents.push({type:'spike',x:W+40,y:gy,w:30,h:big?54:32+Math.random()*12});}
+  else if(r<dT){G.ents.push({type:'spike',x:W+40,y:gy,w:26,h:34});G.ents.push({type:'spike',x:W+72,y:gy,w:26,h:34});if(G.hell)G.ents.push({type:'spike',x:W+104,y:gy,w:26,h:34});}
   else{for(let i=0;i<5;i++)G.ents.push({type:'coin',x:W+40+i*30,y:gy-26,r:11});}}
 function gHurt(){if(G.inv>0)return;
   if(G.shield>0){G.shield=0;G.inv=0.8;G.shake=0.35;gSfx('power');gPop(G.x,G.y-32,'🛡️擋下!','#8ab4ff');gPart(G.x,G.y,16,'rgba(138,180,255,.9)',{spd:180,life:0.5,size:3});return;}
@@ -2037,7 +2041,7 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
   for(const p of G.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=500*dt;p.life-=dt;}
   G.parts=G.parts.filter(p=>p.life>0);if(G.parts.length>240)G.parts.splice(0,G.parts.length-240);
   for(const p of G.pops){p.y-=44*dt;p.life-=dt;}G.pops=G.pops.filter(p=>p.life>0);
-  G.score=Math.floor(G.dist)+G.coins*5+G.correct*50;gHud();}
+  G.score=Math.round((Math.floor(G.dist)+G.coins*5+G.correct*50)*(G.smul||1));gHud();}
 function gAsk(){if(!G)return;G.state='quiz';G.q=pickGameQ();G.total++;
   el('gqMeta').textContent='❓ 檢查哨 ・ 第'+G.q.ch+'章 '+esc(G.q.type)+'　答對加速＋電量';
   el('gqStem').textContent=G.q.stem;
@@ -2046,12 +2050,15 @@ function gAsk(){if(!G)return;G.state='quiz';G.q=pickGameQ();G.total++;
 function gAnswer(L){if(!G||G.state!=='quiz'||!G.q)return;const q=G.q,ok=(L===q.answer);
   el('gqOpts').querySelectorAll('.gqopt').forEach(b=>{b.disabled=true;if(b.dataset.gl===q.answer)b.classList.add('gok');else if(b.dataset.gl===L&&!ok)b.classList.add('gno');});
   if(ok){G.correct++;G.combo++;G.comboMax=Math.max(G.comboMax,G.combo);const mult=1+Math.floor(G.combo/2),gain=8*mult;G.coins+=gain;G.speed=Math.min(590,G.speed+75);G.flash=0.4;gSfx('correct');
-    gPop(G.x,G.y-42,'+'+gain+'⚡'+(G.combo>=2?(' x'+G.combo+'🔥'):''),'#46c98a');gPart(G.x,G.y,16,'rgba(70,201,138,.9)',{spd:175,life:0.5,size:3});}
+    gPop(G.x,G.y-42,'+'+gain+'⚡'+(G.combo>=2?(' x'+G.combo+'🔥'):''),'#46c98a');gPart(G.x,G.y,16,'rgba(70,201,138,.9)',{spd:175,life:0.5,size:3});
+    const prev=S.answers[q.id],fresh=(prev!==q.answer);                 // 把遊戲答對的題計入學習統計（只記「新答對」的，避免重播灌水）
+    if(fresh){S.answers[q.id]=q.answer;if(typeof srUpdate==='function')srUpdate(q.id,true);if(typeof recordStudyDay==='function')recordStudyDay();if(typeof bumpDaily==='function')bumpDaily();G.learned++;if(prev)G.fixed++;save();gPop(G.x,G.y-70,prev?'📚 修正錯題!':'📚 已學會!','#8ab4ff');}}
   else{G.combo=0;G.hearts--;G.shake=0.4;gSfx('wrong');gHud();}
   setTimeout(()=>{el('gQ').classList.remove('show');if(!G)return;if(G.hearts<=0){gOver();}else{G.q=null;G.state='run';}},ok?700:1350);}
 function gOver(){if(!G)return;G.state='over';const nb=G.score>gameBest();setGameBest(G.score);gSfx('hurt');
   el('gOverTitle').textContent=nb?'🏆 新紀錄！':'遊戲結束';
-  el('gStats').innerHTML='本局 <b style="color:var(--gold);font-size:22px">'+G.score+'</b> 分<br>跑了 '+Math.floor(G.dist)+'m ・ 答對 '+G.correct+'/'+G.total+' ・ 連擊 '+G.comboMax+'🔥 ・ ⚡'+G.coins;
+  el('gStats').innerHTML='本局 <b style="color:var(--gold);font-size:22px">'+G.score+'</b> 分'+(G.hell?' 🔥地獄':'')+'<br>跑了 '+Math.floor(G.dist)+'m ・ 答對 '+G.correct+'/'+G.total+' ・ 連擊 '+G.comboMax+'🔥 ・ ⚡'+G.coins
+    +(G.learned?('<br><span style="color:var(--ok);font-weight:800">📚 學會並計入學習統計 '+G.learned+' 題'+(G.fixed?('（修正錯題 '+G.fixed+'）'):'')+'</span>'):'');
   el('gBest2').textContent=gameBest();el('gOver').style.display='flex';cancelAnimationFrame(gRAF);}
 function gLoop(ts){if(!G)return;if(!gLast)gLast=ts;let dt=(ts-gLast)/1000;gLast=ts;if(dt>0.05)dt=0.05;if(dt<0)dt=0;
   if(G.state==='run')gTick(dt);else if(G.state==='count'){G.count-=dt;if(G.count<=0){G.state='run';G.banner='GO!';G.bannerT=0.7;gSfx('go');}}
@@ -2099,6 +2106,7 @@ function openGame(){if(examLock()){toast('🔒 考試進行中，已停用','no'
 function closeGame(){cancelAnimationFrame(gRAF);gRAF=0;G=null;el('gameModal').classList.remove('show');}
 el('gameBtn')&&el('gameBtn').addEventListener('click',openGame);
 el('gPlay').addEventListener('click',gStart);
+el('gDiffRow').addEventListener('click',e=>{const b=e.target.closest('[data-gd]');if(!b)return;gDiff=b.dataset.gd;[...el('gDiffRow').children].forEach(c=>c.classList.toggle('on',c===b));});
 el('gAgain').addEventListener('click',gStart);
 el('gQuit').addEventListener('click',closeGame);
 el('gClose').addEventListener('click',closeGame);
