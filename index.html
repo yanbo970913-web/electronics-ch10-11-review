@@ -2013,10 +2013,11 @@ function startBgm(){stopBgm();try{if(!gAC)gAC=new (window.AudioContext||window.w
 function stopBgm(){if(gBgmTimer){clearInterval(gBgmTimer);gBgmTimer=null;}}
 function gPart(x0,y0,n,color,opt){if(!G)return;opt=opt||{};for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(opt.spd||120)*(0.3+Math.random()*0.9);G.parts.push({x:x0,y:y0,vx:Math.cos(a)*s,vy:Math.sin(a)*s-(opt.up||0),life:opt.life||0.5,max:opt.life||0.5,color:color,size:opt.size||3});}}
 function gPop(x0,y0,text,color){if(!G)return;G.pops.push({x:x0,y:y0,text:text,color:color||'#fff',life:0.95});}
-function gHeal(){if(!G)return;if(G.hearts>=5){gPop(G.x,G.y-44,'❤️ 已滿血','#ff6b8a');return;}G.hearts++;gSfx('power');gPop(G.x,G.y-44,'❤️ 補血 +1','#ff6b8a');gPart(G.x,G.y,16,'rgba(255,120,150,.9)',{spd:165,life:0.55,size:3});gHud();}
+function gVibe(p){if(S.sound&&typeof navigator!=='undefined'&&navigator.vibrate){try{navigator.vibrate(p);}catch(e){}}}   // 📳 觸覺回饋（跟 S.sound；桌機無作用）
+function gHeal(){if(!G)return;if(G.hearts>=5){gPop(G.x,G.y-44,'❤️ 已滿血','#ff6b8a');return;}G.hearts++;gSfx('power');gVibe(18);gPop(G.x,G.y-44,'❤️ 補血 +1','#ff6b8a');gPart(G.x,G.y,16,'rgba(255,120,150,.9)',{spd:165,life:0.55,size:3});gHud();}
 function gCoin(n){if(!G)return;G.coins+=n;G.coinHeal=(G.coinHeal||0)+n;while(G.coinHeal>=60){G.coinHeal-=60;gHeal();}}
 let gDiff='normal',gSkin=localStorage.getItem('gskin')||'opamp';
-const GSKINS=[{id:'opamp',n:'🔺 運放',req:0},{id:'gold',n:'⭐ 黃金',req:300},{id:'chip',n:'🟩 晶片',req:800},{id:'ghost',n:'👻 幽靈',req:1500}];
+const GSKINS=[{id:'opamp',n:'🔺 運放',req:0},{id:'gold',n:'⭐ 黃金',req:300},{id:'chip',n:'🟩 晶片',req:800},{id:'ghost',n:'👻 幽靈',req:1500},{id:'tran',n:'🔴 電晶體',req:2500},{id:'star',n:'🌟 大師',req:4000}];
 function renderSkinRow(){const r=el('gSkinRow');if(!r)return;const best=gameBest();
   if(gameBest()<(GSKINS.find(s=>s.id===gSkin)||{req:0}).req)gSkin='opamp';   // 防呆：選了又被鎖回預設
   r.innerHTML=GSKINS.map(s=>{const lk=best<s.req;return '<button class="chip'+(s.id===gSkin?' on':'')+(lk?' locked':'')+'" data-gs="'+s.id+'" data-req="'+s.req+'">'+(lk?'🔒 '+s.req+'分':s.n)+'</button>';}).join('');}
@@ -2073,7 +2074,7 @@ function gSpawn(){const W=G.W,gy=G.groundY;
   else{for(let i=0;i<5;i++)G.ents.push({type:'coin',x:W+40+i*30,y:gy-26,r:11});}}
 function gHurt(){if(G.inv>0||G.boost>0)return;
   if(G.shield>0){G.shield=0;G.inv=0.8;G.shake=0.35;gSfx('power');gPop(G.x,G.y-32,'🛡️擋下!','#8ab4ff');gPart(G.x,G.y,16,'rgba(138,180,255,.9)',{spd:180,life:0.5,size:3});return;}
-  G.hearts--;G.combo=0;G.inv=1.3;G.flash=0.35;G.shake=0.5;gSfx('hurt');gPart(G.x,G.y,18,'rgba(229,104,127,.9)',{spd:200,life:0.55,size:3});gHud();if(G.hearts<=0)gOver();}
+  G.hearts--;G.combo=0;G.inv=1.3;G.flash=0.35;G.shake=0.5;gSfx('hurt');gVibe(45);gPart(G.x,G.y,18,'rgba(229,104,127,.9)',{spd:200,life:0.55,size:3});gHud();if(G.hearts<=0)gOver();}
 function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
   if(G.dist-G.lastMile>=150){G.lastMile=Math.floor(G.dist/150)*150;G.level++;G.biome=(G.level-1)%GBIOME.length;G.banner='⚡ LV '+G.level+' 加速！';G.bannerT=1.6;G.base+=24;G.shake=0.3;gSfx('go');gPop(G.x,G.y-44,'加速!','#f3c969');}
   if(!G.bossActive&&G.dist>=G.nextBoss)startBoss();
@@ -2122,7 +2123,7 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
 function startBoss(){if(!G||G.bossActive)return;const hp=Math.min(8,4+(G.bossCount||0));G.bossActive=true;G.boss={hp:hp,maxhp:hp,x:G.W*0.8,y:G.groundY-95,by:G.groundY-95,t:0,atkT:1.4,qT:0.7,enraged:false};
   G.ents=G.ents.filter(e=>e.type==='coin'||e.type==='plat');G.banner='👑 第 '+((G.bossCount||0)+1)+' 隻 BOSS！答對 ❓ 反擊！';G.bannerT=2.2;G.shake=0.45;gSfx('go');}
 function defeatBoss(){if(!G||!G.boss)return;const B=G.boss;G.bossActive=false;G.boss=null;G.bossCount=(G.bossCount||0)+1;G.ents=G.ents.filter(e=>e.type!=='shot'&&e.type!=='laser');
-  const rw=25+G.bossCount*5;gCoin(rw);G.hearts=Math.min(5,G.hearts+1);G.banner='👑 擊敗第 '+G.bossCount+' 隻！+'+rw+'⚡ +1❤️';G.bannerT=2.4;G.shake=0.55;gSfx('power');gHud();
+  const rw=25+G.bossCount*5;gCoin(rw);G.hearts=Math.min(5,G.hearts+1);G.banner='👑 擊敗第 '+G.bossCount+' 隻！+'+rw+'⚡ +1❤️';G.bannerT=2.4;G.shake=0.55;gSfx('power');gVibe([35,40,90]);gHud();
   try{const a=gAch();a.bossKills=(a.bossKills||0)+1;saveAch(a);}catch(e){}
   for(let i=0;i<34;i++)gPart(B.x,B.y,1,['#f3c969','#46c98a','#8ab4ff','#ff6b8a','#a98bff'][i%5],{spd:250,up:55,life:0.9,size:3});
   G.nextBoss=Math.floor(G.dist)+210;}
@@ -2206,6 +2207,12 @@ function gDraw(){if(!gCtx||!G)return;const c=gCol(),W=G.W,H=G.H,gy=G.groundY,x=g
       x.shadowBlur=0;x.fillStyle='#10131c';x.fillRect(-12,-11,8,8);x.fillRect(4,-11,8,8);x.fillStyle='#fff';x.fillRect(-10,-9,3,3);x.fillRect(6,-9,3,3);}
     else if(gSkin==='ghost'){x.shadowColor=c.vio;x.shadowBlur=16;x.fillStyle=c.vio;x.beginPath();x.arc(0,-2,19,Math.PI,0);x.lineTo(19,16);x.lineTo(11,9);x.lineTo(4,16);x.lineTo(-4,9);x.lineTo(-11,16);x.lineTo(-19,9);x.closePath();x.fill();
       x.shadowBlur=0;x.fillStyle='#fff';x.beginPath();x.arc(-7,-4,5,0,7);x.fill();x.beginPath();x.arc(7,-4,5,0,7);x.fill();x.fillStyle='#10131c';x.beginPath();x.arc(-5,-3,2.4,0,7);x.fill();x.beginPath();x.arc(9,-3,2.4,0,7);x.fill();}
+    else if(gSkin==='tran'){x.shadowColor=c.no;x.shadowBlur=16;x.fillStyle=c.no;
+      x.beginPath();x.moveTo(-16,-18);x.lineTo(13,-18);x.quadraticCurveTo(20,-18,20,0);x.quadraticCurveTo(20,16,13,16);x.lineTo(-16,16);x.closePath();x.fill();
+      x.strokeStyle=c.no;x.lineWidth=3;x.lineCap='round';for(let i=-1;i<=1;i++){x.beginPath();x.moveTo(i*8-2,16);x.lineTo(i*8-2,24);x.stroke();}
+      x.shadowBlur=0;x.fillStyle='#fff';x.beginPath();x.arc(0,-3,6,0,7);x.fill();x.fillStyle='#10131c';x.beginPath();x.arc(2,-3,3,0,7);x.fill();}
+    else if(gSkin==='star'){x.shadowColor=c.gold;x.shadowBlur=18;x.fillStyle=c.gold;x.beginPath();for(let i=0;i<10;i++){const rr=(i%2?9:22),a=-Math.PI/2+i*Math.PI/5;if(i)x.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);else x.moveTo(Math.cos(a)*rr,Math.sin(a)*rr);}x.closePath();x.fill();
+      x.shadowBlur=0;x.fillStyle='#10131c';x.beginPath();x.arc(-5,-2,2.4,0,7);x.fill();x.beginPath();x.arc(5,-2,2.4,0,7);x.fill();}
     else{const gold=(gSkin==='gold');x.shadowColor=gold?c.gold:c.b2;x.shadowBlur=16;
       const grd=x.createLinearGradient(-20,-22,22,22);if(gold){grd.addColorStop(0,'#ffe88a');grd.addColorStop(1,c.gold);}else{grd.addColorStop(0,c.b2);grd.addColorStop(1,c.b);}x.fillStyle=grd;
       x.beginPath();x.moveTo(-20,-22);x.lineTo(22,0);x.lineTo(-20,22);x.closePath();x.fill();
