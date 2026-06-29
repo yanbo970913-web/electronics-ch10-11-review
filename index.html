@@ -2108,7 +2108,7 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
         if(G.vy>0&&py<e.y-e.h*0.3){e.dead=true;G.vy=-440;G.onGround=false;G.dj=false;G.shake=0.22;gCoin(4);gSfx('coin');gPop(e.x,e.y-e.h-8,'擊落! +4⚡','#f3c969');gPart(e.x,e.y,14,'rgba(111,208,255,.95)',{spd:175,life:0.5,size:3});}
         else if(G.boost>0){e.dead=true;gCoin(2);gSfx('coin');gPart(e.x,e.y,12,'rgba(111,208,255,.95)',{spd:175,life:0.45,size:3});}
         else if(G.inv<=0){gHurt();e.dead=true;}}}
-    else if(e.type==='spike'){if(Math.abs(e.x-px)<e.w/2+pr-8&&py>e.y-e.h-2){if(G.boost>0){e.dead=true;gCoin(1);gSfx('coin');gPart(e.x,e.y-e.h,10,'rgba(243,201,105,.9)',{spd:160,life:0.4,size:3});}else{gHurt();e.dead=true;}}}
+    else if(e.type==='spike'){if(Math.abs(e.x-px)<e.w/2+pr-8&&py>e.y-e.h-2){if(G.boost>0){e.dead=true;gCoin(1);gSfx('coin');gPart(e.x,e.y-e.h,10,'rgba(243,201,105,.9)',{spd:160,life:0.4,size:3});}else if(G.inv<=0){gHurt();e.dead=true;}}}
     else if(e.type==='shot'){if(Math.abs(e.x-px)<13+pr-4&&Math.abs(e.y-py)<13+pr-4){if(G.boost>0){e.dead=true;gPart(e.x,e.y,8,'rgba(243,201,105,.9)',{spd:150,life:0.35,size:2.5});}else if(G.inv<=0){gHurt();e.dead=true;}}}
     else if(e.type==='laser'){if(e.warn>0)e.warn-=dt;else if(e.active>0){e.active-=dt;if(Math.abs(py-e.y)<20&&G.boost<=0&&G.inv<=0)gHurt();}else e.dead=true;}
     else if(e.type==='spring'){if(!e.used&&Math.abs(e.x-px)<e.w/2+pr-2&&py>e.y-e.h-4&&G.vy>=0){e.used=true;G.vy=-1280;G.onGround=false;G.dj=false;G.shake=0.22;gSfx('go');gPop(e.x,e.y-e.h-12,'BOING! 🚀','#a98bff');gPart(e.x,e.y-e.h,14,'rgba(169,139,255,.9)',{up:30,spd:160,life:0.5,size:3});}}
@@ -2121,26 +2121,29 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
   for(const p of G.pops){p.y-=44*dt;p.life-=dt;}G.pops=G.pops.filter(p=>p.life>0);
   G.score=Math.round((Math.floor(G.dist)+G.coins*5+G.correct*50)*(G.smul||1));gHud();}
 function startBoss(){if(!G||G.bossActive)return;const hp=Math.min(8,4+(G.bossCount||0));G.bossActive=true;G.boss={hp:hp,maxhp:hp,x:G.W*0.8,y:G.groundY-95,by:G.groundY-95,t:0,atkT:1.4,qT:0.7,enraged:false};
-  G.ents=G.ents.filter(e=>e.type==='coin'||e.type==='plat');G.banner='👑 第 '+((G.bossCount||0)+1)+' 隻 BOSS！答對 ❓ 反擊！';G.bannerT=2.2;G.shake=0.45;gSfx('go');}
-function defeatBoss(){if(!G||!G.boss)return;const B=G.boss;G.bossActive=false;G.boss=null;G.bossCount=(G.bossCount||0)+1;G.ents=G.ents.filter(e=>e.type!=='shot'&&e.type!=='laser');
+  G.ents=G.ents.filter(e=>e.type==='coin'||e.type==='plat');G.banner='👑 第 '+((G.bossCount||0)+1)+' 隻 BOSS！答對 ❓ 反擊！';G.bannerT=2.2;G.shake=0.45;gSfx('go');startBgm();}
+function defeatBoss(){if(!G||!G.boss)return;const B=G.boss;G.bossActive=false;G.boss=null;G.bossCount=(G.bossCount||0)+1;G.ents=G.ents.filter(e=>e.type!=='shot'&&e.type!=='laser'&&!e.minion);
   const rw=25+G.bossCount*5;gCoin(rw);G.hearts=Math.min(5,G.hearts+1);G.banner='👑 擊敗第 '+G.bossCount+' 隻！+'+rw+'⚡ +1❤️';G.bannerT=2.4;G.shake=0.55;gSfx('power');gVibe([35,40,90]);gHud();
   try{const a=gAch();a.bossKills=(a.bossKills||0)+1;saveAch(a);}catch(e){}
   for(let i=0;i<34;i++)gPart(B.x,B.y,1,['#f3c969','#46c98a','#8ab4ff','#ff6b8a','#a98bff'][i%5],{spd:250,up:55,life:0.9,size:3});
-  G.nextBoss=Math.floor(G.dist)+210;}
+  G.nextBoss=Math.floor(G.dist)+210;startBgm();}
 function gAsk(){if(!G)return;G.state='quiz';G.q=pickGameQ();G.total++;
   el('gqMeta').textContent='❓ 檢查哨 ・ 第'+G.q.ch+'章 '+esc(G.q.type)+'　答對加速＋電量';
   el('gqStem').textContent=G.q.stem;
   el('gqOpts').innerHTML=['A','B','C','D'].map(L=>'<button class="gqopt" data-gl="'+L+'">('+L+') '+esc(G.q.opts[L])+'</button>').join('');
   el('gQ').classList.add('show');}
-function gAnswer(L){if(!G||G.state!=='quiz'||!G.q)return;const q=G.q,ok=(L===q.answer);
+function gAnswer(L){if(!G||G.state!=='quiz'||!G.q)return;const q=G.q,ok=(L===q.answer),capturedG=G;
   el('gqOpts').querySelectorAll('.gqopt').forEach(b=>{b.disabled=true;if(b.dataset.gl===q.answer)b.classList.add('gok');else if(b.dataset.gl===L&&!ok)b.classList.add('gno');});
-  if(ok){G.correct++;G.combo++;G.comboMax=Math.max(G.comboMax,G.combo);const mult=1+Math.floor(G.combo/2),gain=8*mult;G.coins+=gain;G.speed=Math.min(590,G.speed+75);G.flash=0.4;gSfx('correct');
+  if(ok){G.correct++;G.combo++;G.comboMax=Math.max(G.comboMax,G.combo);const mult=1+Math.floor(G.combo/2),gain=8*mult;gCoin(gain);G.speed=Math.min(590,G.speed+75);G.flash=0.4;gSfx('correct');
     gPop(G.x,G.y-42,'+'+gain+'⚡'+(G.combo>=2?(' x'+G.combo+'🔥'):''),'#46c98a');gPart(G.x,G.y,16,'rgba(70,201,138,.9)',{spd:175,life:0.5,size:3});
     const prev=S.answers[q.id],fresh=(prev!==q.answer);                 // 把遊戲答對的題計入學習統計（只記「新答對」的，避免重播灌水）
     if(fresh){S.answers[q.id]=q.answer;if(typeof srUpdate==='function')srUpdate(q.id,true);if(typeof recordStudyDay==='function')recordStudyDay();if(typeof bumpDaily==='function')bumpDaily();G.learned++;if(prev)G.fixed++;save();gPop(G.x,G.y-70,prev?'📚 修正錯題!':'📚 已學會!','#8ab4ff');}
     if(G.bossActive&&G.boss){G.boss.hp--;G.shake=0.4;gPop(G.W/2,G.H*0.32,'⚡ 反擊！BOSS -1','#46c98a');if(G.boss.hp<=0)defeatBoss();else{G.boss.qT=2.4;if(!G.boss.enraged&&G.boss.hp<=Math.ceil(G.boss.maxhp/2)){G.boss.enraged=true;G.banner='👑 BOSS 暴走！攻擊變猛！';G.bannerT=1.9;G.shake=0.5;gSfx('hurt');}}}}
-  else{G.combo=0;G.hearts--;G.shake=0.4;gSfx('wrong');gHud();if(G.bossActive&&G.boss)G.boss.qT=2.4;}
-  setTimeout(()=>{el('gQ').classList.remove('show');if(!G)return;if(G.hearts<=0){gOver();}else{G.q=null;G.state='run';}},ok?700:1350);}
+  else{G.combo=0;G.shake=0.4;gSfx('wrong');
+    if(G.shield>0){G.shield=0;G.inv=0.8;gSfx('power');gPop(G.x,G.y-32,'🛡️擋下!','#8ab4ff');}
+    else if(G.inv<=0&&G.boost<=0){G.hearts--;gVibe(45);}
+    gHud();if(G.bossActive&&G.boss)G.boss.qT=2.4;}
+  setTimeout(()=>{el('gQ').classList.remove('show');if(!G||G!==capturedG)return;if(G.hearts<=0){gOver();}else{G.q=null;G.state='run';}},ok?700:1350);}
 function gOver(){if(!G)return;G.state='over';const nb=G.score>gameBest();setGameBest(G.score);pushRun(G.score);const gotAch=checkAch();gSfx('hurt');
   el('gOverTitle').textContent=nb?'🏆 新紀錄！':'遊戲結束';
   el('gStats').innerHTML='本局 <b style="color:var(--gold);font-size:22px">'+G.score+'</b> 分'+(G.hell?' 🔥地獄':'')+'<br>跑了 '+Math.floor(G.dist)+'m ・ 答對 '+G.correct+'/'+G.total+' ・ 連擊 '+G.comboMax+'🔥 ・ ⚡'+G.coins+(G.bossCount?(' ・ 擊敗👑'+G.bossCount):'')
@@ -2258,7 +2261,7 @@ el('gqOpts').addEventListener('click',e=>{const b=e.target.closest('[data-gl]');
 document.addEventListener('keydown',e=>{if(!el('gameModal').classList.contains('show'))return;
   if(e.key===' '||e.key==='ArrowUp'){e.preventDefault();if(G&&G.state==='run')gJump();else if(G&&G.state==='pause')gResume();else if(el('gStart').style.display!=='none')gStart();}
   else if(e.key==='p'||e.key==='P'){if(G&&G.state==='run')gPause();else if(G&&G.state==='pause')gResume();}
-  else if(e.key==='Escape'){if(G&&G.state==='run')gPause();else closeGame();}});
+  else if(e.key==='Escape'){if(G&&G.state==='run')gPause();else if(!G||G.state==='over'||G.state==='pause')closeGame();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&el('gameModal').classList.contains('show')&&G&&G.state==='run')gPause();});
 window.addEventListener('resize',()=>{if(el('gameModal').classList.contains('show'))gResize();});
 function setActive(id,scroll){
