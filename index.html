@@ -404,7 +404,8 @@ svg.ckt{display:block;width:100%;height:auto}
 .gamewrap{position:relative;width:100vw;height:100vh;height:100dvh;max-width:none;background:#0a0c12;overflow:hidden;border-radius:0}
 #gameCanvas{display:block;width:100%;height:100%;touch-action:none}
 .ghud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 14px;z-index:3;pointer-events:none}
-.ghud .iconbtn{pointer-events:auto;margin-left:auto;background:rgba(0,0,0,.35)}
+.ghud .iconbtn{pointer-events:auto;margin-left:8px;background:rgba(0,0,0,.35)}
+.ghud #gPauseBtn{margin-left:auto}
 .ghearts{font-size:19px;letter-spacing:2px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
 .gscore{font-size:17px;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}
 .gscore .gdist{font-weight:700;color:#cdd6ff;font-size:13px}
@@ -1139,11 +1140,12 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
   <div class="ghud">
     <span class="ghearts" id="gHearts">❤️❤️❤️</span>
     <span class="gscore">⚡<b id="gScore">0</b><span class="gdist"> ・ <span id="gDist">0</span>m</span></span>
+    <button class="iconbtn" id="gPauseBtn" title="暫停" aria-label="暫停">⏸</button>
     <button class="iconbtn" id="gClose" title="離開遊戲" aria-label="離開遊戲">✕</button>
   </div>
   <div class="goverlay" id="gStart">
     <div class="gtitle">⚡ 電子衝刺</div>
-    <div class="gsub">跳躍收集⚡（每 60 個自動補血）、踩扁 👾 怪物得電量、吃 ❤️補血 / 🛡️護盾 / 🧲磁鐵、連擊加倍。<br><b style="color:var(--ok)">❓ 檢查哨答對的題會自動計入學習統計、修正錯題本！</b></div>
+    <div class="gsub">跳躍收集⚡（每 60 個補血）、跳上 ⬛ 高台拿高處好料、踩扁 👾 怪物、吃 ❤️🛡️🧲、連擊加倍。<br><b style="color:var(--ok)">❓ 檢查哨答對的題會自動計入學習統計、修正錯題本！</b></div>
     <div class="gdiffrow" id="gDiffRow"><button class="chip on" data-gd="normal">😀 普通</button><button class="chip" data-gd="hell">🔥 地獄 (×1.5分)</button></div>
     <div class="gbest">🏆 最高分 <b id="gBest1">0</b></div>
     <button class="btn pri gbig" id="gPlay">▶ 開始衝刺</button>
@@ -1159,6 +1161,12 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
     <div class="gstats" id="gStats"></div>
     <div class="gbest">🏆 最高分 <b id="gBest2">0</b></div>
     <div class="growbtns"><button class="btn pri gbig" id="gAgain">🔁 再玩一次</button><button class="btn" id="gQuit">離開</button></div>
+  </div>
+  <div class="goverlay" id="gPause" style="display:none">
+    <div class="gtitle">⏸ 暫停</div>
+    <div class="gstats" id="gPauseStat"></div>
+    <div class="growbtns"><button class="btn pri gbig" id="gResumeBtn">▶ 繼續</button><button class="btn" id="gPauseQuit">離開</button></div>
+    <div class="gctrlhint">P 或 Esc 可暫停 / 繼續　・　切到別的分頁會自動暫停</div>
   </div>
 </div></div>
 
@@ -2003,10 +2011,10 @@ function gStart(){const c=el('gameCanvas');if(!c)return;gResize();
   const hell=(gDiff==='hell'),base=hell?320:240;
   G={W:w,H:h,groundY:Math.round(h*0.80),x:Math.max(70,w*0.16),y:Math.round(h*0.80),vy:0,onGround:true,dj:false,
      speed:base,base:base,dist:0,score:0,coins:0,hearts:3,inv:0,flash:0,t:0,
-     ents:[],parts:[],pops:[],spawnX:w*0.55,lastGate:0,lastPow:0,lastHeart:0,coinHeal:0,correct:0,total:0,learned:0,fixed:0,
+     ents:[],parts:[],pops:[],spawnX:w*0.55,lastGate:0,lastPow:0,lastHeart:0,lastPlat:0,coinHeal:0,correct:0,total:0,learned:0,fixed:0,
      combo:0,comboMax:0,shield:0,magnet:0,shake:0,level:1,lastMile:0,hell:hell,smul:hell?1.5:1,
      state:'count',count:3.0,banner:'',bannerT:0,q:null,bgx:0};
-  el('gStart').style.display='none';el('gOver').style.display='none';el('gQ').classList.remove('show');
+  el('gStart').style.display='none';el('gOver').style.display='none';el('gPause').style.display='none';el('gQ').classList.remove('show');
   gHud();gLast=0;cancelAnimationFrame(gRAF);gRAF=requestAnimationFrame(gLoop);}
 function gHud(){if(!G)return;let h='';const mx=Math.max(5,G.hearts);for(let i=0;i<mx;i++)h+=i<G.hearts?'❤️':'🤍';
   el('gHearts').textContent=h;el('gScore').textContent=G.score;el('gDist').textContent=Math.floor(G.dist);}
@@ -2017,6 +2025,11 @@ function gSpawn(){const W=G.W,gy=G.groundY;
   if(G.dist-G.lastGate>52){G.lastGate=G.dist;G.ents.push({type:'gate',x:W+40,y:gy,used:false});return;}
   if(G.dist-G.lastPow>85&&Math.random()<0.5){G.lastPow=G.dist;G.ents.push({type:'power',sub:Math.random()<0.5?'shield':'magnet',x:W+40,y:gy-95,r:15});return;}
   if(G.hearts<5&&G.dist-G.lastHeart>72&&Math.random()<(G.hearts<=1?0.85:0.5)){G.lastHeart=G.dist;G.ents.push({type:'heart',x:W+40,y:gy-90-Math.random()*30,r:15});return;}
+  if(G.dist-G.lastPlat>58&&Math.random()<0.5){G.lastPlat=G.dist;const pw=100+Math.random()*70,ph=gy-(100+Math.random()*75);   // 可攀爬高台＋上面有好料
+    G.ents.push({type:'plat',x:W+50+pw/2,y:ph,w:pw});
+    const n=3+(Math.random()*2|0);for(let i=0;i<n;i++)G.ents.push({type:'coin',x:W+50+pw*0.18+i*28,y:ph-30,r:11});
+    if(Math.random()<0.45){if(G.hearts<5&&Math.random()<0.5)G.ents.push({type:'heart',x:W+50+pw*0.78,y:ph-32,r:15});else G.ents.push({type:'power',sub:Math.random()<0.5?'shield':'magnet',x:W+50+pw*0.78,y:ph-32,r:15});}
+    return;}
   const r=Math.random(),cT=G.hell?0.28:0.38,mT=G.hell?0.52:0.56,sT=G.hell?0.74:0.78,dT=G.hell?0.9:0.88;
   if(r<cT){const n=3+(Math.random()*3|0),by=gy-72-Math.random()*80;
     for(let i=0;i<n;i++)G.ents.push({type:'coin',x:W+40+i*32,y:by-Math.sin(i/Math.max(1,n-1)*Math.PI)*40,r:11});}
@@ -2030,7 +2043,10 @@ function gHurt(){if(G.inv>0)return;
 function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
   if(G.dist-G.lastMile>=150){G.lastMile=Math.floor(G.dist/150)*150;G.level++;G.banner='⚡ LV '+G.level+' 加速！';G.bannerT=1.6;G.base+=24;G.shake=0.3;gSfx('go');gPop(G.x,G.y-44,'加速!','#f3c969');}
   G.speed=Math.min(575,G.base+G.dist*0.85);G.bgx-=G.speed*dt;
-  G.vy+=2000*dt;G.y+=G.vy*dt;if(G.y>=G.groundY){G.y=G.groundY;G.vy=0;G.onGround=true;G.dj=false;}else G.onGround=false;
+  const prevY=G.y;G.vy+=2000*dt;G.y+=G.vy*dt;
+  let floorY=G.groundY;                                  // 單向高台：只有從上方落下/站立才會被托住
+  if(G.vy>=0){for(const e of G.ents){if(e.type==='plat'&&Math.abs(e.x-G.x)<e.w/2+12&&prevY<=e.y+1&&e.y<floorY)floorY=e.y;}}
+  if(G.y>=floorY){G.y=floorY;G.vy=0;G.onGround=true;G.dj=false;}else G.onGround=false;
   if(G.inv>0)G.inv-=dt;if(G.flash>0)G.flash-=dt;if(G.shield>0)G.shield-=dt;if(G.magnet>0)G.magnet-=dt;if(G.shake>0)G.shake-=dt;if(G.bannerT>0)G.bannerT-=dt;
   for(const e of G.ents){e.x-=G.speed*dt;
     if((e.type==='coin'||e.type==='heart')&&G.magnet>0){const dx=G.x-e.x,dy=G.y-e.y,d=Math.hypot(dx,dy)||1;if(d<220){e.x+=dx/d*300*dt;e.y+=dy/d*300*dt;}}}
@@ -2095,6 +2111,9 @@ function gDraw(){if(!gCtx||!G)return;const c=gCol(),W=G.W,H=G.H,gy=G.groundY,x=g
       x.fillStyle='#fff';x.beginPath();x.arc(-7,-6,5,0,7);x.fill();x.beginPath();x.arc(7,-6,5,0,7);x.fill();
       x.fillStyle='#10131c';x.beginPath();x.arc(-6,-5,2.4,0,7);x.fill();x.beginPath();x.arc(8,-5,2.4,0,7);x.fill();
       x.strokeStyle='#10131c';x.lineWidth=2;x.beginPath();x.moveTo(-12,-12);x.lineTo(-3,-8);x.moveTo(12,-12);x.lineTo(3,-8);x.stroke();x.restore();}
+    else if(e.type==='plat'){const w=e.w;x.save();x.shadowColor=c.b;x.shadowBlur=12;x.fillStyle='rgba(91,140,255,.28)';
+      x.beginPath();x.moveTo(e.x-w/2,e.y);x.lineTo(e.x+w/2,e.y);x.lineTo(e.x+w/2-7,e.y+13);x.lineTo(e.x-w/2+7,e.y+13);x.closePath();x.fill();
+      x.shadowBlur=0;x.strokeStyle=c.b2;x.lineWidth=3;x.lineCap='round';x.beginPath();x.moveTo(e.x-w/2+3,e.y);x.lineTo(e.x+w/2-3,e.y);x.stroke();x.restore();}
     else if(e.type==='gate'){x.save();x.globalAlpha=e.used?0.25:0.9;x.fillStyle=c.vio;x.shadowColor=c.vio;x.shadowBlur=18;
       x.fillRect(e.x-4,gy-150,8,150);x.font='900 26px sans-serif';x.textAlign='center';x.fillStyle=c.gold;x.shadowBlur=8;x.fillText('❓',e.x,gy-160);x.restore();}}
   for(const p of G.parts){x.globalAlpha=Math.max(0,p.life/p.max);x.fillStyle=p.color;x.fillRect(p.x-p.size,p.y-p.size,p.size*2,p.size*2);}x.globalAlpha=1;
@@ -2114,22 +2133,31 @@ function gDraw(){if(!gCtx||!G)return;const c=gCol(),W=G.W,H=G.H,gy=G.groundY,x=g
   if(G.flash>0){x.fillStyle=(G.flash>0.38?'rgba(70,201,138,':'rgba(229,104,127,')+(Math.min(0.35,G.flash))+')';x.fillRect(0,0,W,H);}
   x.restore();
   if(G.state==='count'){const n=Math.ceil(G.count),f=G.count-(n-1);x.save();x.globalAlpha=Math.min(1,f*2.2);x.fillStyle=c.b2;x.textAlign='center';x.textBaseline='middle';x.shadowColor=c.b;x.shadowBlur=22;x.font='900 '+Math.round(72+(1-f)*34)+'px sans-serif';x.fillText(n>0?String(n):'GO!',W/2,H*0.45);x.restore();}}
+function gPause(){if(!G||G.state!=='run')return;G.state='pause';cancelAnimationFrame(gRAF);gRAF=0;
+  el('gPauseStat').innerHTML='⚡ '+G.score+' ・ '+Math.floor(G.dist)+'m ・ '+G.hearts+'♥ ・ 答對 '+G.correct;
+  el('gPause').style.display='flex';}
+function gResume(){if(!G||G.state!=='pause')return;el('gPause').style.display='none';G.state='run';gLast=0;cancelAnimationFrame(gRAF);gRAF=requestAnimationFrame(gLoop);}
 function openGame(){if(examLock()){toast('🔒 考試進行中，已停用','no');return;}if(typeof stopTTS==='function')stopTTS();
   el('gameModal').classList.add('show');el('gBest1').textContent=gameBest();
-  el('gStart').style.display='flex';el('gOver').style.display='none';el('gQ').classList.remove('show');
+  el('gStart').style.display='flex';el('gOver').style.display='none';el('gPause').style.display='none';el('gQ').classList.remove('show');
   setTimeout(gResize,30);}
-function closeGame(){cancelAnimationFrame(gRAF);gRAF=0;G=null;el('gameModal').classList.remove('show');}
+function closeGame(){cancelAnimationFrame(gRAF);gRAF=0;G=null;el('gPause').style.display='none';el('gameModal').classList.remove('show');}
 el('gameBtn')&&el('gameBtn').addEventListener('click',openGame);
 el('gPlay').addEventListener('click',gStart);
 el('gDiffRow').addEventListener('click',e=>{const b=e.target.closest('[data-gd]');if(!b)return;gDiff=b.dataset.gd;[...el('gDiffRow').children].forEach(c=>c.classList.toggle('on',c===b));});
 el('gAgain').addEventListener('click',gStart);
 el('gQuit').addEventListener('click',closeGame);
 el('gClose').addEventListener('click',closeGame);
+el('gPauseBtn').addEventListener('click',gPause);
+el('gResumeBtn').addEventListener('click',gResume);
+el('gPauseQuit').addEventListener('click',closeGame);
 el('gameCanvas').addEventListener('pointerdown',e=>{e.preventDefault();gJump();});
 el('gqOpts').addEventListener('click',e=>{const b=e.target.closest('[data-gl]');if(b)gAnswer(b.dataset.gl);});
 document.addEventListener('keydown',e=>{if(!el('gameModal').classList.contains('show'))return;
-  if(e.key===' '||e.key==='ArrowUp'){e.preventDefault();if(G&&G.state==='run')gJump();else if(el('gStart').style.display!=='none')gStart();}
-  else if(e.key==='Escape'){closeGame();}});
+  if(e.key===' '||e.key==='ArrowUp'){e.preventDefault();if(G&&G.state==='run')gJump();else if(G&&G.state==='pause')gResume();else if(el('gStart').style.display!=='none')gStart();}
+  else if(e.key==='p'||e.key==='P'){if(G&&G.state==='run')gPause();else if(G&&G.state==='pause')gResume();}
+  else if(e.key==='Escape'){if(G&&G.state==='run')gPause();else closeGame();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&el('gameModal').classList.contains('show')&&G&&G.state==='run')gPause();});
 window.addEventListener('resize',()=>{if(el('gameModal').classList.contains('show'))gResize();});
 function setActive(id,scroll){
   activeId=id;document.querySelectorAll('.q.active').forEach(x=>x.classList.remove('active'));
