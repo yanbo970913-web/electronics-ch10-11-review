@@ -400,6 +400,35 @@ svg.ckt{display:block;width:100%;height:auto}
 .cmditem .ci{font-size:18px;width:24px;text-align:center;flex:0 0 auto}
 .cmditem.sel,.cmditem:hover{background:linear-gradient(135deg,var(--brand),var(--violet));color:#fff}
 .cmdfoot{padding:9px 16px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);text-align:center}
+.gamemodal{padding:0}
+.gamewrap{position:relative;width:100vw;height:100vh;height:100dvh;max-width:none;background:#0a0c12;overflow:hidden;border-radius:0}
+#gameCanvas{display:block;width:100%;height:100%;touch-action:none}
+.ghud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 14px;z-index:3;pointer-events:none}
+.ghud .iconbtn{pointer-events:auto;margin-left:auto;background:rgba(0,0,0,.35)}
+.ghearts{font-size:19px;letter-spacing:2px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.gscore{font-size:17px;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.gscore .gdist{font-weight:700;color:#cdd6ff;font-size:13px}
+.goverlay{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(12,16,28,.72),rgba(8,10,16,.93))}
+.gtitle{font-size:38px;font-weight:900;background:linear-gradient(135deg,var(--brand2),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 6px 30px rgba(91,140,255,.4);letter-spacing:1px}
+.gsub{color:#cfd6e6;font-size:14.5px;line-height:1.8;max-width:440px}
+.gbest{font-size:15px;color:var(--gold);font-weight:800}
+.gbig{font-size:19px;padding:13px 34px;border-radius:14px}
+.gctrlhint{color:#8e97ac;font-size:12.5px;margin-top:4px}
+.gstats{color:#fff;font-size:16px;line-height:1.9}
+.growbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.gqover{position:absolute;inset:0;z-index:5;display:none;align-items:flex-end;justify-content:center;padding:0 0 max(20px,5vh);background:linear-gradient(to top,rgba(8,10,16,.82),rgba(8,10,16,.15));animation:gqin .25s}
+.gqover.show{display:flex}
+@keyframes gqin{from{opacity:0}to{opacity:1}}
+.gqcard{width:min(620px,94vw);background:linear-gradient(160deg,var(--surface),var(--surface2));border:1px solid var(--brand);border-radius:18px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:gqup .3s cubic-bezier(.2,.9,.3,1)}
+@keyframes gqup{from{transform:translateY(40px);opacity:.4}to{transform:translateY(0);opacity:1}}
+.gqmeta{font-size:12.5px;font-weight:800;color:var(--brand2);margin-bottom:7px}
+.gqstem{font-size:16px;font-weight:700;line-height:1.7;margin-bottom:13px}
+.gqopts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.gqopt{text-align:left;font-size:14px;font-weight:600;padding:11px 13px;border-radius:11px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;transition:transform .1s,border-color .15s,background .15s}
+.gqopt:hover{border-color:var(--brand);transform:translateY(-2px)}
+.gqopt.gok{background:color-mix(in srgb,var(--ok) 28%,transparent);border-color:var(--ok);color:#fff;font-weight:900}
+.gqopt.gno{background:color-mix(in srgb,var(--no) 28%,transparent);border-color:var(--no);color:#fff}
+@media(max-width:520px){.gqopts{grid-template-columns:1fr}.gtitle{font-size:30px}}
 .flashbox{max-width:620px;width:94vw}
 .flashtop{display:flex;align-items:center;gap:10px}
 .flashprog{margin-left:auto;font-weight:800;color:var(--muted);font-size:13px}
@@ -632,6 +661,7 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
         <button class="btn" id="shuffle">🔀 洗牌</button>
         <button class="btn" id="redoWrong">🔁 錯題重練</button>
         <button class="btn" id="flashBtn">🃏 翻卡速記</button>
+        <button class="btn pri" id="gameBtn">🎮 衝刺遊戲</button>
         <button class="btn" id="sheetBtn">🖨 複習講義</button>
         <button class="btn" id="printWrong">🖨 印錯題</button>
         <button class="btn danger" id="reset">↺ 清除</button>
@@ -1103,6 +1133,33 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
   </div>
 </div></div>
 
+<div class="modal gamemodal" id="gameModal"><div class="gamewrap">
+  <canvas id="gameCanvas"></canvas>
+  <div class="ghud">
+    <span class="ghearts" id="gHearts">❤️❤️❤️</span>
+    <span class="gscore">⚡<b id="gScore">0</b><span class="gdist"> ・ <span id="gDist">0</span>m</span></span>
+    <button class="iconbtn" id="gClose" title="離開遊戲" aria-label="離開遊戲">✕</button>
+  </div>
+  <div class="goverlay" id="gStart">
+    <div class="gtitle">⚡ 電子衝刺</div>
+    <div class="gsub">一邊跑酷一邊學電子學！<br>跳躍收集⚡電量、跨過障礙，遇到 ❓ 檢查哨答對就加速衝刺。</div>
+    <div class="gbest">🏆 最高分 <b id="gBest1">0</b></div>
+    <button class="btn pri gbig" id="gPlay">▶ 開始衝刺</button>
+    <div class="gctrlhint">點畫面 / 空白鍵 = 跳（可二段跳）</div>
+  </div>
+  <div class="gqover" id="gQ"><div class="gqcard">
+    <div class="gqmeta" id="gqMeta"></div>
+    <div class="gqstem" id="gqStem"></div>
+    <div class="gqopts" id="gqOpts"></div>
+  </div></div>
+  <div class="goverlay gover" id="gOver">
+    <div class="gtitle" id="gOverTitle">遊戲結束</div>
+    <div class="gstats" id="gStats"></div>
+    <div class="gbest">🏆 最高分 <b id="gBest2">0</b></div>
+    <div class="growbtns"><button class="btn pri gbig" id="gAgain">🔁 再玩一次</button><button class="btn" id="gQuit">離開</button></div>
+  </div>
+</div></div>
+
 <div class="modal" id="flashModal"><div class="mbox flashbox">
   <div class="flashtop">
     <b style="font-size:15px">🃏 翻卡速記</b>
@@ -1448,15 +1505,15 @@ const LS_BASE='opa_quiz_v2', PREFS='opa_prefs';
 const QMAP=new Map(QUESTIONS.map(q=>[q.id,q]));const Q=id=>QMAP.get(id);   // O(1) 查表，取代每次 find
 
 /* ---------- persistence（進度依帳號分離，不同人不會互相看到） ---------- */
-let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false,mockHistory:[],review:{},studyDays:{},notes:{},hours:{},_mt:0};
+let S={answers:{},bookmarks:{},bestStreak:0,theme:'dark',sound:false,mockHistory:[],review:{},studyDays:{},notes:{},hours:{},gameBest:0,_mt:0};
 try{const p=JSON.parse(localStorage.getItem(PREFS)||'{}');if(p.theme)S.theme=p.theme;if(typeof p.sound==='boolean')S.sound=p.sound;if(p.music&&typeof p.music==='object')S.music=p.music;}catch(e){}   // 只還原裝置層級偏好(主題/音效/音樂)，進度等登入後依帳號載入
 var supaUser=null, pushTimer=null;     // cloud-sync state
 function userKey(uid){return LS_BASE+':'+uid;}
-function resetProgress(){S.answers={};S.bookmarks={};S.bestStreak=0;S.mockHistory=[];S.review={};S.studyDays={};S.notes={};S.hours={};S._mt=0;}     // 換帳號/登出時清空進度
+function resetProgress(){S.answers={};S.bookmarks={};S.bestStreak=0;S.mockHistory=[];S.review={};S.studyDays={};S.notes={};S.hours={};S.gameBest=0;S._mt=0;}     // 換帳號/登出時清空進度
 function loadProgressFor(uid){if(typeof hardExitExam==='function')hardExitExam();resetProgress();   // 換帳號先收掉上一人的考試，再載入此帳號進度
   try{const d=JSON.parse(localStorage.getItem(userKey(uid))||'{}');
     if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;
-    if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;if(Array.isArray(d.mockHistory))S.mockHistory=d.mockHistory;
+    if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;if(typeof d.gameBest==='number')S.gameBest=d.gameBest;if(Array.isArray(d.mockHistory))S.mockHistory=d.mockHistory;
     if(d.review&&typeof d.review==='object')S.review=d.review;
     if(d.studyDays&&typeof d.studyDays==='object')S.studyDays=d.studyDays;
     if(d.notes&&typeof d.notes==='object')S.notes=d.notes;
@@ -1466,7 +1523,7 @@ function loadProgressFor(uid){if(typeof hardExitExam==='function')hardExitExam()
 function save(){try{
     S._mt=Date.now();                                                                       // 進度最後修改時間(用於雲端 last-write-wins)
     localStorage.setItem(PREFS,JSON.stringify({theme:S.theme,sound:S.sound,music:S.music}));   // 偏好：裝置層級
-    if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,_mt:S._mt})); // 進度：依帳號分開存
+    if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,gameBest:S.gameBest,_mt:S._mt})); // 進度：依帳號分開存
   }catch(e){}
   if(supaUser){clearTimeout(pushTimer);pushTimer=setTimeout(function(){if(typeof pushCloud==='function')pushCloud().catch(function(){});},700);}}
 
@@ -1820,6 +1877,7 @@ const CMDS=[
   {ic:'🎲',label:'隨機測驗',run:()=>el('rqBtn').click()},
   {ic:'🔁',label:'錯題重練',run:()=>el('redoWrong').click()},
   {ic:'🃏',label:'翻卡速記模式',run:()=>openFlash()},
+  {ic:'🎮',label:'電子衝刺遊戲',run:()=>openGame()},
   {ic:'🖨',label:'匯出複習講義（錯題/收藏/備註）',run:()=>el('sheetBtn').click()},
   {ic:'🎯',label:'練習我的弱點主題',run:()=>{const cand=TOPICS.map(t=>{const qs=QUESTIONS.filter(q=>q.topicKey===t.key);const a=qs.filter(q=>S.answers[q.id]).length,c=qs.filter(q=>S.answers[q.id]===q.answer).length;return{key:t.key,a,acc:a?c/a:1};}).filter(x=>x.a>=3).sort((a,b)=>a.acc-b.acc);if(cand.length)practiceWeak(cand[0].key);else toast('多答幾題後才有弱點推薦','');}},
   {ic:'💾',label:'匯出進度備份',run:()=>exportProgress()},
@@ -1917,6 +1975,104 @@ document.addEventListener('keydown',e=>{if(!el('flashModal').classList.contains(
   else if(e.key==='ArrowRight'){e.preventDefault();flashNav(1);}
   else if(e.key==='ArrowLeft'){e.preventDefault();flashNav(-1);}
   else if(e.key==='Escape'){closeFlash();}});
+/* ===== ⚡ 電子衝刺：跑酷答題遊戲 ===== */
+let G=null,gRAF=0,gLast=0,gCtx=null;
+function gameBest(){return (S.gameBest|0)||0;}
+function setGameBest(v){if((v|0)>(S.gameBest||0)){S.gameBest=v|0;save();}}
+function gCol(){const cs=getComputedStyle(document.body),g=n=>(cs.getPropertyValue(n)||'').trim();
+  return {b:g('--brand')||'#5b8cff',b2:g('--brand2')||'#8ab4ff',ok:g('--ok')||'#46c98a',gold:g('--gold')||'#f3c969',no:g('--no')||'#e5687f',vio:g('--violet')||'#a98bff'};}
+function gResize(){const c=el('gameCanvas');if(!c)return;const wrap=c.parentElement,dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=wrap.clientWidth||window.innerWidth,h=wrap.clientHeight||window.innerHeight;
+  c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);c.style.width=w+'px';c.style.height=h+'px';
+  gCtx=c.getContext('2d');gCtx.setTransform(dpr,0,0,dpr,0,0);if(G){G.W=w;G.H=h;G.groundY=Math.round(h*0.80);}}
+function pickGameQ(){let pool=QUESTIONS.filter(q=>S.answers[q.id]&&S.answers[q.id]!==q.answer);
+  if(pool.length<3)pool=QUESTIONS.filter(q=>!S.answers[q.id]);if(pool.length<1)pool=QUESTIONS;
+  return pool[Math.floor(Math.random()*pool.length)];}
+function gStart(){const c=el('gameCanvas');if(!c)return;gResize();
+  const w=c.parentElement.clientWidth||window.innerWidth,h=c.parentElement.clientHeight||window.innerHeight;
+  G={W:w,H:h,groundY:Math.round(h*0.80),x:Math.max(70,w*0.16),y:Math.round(h*0.80),vy:0,onGround:true,dj:false,
+     speed:240,base:240,dist:0,score:0,coins:0,hearts:3,inv:0,flash:0,t:0,
+     ents:[],spawnX:w*0.6,lastGate:0,correct:0,total:0,state:'run',q:null,bgx:0};
+  el('gStart').style.display='none';el('gOver').style.display='none';el('gQ').classList.remove('show');
+  gHud();gLast=0;cancelAnimationFrame(gRAF);gRAF=requestAnimationFrame(gLoop);}
+function gHud(){if(!G)return;let h='';for(let i=0;i<3;i++)h+=i<G.hearts?'❤️':'🤍';
+  el('gHearts').textContent=h;el('gScore').textContent=G.score;el('gDist').textContent=Math.floor(G.dist);}
+function gJump(){if(!G||G.state!=='run')return;if(G.onGround){G.vy=-760;G.onGround=false;}else if(!G.dj){G.vy=-650;G.dj=true;}}
+function gSpawn(){const W=G.W,gy=G.groundY;
+  if(G.dist-G.lastGate>52){G.lastGate=G.dist;G.ents.push({type:'gate',x:W+40,y:gy,used:false});return;}
+  const r=Math.random();
+  if(r<0.45){const n=3+(Math.random()*3|0),by=gy-70-Math.random()*80;
+    for(let i=0;i<n;i++)G.ents.push({type:'coin',x:W+40+i*32,y:by-Math.sin(i/Math.max(1,n-1)*Math.PI)*38,r:11});}
+  else if(r<0.78){G.ents.push({type:'spike',x:W+40,y:gy,w:30,h:30+Math.random()*16});}
+  else{for(let i=0;i<4;i++)G.ents.push({type:'coin',x:W+40+i*30,y:gy-26,r:11});}}
+function gHurt(){if(G.inv>0)return;G.hearts--;G.inv=1.3;G.flash=0.35;gHud();if(G.hearts<=0)gOver();}
+function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;G.speed=Math.min(540,G.base+G.dist*0.85);G.bgx-=G.speed*dt;
+  G.vy+=2000*dt;G.y+=G.vy*dt;if(G.y>=G.groundY){G.y=G.groundY;G.vy=0;G.onGround=true;G.dj=false;}else G.onGround=false;
+  if(G.inv>0)G.inv-=dt;if(G.flash>0)G.flash-=dt;
+  for(const e of G.ents)e.x-=G.speed*dt;
+  G.spawnX-=G.speed*dt;if(G.spawnX<=0){gSpawn();G.spawnX=G.W*(0.45+Math.random()*0.4);}
+  const px=G.x,py=G.y,pr=20;
+  for(const e of G.ents){if(e.dead)continue;
+    if(e.type==='coin'){if(Math.abs(e.x-px)<e.r+pr&&Math.abs(e.y-py)<e.r+pr){e.dead=true;G.coins++;}}
+    else if(e.type==='spike'){if(Math.abs(e.x-px)<e.w/2+pr-8&&py>e.y-e.h-2){gHurt();e.dead=true;}}
+    else if(e.type==='gate'){if(!e.used&&e.x<=px){e.used=true;gAsk();}}}
+  G.ents=G.ents.filter(e=>!e.dead&&e.x>-90);
+  G.score=Math.floor(G.dist)+G.coins*5+G.correct*50;gHud();}
+function gAsk(){if(!G)return;G.state='quiz';G.q=pickGameQ();G.total++;
+  el('gqMeta').textContent='❓ 檢查哨 ・ 第'+G.q.ch+'章 '+esc(G.q.type)+'　答對加速＋電量';
+  el('gqStem').textContent=G.q.stem;
+  el('gqOpts').innerHTML=['A','B','C','D'].map(L=>'<button class="gqopt" data-gl="'+L+'">('+L+') '+esc(G.q.opts[L])+'</button>').join('');
+  el('gQ').classList.add('show');}
+function gAnswer(L){if(!G||G.state!=='quiz'||!G.q)return;const q=G.q,ok=(L===q.answer);
+  el('gqOpts').querySelectorAll('.gqopt').forEach(b=>{b.disabled=true;if(b.dataset.gl===q.answer)b.classList.add('gok');else if(b.dataset.gl===L&&!ok)b.classList.add('gno');});
+  if(ok){G.correct++;G.coins+=8;G.speed=Math.min(560,G.speed+70);G.flash=0.4;}else{G.hearts--;gHud();}
+  setTimeout(()=>{el('gQ').classList.remove('show');if(!G)return;if(G.hearts<=0){gOver();}else{G.q=null;G.state='run';}},ok?700:1350);}
+function gOver(){if(!G)return;G.state='over';const nb=G.score>gameBest();setGameBest(G.score);
+  el('gOverTitle').textContent=nb?'🏆 新紀錄！':'遊戲結束';
+  el('gStats').innerHTML='本局 <b style="color:var(--gold);font-size:22px">'+G.score+'</b> 分<br>跑了 '+Math.floor(G.dist)+'m ・ 答對 '+G.correct+'/'+G.total+' ・ ⚡'+G.coins;
+  el('gBest2').textContent=gameBest();el('gOver').style.display='flex';cancelAnimationFrame(gRAF);}
+function gLoop(ts){if(!G)return;if(!gLast)gLast=ts;let dt=(ts-gLast)/1000;gLast=ts;if(dt>0.05)dt=0.05;if(dt<0)dt=0;
+  if(G.state==='run')gTick(dt);gDraw();if(G.state!=='over')gRAF=requestAnimationFrame(gLoop);}
+function gDraw(){if(!gCtx||!G)return;const c=gCol(),W=G.W,H=G.H,gy=G.groundY,x=gCtx;
+  x.clearRect(0,0,W,H);
+  const bg=x.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#0b0f1c');bg.addColorStop(1,'#0a0c14');x.fillStyle=bg;x.fillRect(0,0,W,H);
+  x.save();x.globalAlpha=.16;x.strokeStyle=c.b2;x.lineWidth=1;const gs=46,off=((G.bgx*0.4)%gs+gs)%gs;
+  for(let gx=-off;gx<W;gx+=gs){x.beginPath();x.moveTo(gx,0);x.lineTo(gx,gy);x.stroke();}
+  for(let gyl=gs;gyl<gy;gyl+=gs){x.beginPath();x.moveTo(0,gyl);x.lineTo(W,gyl);x.stroke();}x.restore();
+  x.fillStyle='rgba(91,140,255,.08)';x.fillRect(0,gy,W,H-gy);
+  x.strokeStyle=c.b;x.lineWidth=3;x.shadowColor=c.b;x.shadowBlur=14;x.beginPath();x.moveTo(0,gy);x.lineTo(W,gy);x.stroke();x.shadowBlur=0;
+  for(const e of G.ents){
+    if(e.type==='coin'){const pulse=0.5+0.5*Math.sin(G.t*6+e.x*0.05);x.save();x.translate(e.x,e.y);
+      x.shadowColor=c.gold;x.shadowBlur=12;x.fillStyle=c.gold;x.beginPath();
+      const s=e.r*(0.8+0.2*pulse);x.moveTo(-s*0.35,-s);x.lineTo(s*0.5,-s*0.15);x.lineTo(s*0.05,-s*0.15);x.lineTo(s*0.35,s);x.lineTo(-s*0.5,s*0.1);x.lineTo(-s*0.05,s*0.1);x.closePath();x.fill();x.restore();}
+    else if(e.type==='spike'){x.save();x.fillStyle=c.no;x.shadowColor=c.no;x.shadowBlur=10;x.beginPath();
+      x.moveTo(e.x-e.w/2,e.y);x.lineTo(e.x,e.y-e.h);x.lineTo(e.x+e.w/2,e.y);x.closePath();x.fill();x.restore();}
+    else if(e.type==='gate'){x.save();x.globalAlpha=e.used?0.25:0.9;x.fillStyle=c.vio;x.shadowColor=c.vio;x.shadowBlur=18;
+      x.fillRect(e.x-4,gy-150,8,150);x.font='900 26px sans-serif';x.textAlign='center';x.fillStyle=c.gold;x.shadowBlur=8;x.fillText('❓',e.x,gy-160);x.restore();}}
+  // player op-amp triangle
+  const blink=(G.inv>0&&(Math.floor(G.t*14)%2===0));x.save();x.translate(G.x,G.y);
+  if(!blink){const sq=G.onGround?1:1.06;x.scale(1,1/sq);x.shadowColor=c.b2;x.shadowBlur=16;
+    const grd=x.createLinearGradient(-20,-22,22,22);grd.addColorStop(0,c.b2);grd.addColorStop(1,c.b);x.fillStyle=grd;
+    x.beginPath();x.moveTo(-20,-22);x.lineTo(22,0);x.lineTo(-20,22);x.closePath();x.fill();
+    x.shadowBlur=0;x.fillStyle='#fff';x.beginPath();x.arc(-6,-7,4.2,0,7);x.fill();x.fillStyle='#10131c';x.beginPath();x.arc(-4.5,-7,2,0,7);x.fill();}
+  x.restore();
+  if(G.flash>0){x.fillStyle=(G.flash>0.38?'rgba(70,201,138,':'rgba(229,104,127,')+(Math.min(0.35,G.flash))+')';x.fillRect(0,0,W,H);}}
+function openGame(){if(examLock()){toast('🔒 考試進行中，已停用','no');return;}if(typeof stopTTS==='function')stopTTS();
+  el('gameModal').classList.add('show');el('gBest1').textContent=gameBest();
+  el('gStart').style.display='flex';el('gOver').style.display='none';el('gQ').classList.remove('show');
+  setTimeout(gResize,30);}
+function closeGame(){cancelAnimationFrame(gRAF);gRAF=0;G=null;el('gameModal').classList.remove('show');}
+el('gameBtn')&&el('gameBtn').addEventListener('click',openGame);
+el('gPlay').addEventListener('click',gStart);
+el('gAgain').addEventListener('click',gStart);
+el('gQuit').addEventListener('click',closeGame);
+el('gClose').addEventListener('click',closeGame);
+el('gameCanvas').addEventListener('pointerdown',e=>{e.preventDefault();gJump();});
+el('gqOpts').addEventListener('click',e=>{const b=e.target.closest('[data-gl]');if(b)gAnswer(b.dataset.gl);});
+document.addEventListener('keydown',e=>{if(!el('gameModal').classList.contains('show'))return;
+  if(e.key===' '||e.key==='ArrowUp'){e.preventDefault();if(G&&G.state==='run')gJump();else if(el('gStart').style.display!=='none')gStart();}
+  else if(e.key==='Escape'){closeGame();}});
+window.addEventListener('resize',()=>{if(el('gameModal').classList.contains('show'))gResize();});
 function setActive(id,scroll){
   activeId=id;document.querySelectorAll('.q.active').forEach(x=>x.classList.remove('active'));
   const c=el('q'+id);if(c){c.classList.add('active');if(scroll)c.scrollIntoView({block:'center',behavior:'smooth'});}
@@ -2039,7 +2195,7 @@ el('adaptBtn').addEventListener('click',startAdaptive);
 el('adaptbar').addEventListener('click',e=>{if(e.target.closest('#adaptNext'))nextAdaptive();else if(e.target.closest('#adaptEnd'))endAdapt(false);});
 el('reset').addEventListener('click',()=>{
   askConfirm('清除全部紀錄','確定清除所有作答、收藏與連對紀錄？（不影響題庫）',()=>{
-    cancelMock();S.answers={};S.bookmarks={};S.bestStreak=0;streak=0;save();submitted=false;hideResult();randomSet=null;
+    cancelMock();S.answers={};S.bookmarks={};S.bestStreak=0;S.gameBest=0;streak=0;save();submitted=false;hideResult();randomSet=null;
     order=QUESTIONS.map(q=>q.id);chip='all';[...el('chips').children].forEach((c,i)=>c.classList.toggle('on',i===0));
     render();renderDash();toast('已清除全部紀錄','');
   });
@@ -2757,6 +2913,7 @@ function mergeCloud(c){
   if(c.studyDays&&typeof c.studyDays==='object'){S.studyDays=S.studyDays||{};for(const dd in c.studyDays)S.studyDays[dd]=Math.max(S.studyDays[dd]||0,c.studyDays[dd]);}   // 學習日曆：累積取大，不丟任一裝置
   if(c.hours&&typeof c.hours==='object'){S.hours=S.hours||{};for(const hh in c.hours)S.hours[hh]=Math.max(S.hours[hh]||0,c.hours[hh]);}   // 時段分析：同樣累積取大
   if(typeof c.bestStreak==='number')S.bestStreak=Math.max(S.bestStreak||0,c.bestStreak);   // 連對只增
+  if(typeof c.gameBest==='number')S.gameBest=Math.max(S.gameBest||0,c.gameBest);   // 遊戲最高分只增
   if(Array.isArray(c.mockHistory)){const seen={};(S.mockHistory||[]).forEach(x=>seen[x.t]=1);   // 模擬考紀錄只增不刪
     S.mockHistory=(S.mockHistory||[]).concat(c.mockHistory.filter(x=>!seen[x.t])).sort((a,b)=>b.t-a.t).slice(0,30);}
 }
@@ -2764,12 +2921,12 @@ async function pullCloud(){if(!supaUser)return null;const sb=await loadSupa();
   const r=await sb.from('user_progress').select('data').eq('user_id',supaUser.id).maybeSingle();
   if(r.error){console.warn('pull',r.error);return null;}return r.data?r.data.data:null;}
 async function pushCloud(){if(!supaUser)return;const sb=await loadSupa();
-  const payload={answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,_mt:S._mt||Date.now()};
+  const payload={answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,gameBest:S.gameBest,_mt:S._mt||Date.now()};
   const r=await sb.from('user_progress').upsert({user_id:supaUser.id,data:payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
   if(r.error)console.warn('push',r.error);}
 async function syncOnLogin(){try{const c=await pullCloud();if(c)mergeCloud(c);save();render();renderDash();await pushCloud();}catch(e){console.warn(e);}}
 /* ---- 跨裝置即時同步（Realtime 訂閱 + 輪詢後援）---- */
-function saveLocalOnly(){try{if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,_mt:S._mt}));}catch(e){}}
+function saveLocalOnly(){try{if(supaUser)localStorage.setItem(userKey(supaUser.id),JSON.stringify({answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,gameBest:S.gameBest,_mt:S._mt}));}catch(e){}}
 function applyRemote(c){
   if(!c||!supaUser)return;
   if(typeof mockOn==='function'&&mockOn())return;                      // 考試中不打擾，交卷後會再同步
@@ -2816,7 +2973,7 @@ el('authCancel').addEventListener('click',()=>el('authModal').classList.remove('
 el('authClose').addEventListener('click',()=>el('authModal').classList.remove('show'));
 /* 進度匯出 / 匯入備份 */
 function exportProgress(){
-  const data={_app:'opa-review',_v:1,_t:Date.now(),answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,daily:daily};
+  const data={_app:'opa-review',_v:1,_t:Date.now(),answers:S.answers,bookmarks:S.bookmarks,bestStreak:S.bestStreak,mockHistory:S.mockHistory,review:S.review,studyDays:S.studyDays,notes:S.notes,hours:S.hours,gameBest:S.gameBest,daily:daily};
   try{const blob=new Blob([JSON.stringify(data)],{type:'application/json'});const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='電子學複習進度_'+todayStr()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
     toast('⬇ 已匯出進度備份','ok');}catch(e){toast('匯出失敗','no');}
@@ -2827,7 +2984,7 @@ function importProgress(file){
   r.onload=()=>{if(examLock()){toast('🔒 考試進行中無法匯入備份','no');return;}let d;try{d=JSON.parse(r.result);}catch(e){toast('檔案格式錯誤','no');return;}
     if(!d||typeof d!=='object'||d._app!=='opa-review'){toast('不是有效的備份檔','no');return;}
     askConfirm('匯入進度備份','匯入會以備份「覆蓋」目前的作答、收藏、錯題複習、備註與紀錄。確定要還原嗎？',()=>{
-      if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;
+      if(d.answers)S.answers=d.answers;if(d.bookmarks)S.bookmarks=d.bookmarks;if(typeof d.bestStreak==='number')S.bestStreak=d.bestStreak;if(typeof d.gameBest==='number')S.gameBest=d.gameBest;
       if(Array.isArray(d.mockHistory))S.mockHistory=d.mockHistory;if(d.review&&typeof d.review==='object')S.review=d.review;
       if(d.studyDays&&typeof d.studyDays==='object')S.studyDays=d.studyDays;if(d.notes&&typeof d.notes==='object')S.notes=d.notes;
       if(d.hours&&typeof d.hours==='object')S.hours=d.hours;
