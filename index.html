@@ -415,7 +415,8 @@ svg.ckt{display:block;width:100%;height:auto}
 .gbest{font-size:15px;color:var(--gold);font-weight:800}
 .gbig{font-size:19px;padding:13px 34px;border-radius:14px}
 .gctrlhint{color:#8e97ac;font-size:12.5px;margin-top:4px}
-.gdiffrow{display:flex;gap:9px}
+.gdiffrow{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+.gdiffrow .chip.locked{opacity:.5}
 .gstats{color:#fff;font-size:16px;line-height:1.9}
 .growbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .gqover{position:absolute;inset:0;z-index:5;display:none;align-items:flex-end;justify-content:center;padding:0 0 max(20px,5vh);background:linear-gradient(to top,rgba(8,10,16,.82),rgba(8,10,16,.15));animation:gqin .25s}
@@ -1147,8 +1148,9 @@ body.examlock{-webkit-user-select:none;-moz-user-select:none;user-select:none;-w
     <div class="gtitle">⚡ 電子衝刺</div>
     <div class="gsub">跳躍收集⚡（每 60 個補血）、跳上 ⬛ 高台、踩 🌀 彈簧、開 🎁 寶箱、踩扁 👾🐦 怪物、吃 ❤️🛡️🧲🚀、連擊加倍；每 200m 出現 👑 BOSS——答對 ❓ 就能反擊擊敗牠！<br><b style="color:var(--ok)">❓ 檢查哨答對的題會自動計入學習統計、修正錯題本！</b></div>
     <div class="gdiffrow" id="gDiffRow"><button class="chip on" data-gd="normal">😀 普通</button><button class="chip" data-gd="hell">🔥 地獄 (×1.5分)</button></div>
-    <div class="gdiffrow" id="gSkinRow"><button class="chip on" data-gs="opamp">🔺 運放</button><button class="chip" data-gs="gold">⭐ 黃金</button><button class="chip" data-gs="chip">🟩 晶片</button><button class="chip" data-gs="ghost">👻 幽靈</button></div>
+    <div class="gdiffrow" id="gSkinRow"></div>
     <div class="gbest">🏆 最高分 <b id="gBest1">0</b></div>
+    <div id="gRecent" style="font-size:12.5px;color:var(--muted)"></div>
     <button class="btn pri gbig" id="gPlay">▶ 開始衝刺</button>
     <div class="gctrlhint">點畫面 / 空白鍵 = 跳（可二段跳）</div>
   </div>
@@ -2014,6 +2016,12 @@ function gPop(x0,y0,text,color){if(!G)return;G.pops.push({x:x0,y:y0,text:text,co
 function gHeal(){if(!G)return;if(G.hearts>=5){gPop(G.x,G.y-44,'❤️ 已滿血','#ff6b8a');return;}G.hearts++;gSfx('power');gPop(G.x,G.y-44,'❤️ 補血 +1','#ff6b8a');gPart(G.x,G.y,16,'rgba(255,120,150,.9)',{spd:165,life:0.55,size:3});gHud();}
 function gCoin(n){if(!G)return;G.coins+=n;G.coinHeal=(G.coinHeal||0)+n;while(G.coinHeal>=60){G.coinHeal-=60;gHeal();}}
 let gDiff='normal',gSkin=localStorage.getItem('gskin')||'opamp';
+const GSKINS=[{id:'opamp',n:'🔺 運放',req:0},{id:'gold',n:'⭐ 黃金',req:300},{id:'chip',n:'🟩 晶片',req:800},{id:'ghost',n:'👻 幽靈',req:1500}];
+function renderSkinRow(){const r=el('gSkinRow');if(!r)return;const best=gameBest();
+  if(gameBest()<(GSKINS.find(s=>s.id===gSkin)||{req:0}).req)gSkin='opamp';   // 防呆：選了又被鎖回預設
+  r.innerHTML=GSKINS.map(s=>{const lk=best<s.req;return '<button class="chip'+(s.id===gSkin?' on':'')+(lk?' locked':'')+'" data-gs="'+s.id+'" data-req="'+s.req+'">'+(lk?'🔒 '+s.req+'分':s.n)+'</button>';}).join('');}
+function gameRuns(){try{return JSON.parse(localStorage.getItem('game_runs')||'[]');}catch(e){return [];}}
+function pushRun(sc){try{const a=gameRuns();a.unshift(sc|0);localStorage.setItem('game_runs',JSON.stringify(a.slice(0,8)));}catch(e){}}
 function gStart(){const c=el('gameCanvas');if(!c)return;gResize();
   const w=c.parentElement.clientWidth||window.innerWidth,h=c.parentElement.clientHeight||window.innerHeight;
   const hell=(gDiff==='hell'),base=hell?320:240;
@@ -2063,10 +2071,10 @@ function gTick(dt){G.t+=dt;G.dist+=G.speed*dt/42;
   if(G.y>=floorY){G.y=floorY;G.vy=0;G.onGround=true;G.dj=false;}else G.onGround=false;
   if(G.inv>0)G.inv-=dt;if(G.flash>0)G.flash-=dt;if(G.shield>0)G.shield-=dt;if(G.magnet>0)G.magnet-=dt;if(G.boost>0)G.boost-=dt;if(G.shake>0)G.shake-=dt;if(G.bannerT>0)G.bannerT-=dt;
   if(G.bossActive&&G.boss){const B=G.boss,gy=G.groundY;B.t+=dt;B.y=B.by+Math.sin(B.t*2)*14;
-    B.atkT-=dt;if(B.atkT<=0){B.atkT=1.15+Math.random()*0.6;const pk=Math.random();
-      if(pk<0.45){const hi=Math.random()<0.3;G.ents.push({type:'shot',x:B.x-30,y:gy-16-(hi?64:0),vx:-(330+G.dist*0.12)});}
-      else if(pk<0.72){G.ents.push({type:'mob',x:G.W+30,y:gy,w:30,h:30,hop:Math.random()<0.5,vy:0,gy0:gy,minion:true});G.banner='👾 召喚小怪！踩掉牠';G.bannerT=0.9;}
-      else{const ly=gy-(Math.random()<0.55?2:72);G.ents.push({type:'laser',x:G.W/2,y:ly,warn:0.85,active:0.5});G.banner=ly<gy-30?'⚡ 高空雷射！趴低（別跳）':'⚡ 地面雷射！跳起來閃';G.bannerT=0.95;gSfx('go');}}
+    B.atkT-=dt;if(B.atkT<=0){B.atkT=(1.15+Math.random()*0.6)*(B.enraged?0.55:1);const pk=Math.random();
+      if(pk<0.45){const hi=Math.random()<0.3;G.ents.push({type:'shot',x:B.x-30,y:gy-16-(hi?64:0),vx:-(330+G.dist*0.12)});if(B.enraged)G.ents.push({type:'shot',x:B.x-30,y:gy-16-(hi?0:64),vx:-(360+G.dist*0.12)});}
+      else if(pk<0.72){G.ents.push({type:'mob',x:G.W+30,y:gy,w:30,h:30,hop:Math.random()<0.5,vy:0,gy0:gy,minion:true});if(B.enraged)G.ents.push({type:'mob',x:G.W+90,y:gy,w:30,h:30,hop:Math.random()<0.5,vy:0,gy0:gy,minion:true});G.banner='👾 召喚小怪！踩掉牠';G.bannerT=0.9;}
+      else{const ly=gy-(Math.random()<0.55?2:72);G.ents.push({type:'laser',x:G.W/2,y:ly,warn:B.enraged?0.55:0.85,active:0.5});G.banner=ly<gy-30?'⚡ 高空雷射！趴低（別跳）':'⚡ 地面雷射！跳起來閃';G.bannerT=0.95;gSfx('go');}}
     B.qT-=dt;if(B.qT<=0&&G.state==='run'){B.qT=99;gAsk();}}
   for(const e of G.ents){if(e.type==='shot')e.x+=e.vx*dt;else e.x-=G.speed*dt;
     if(e.type==='mob'&&e.minion)e.x-=190*dt;
@@ -2115,13 +2123,14 @@ function gAnswer(L){if(!G||G.state!=='quiz'||!G.q)return;const q=G.q,ok=(L===q.a
     gPop(G.x,G.y-42,'+'+gain+'⚡'+(G.combo>=2?(' x'+G.combo+'🔥'):''),'#46c98a');gPart(G.x,G.y,16,'rgba(70,201,138,.9)',{spd:175,life:0.5,size:3});
     const prev=S.answers[q.id],fresh=(prev!==q.answer);                 // 把遊戲答對的題計入學習統計（只記「新答對」的，避免重播灌水）
     if(fresh){S.answers[q.id]=q.answer;if(typeof srUpdate==='function')srUpdate(q.id,true);if(typeof recordStudyDay==='function')recordStudyDay();if(typeof bumpDaily==='function')bumpDaily();G.learned++;if(prev)G.fixed++;save();gPop(G.x,G.y-70,prev?'📚 修正錯題!':'📚 已學會!','#8ab4ff');}
-    if(G.bossActive&&G.boss){G.boss.hp--;G.shake=0.4;gPop(G.W/2,G.H*0.32,'⚡ 反擊！BOSS -1','#46c98a');if(G.boss.hp<=0)defeatBoss();else G.boss.qT=2.4;}}
+    if(G.bossActive&&G.boss){G.boss.hp--;G.shake=0.4;gPop(G.W/2,G.H*0.32,'⚡ 反擊！BOSS -1','#46c98a');if(G.boss.hp<=0)defeatBoss();else{G.boss.qT=2.4;if(!G.boss.enraged&&G.boss.hp<=Math.ceil(G.boss.maxhp/2)){G.boss.enraged=true;G.banner='👑 BOSS 暴走！攻擊變猛！';G.bannerT=1.9;G.shake=0.5;gSfx('hurt');}}}}
   else{G.combo=0;G.hearts--;G.shake=0.4;gSfx('wrong');gHud();if(G.bossActive&&G.boss)G.boss.qT=2.4;}
   setTimeout(()=>{el('gQ').classList.remove('show');if(!G)return;if(G.hearts<=0){gOver();}else{G.q=null;G.state='run';}},ok?700:1350);}
-function gOver(){if(!G)return;G.state='over';const nb=G.score>gameBest();setGameBest(G.score);gSfx('hurt');
+function gOver(){if(!G)return;G.state='over';const nb=G.score>gameBest();setGameBest(G.score);pushRun(G.score);gSfx('hurt');
   el('gOverTitle').textContent=nb?'🏆 新紀錄！':'遊戲結束';
   el('gStats').innerHTML='本局 <b style="color:var(--gold);font-size:22px">'+G.score+'</b> 分'+(G.hell?' 🔥地獄':'')+'<br>跑了 '+Math.floor(G.dist)+'m ・ 答對 '+G.correct+'/'+G.total+' ・ 連擊 '+G.comboMax+'🔥 ・ ⚡'+G.coins
-    +(G.learned?('<br><span style="color:var(--ok);font-weight:800">📚 學會並計入學習統計 '+G.learned+' 題'+(G.fixed?('（修正錯題 '+G.fixed+'）'):'')+'</span>'):'');
+    +(G.learned?('<br><span style="color:var(--ok);font-weight:800">📚 學會並計入學習統計 '+G.learned+' 題'+(G.fixed?('（修正錯題 '+G.fixed+'）'):'')+'</span>'):'')
+    +'<br><span style="color:var(--muted);font-size:12.5px">近期：'+gameRuns().slice(0,5).join(' ・ ')+' 分</span>';
   el('gBest2').textContent=gameBest();el('gOver').style.display='flex';cancelAnimationFrame(gRAF);stopBgm();}
 function gLoop(ts){if(!G)return;if(!gLast)gLast=ts;let dt=(ts-gLast)/1000;gLast=ts;if(dt>0.05)dt=0.05;if(dt<0)dt=0;
   if(G.state==='run')gTick(dt);else if(G.state==='count'){G.count-=dt;if(G.count<=0){G.state='run';G.banner='GO!';G.bannerT=0.7;gSfx('go');}}
@@ -2168,7 +2177,7 @@ function gDraw(){if(!gCtx||!G)return;const c=gCol(),W=G.W,H=G.H,gy=G.groundY,x=g
     else if(e.type==='laser'){x.save();if(e.warn>0){x.globalAlpha=0.35+0.45*(0.5+0.5*Math.sin(G.t*30));x.strokeStyle=c.no;x.lineWidth=3;x.setLineDash([12,9]);x.beginPath();x.moveTo(0,e.y);x.lineTo(W,e.y);x.stroke();}else if(e.active>0){x.shadowColor=c.no;x.shadowBlur=20;x.globalAlpha=0.85;x.fillStyle=c.no;x.fillRect(0,e.y-15,W,30);x.globalAlpha=0.95;x.fillStyle='#fff';x.fillRect(0,e.y-5,W,10);}x.restore();x.globalAlpha=1;}
     else if(e.type==='gate'){x.save();x.globalAlpha=e.used?0.25:0.9;x.fillStyle=c.vio;x.shadowColor=c.vio;x.shadowBlur=18;
       x.fillRect(e.x-4,gy-150,8,150);x.font='900 26px sans-serif';x.textAlign='center';x.fillStyle=c.gold;x.shadowBlur=8;x.fillText('❓',e.x,gy-160);x.restore();}}
-  if(G.bossActive&&G.boss){const B=G.boss,bw=72,bh=66;x.save();x.translate(B.x,B.y);x.shadowColor=c.vio;x.shadowBlur=22;x.fillStyle='#b56bff';
+  if(G.bossActive&&G.boss){const B=G.boss,bw=72,bh=66;x.save();x.translate(B.x,B.y);x.shadowColor=B.enraged?c.no:c.vio;x.shadowBlur=B.enraged?(22+10*Math.sin(G.t*16)):22;x.fillStyle=B.enraged?'#ff5a6e':'#b56bff';
     x.beginPath();x.moveTo(-bw/2,bh/2);x.lineTo(-bw/2,-bh/4);x.quadraticCurveTo(-bw/2,-bh/2,0,-bh/2);x.quadraticCurveTo(bw/2,-bh/2,bw/2,-bh/4);x.lineTo(bw/2,bh/2);x.closePath();x.fill();x.shadowBlur=0;
     x.fillStyle=c.gold;x.beginPath();x.moveTo(-24,-bh/2);x.lineTo(-24,-bh/2-15);x.lineTo(-12,-bh/2-4);x.lineTo(0,-bh/2-17);x.lineTo(12,-bh/2-4);x.lineTo(24,-bh/2-15);x.lineTo(24,-bh/2);x.closePath();x.fill();
     x.fillStyle='#fff';x.beginPath();x.arc(-15,-8,8,0,7);x.fill();x.beginPath();x.arc(15,-8,8,0,7);x.fill();
@@ -2209,13 +2218,13 @@ function gResume(){if(!G||G.state!=='pause')return;el('gPause').style.display='n
 function openGame(){if(examLock()){toast('🔒 考試進行中，已停用','no');return;}if(typeof stopTTS==='function')stopTTS();
   el('gameModal').classList.add('show');el('gBest1').textContent=gameBest();
   el('gStart').style.display='flex';el('gOver').style.display='none';el('gPause').style.display='none';el('gQ').classList.remove('show');
-  [...el('gSkinRow').children].forEach(c=>c.classList.toggle('on',c.dataset.gs===gSkin));
+  renderSkinRow();const rr=gameRuns();el('gRecent').textContent=rr.length?('近期：'+rr.slice(0,5).join(' ・ ')+' 分'):'';
   setTimeout(gResize,30);}
 function closeGame(){cancelAnimationFrame(gRAF);gRAF=0;G=null;stopBgm();el('gPause').style.display='none';el('gameModal').classList.remove('show');}
 el('gameBtn')&&el('gameBtn').addEventListener('click',openGame);
 el('gPlay').addEventListener('click',gStart);
 el('gDiffRow').addEventListener('click',e=>{const b=e.target.closest('[data-gd]');if(!b)return;gDiff=b.dataset.gd;[...el('gDiffRow').children].forEach(c=>c.classList.toggle('on',c===b));});
-el('gSkinRow').addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(!b)return;gSkin=b.dataset.gs;localStorage.setItem('gskin',gSkin);[...el('gSkinRow').children].forEach(c=>c.classList.toggle('on',c===b));});
+el('gSkinRow').addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(!b)return;if(gameBest()<(+b.dataset.req||0)){toast('🔒 最高分達 '+b.dataset.req+' 分解鎖此造型','no');return;}gSkin=b.dataset.gs;localStorage.setItem('gskin',gSkin);renderSkinRow();});
 el('gAgain').addEventListener('click',gStart);
 el('gQuit').addEventListener('click',closeGame);
 el('gClose').addEventListener('click',closeGame);
